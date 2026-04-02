@@ -39,6 +39,8 @@ run_tests.bat
 
 ```bash
 pytest tests_logic -q
+# 如果希望命令行逐条显示测试数据，可改用
+pytest tests_logic -vv
 ```
 
 或：
@@ -70,6 +72,8 @@ pytest -q
 `pytest.ini` 已默认开启以下能力：
 
 - HTML 报告：`test-artifacts/reports/pytest-report.html`
+- 逻辑测试详细案例报告：`test-artifacts/reports/logic-case-results.md`
+- 逻辑测试详细 JSON：`test-artifacts/reports/logic-case-results.json`
 - E2E 失败截图：Playwright `--screenshot=only-on-failure`
 - E2E 失败 trace：Playwright `--tracing=retain-on-failure`
 - E2E 失败视频：Playwright `--video=retain-on-failure`
