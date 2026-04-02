@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="养老金计算器，支持退休年龄速查、城镇职工养老测算、城乡居民养老测算。" />
-  <title>养老金计算器</title>
+  <meta name="description" content="养老金计算器上线版，提供退休年龄速查、职工养老测算、居民养老测算。先查几岁退休，再估算退休后预计每月养老金。" />
+  <title>养老金计算器_退休年龄查询_养老保险测算工具</title>
   <style>
     :root{
       --bg:#f4f7fb;
@@ -86,6 +86,14 @@
     .stat .v{font-size:19px;font-weight:800;margin-top:4px}
     .hero-panel{padding:16px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%)}
     .hero-panel ul{margin:10px 0 0 18px;padding:0;color:var(--muted);font-size:14px}
+    .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .hero-btn{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:11px 16px;border-radius:14px;font-size:14px;font-weight:800;text-decoration:none;
+      border:1px solid var(--line);
+    }
+    .hero-btn.primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;border-color:transparent}
+    .hero-btn.secondary{background:#fff;color:var(--text)}
     .section-stack{display:grid;gap:18px;margin-top:18px}
     .card{padding:22px}
     .section-title{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
@@ -120,12 +128,6 @@
       cursor:pointer;font-size:13px;font-weight:700;color:var(--text);
     }
     .seg button.active{background:var(--primary-soft);color:var(--primary);border-color:#bfdbfe}
-    .tabs{display:flex;gap:10px;flex-wrap:wrap}
-    .tab{
-      border:1px solid var(--line);background:#fff;color:var(--text);
-      border-radius:999px;padding:10px 16px;cursor:pointer;font-size:14px;font-weight:700;
-    }
-    .tab.active{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;border-color:transparent}
     .hidden{display:none}
     .advanced{margin-top:16px;border:1px solid var(--line);border-radius:20px;background:#fbfcff;overflow:hidden}
     .advanced-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;font-weight:800}
@@ -156,64 +158,137 @@
     @media (max-width:520px){.bar-row{grid-template-columns:1fr;gap:6px}}
     .bar{position:relative;height:12px;background:#eaf1ff;border-radius:999px;overflow:hidden}
     .bar > span{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(135deg,var(--primary),#60a5fa)}
-    .mini-hero{
-      display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin-bottom:14px;
-    }
+    .mini-hero{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin-bottom:14px}
     @media (max-width:720px){.mini-hero{grid-template-columns:1fr}}
-    .quick-result{
-      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px
-    }
+    .quick-result{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
     @media (max-width:720px){.quick-result{grid-template-columns:1fr}}
     .quick-box{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px}
     .quick-label{font-size:12px;color:var(--muted)}
     .quick-value{font-size:26px;font-weight:900;margin-top:4px}
-    .footer{margin-top:18px;font-size:13px;color:var(--muted)}
+    .faq-list{display:grid;gap:10px;margin-top:14px}
+    .faq-item{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+    .faq-item h3{margin-bottom:6px;font-size:15px}
+    .related-list{display:grid;gap:10px;margin-top:12px}
+    .related-card{padding:12px;border:1px dashed var(--line);border-radius:14px;background:#fff}
     .site-footer{margin-top:18px;padding:18px 22px;color:var(--muted);font-size:13px}
   </style>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "养老金计算器（含退休年龄速查）",
+      "url": "https://yanglao.zhibeimao.com/",
+      "description": "提供退休年龄速查、职工养老测算、居民养老测算，帮助用户估算退休时间与预计每月养老金。",
+      "inLanguage": "zh-CN"
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "首页",
+          "item": "https://yanglao.zhibeimao.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "养老金计算器"
+        }
+      ]
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "我怎么查累计缴费年限？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "可通过支付宝电子社保卡、市民中心或当地人社官方渠道查看养老保险个人权益记录，常见字段包括累计缴费月数、缴费年限、实际缴费年限。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "我怎么查个人账户累计储存额？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "在电子社保卡、社保查询页面或个人权益记录中，通常可看到个人账户余额、个人账户累计储存额等字段，按页面展示口径填写即可。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "为什么不同地区结果会不同？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "不同地区的养老金计发基数、基础养老金标准、地方加发政策和历史衔接规则不同，所以同样条件下测算结果会有差异。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "提前退休和延迟退休会怎样影响结果？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "提前退休通常会减少累计缴费和个人账户积累，同时计发月数更大；延迟退休通常会增加缴费和账户积累，计发月数更小，因此月养老金可能更高。"
+          }
+        }
+      ]
+    }
+  </script>
 </head>
 <body>
   <div class="wrap">
-    <div class="topbar">
+    <header class="topbar" aria-label="主导航">
       <div class="brand">养老金计算器</div>
       <nav>
         <a href="#retire-quick">退休年龄速查</a>
-        <a href="#employee-panel">职工养老</a>
-        <a href="#resident-panel">居民养老</a>
-        <a href="#faq">说明</a>
+        <a href="#employee-panel">职工养老测算</a>
+        <a href="#resident-panel">居民养老测算</a>
+        <a href="#faq">常见问题</a>
       </nav>
-    </div>
+    </header>
 
-    <div class="hero">
+    <section class="hero" aria-labelledby="page-title">
       <div class="hero-grid">
         <div>
-          <div class="pill">退休年龄速查 + 养老金测算</div>
-          <h1>快速知道你几岁退休，以及退休后每月养老金大概有多少</h1>
-          <p class="muted">支持退休年龄速查、城镇职工养老测算、城乡居民养老测算。主流程只保留普通用户能查到、能填写的核心字段。</p>
+          <div class="pill">退休年龄查询 + 养老金测算</div>
+          <h1 id="page-title">养老金计算器（含退休年龄速查）</h1>
+          <p class="muted">先用退休年龄速查确认“几岁退休、什么时候退休”，再按职工养老或居民养老路径估算退休后预计每月养老金。</p>
+          <div class="hero-actions">
+            <a class="hero-btn primary" href="#retire-quick">退休年龄速查</a>
+            <a class="hero-btn secondary" href="#employee-panel">开始测算养老金</a>
+          </div>
           <div class="hero-stats">
-            <div class="stat"><div class="k">入口一</div><div class="v">退休年龄速查</div></div>
-            <div class="stat"><div class="k">入口二</div><div class="v">职工养老测算</div></div>
-            <div class="stat"><div class="k">入口三</div><div class="v">居民养老测算</div></div>
+            <div class="stat"><div class="k">步骤 1</div><div class="v">查退休年龄</div></div>
+            <div class="stat"><div class="k">步骤 2</div><div class="v">选测算类型</div></div>
+            <div class="stat"><div class="k">步骤 3</div><div class="v">看预计月养老金</div></div>
           </div>
         </div>
-        <div class="hero-panel">
-          <h3>适合哪些人</h3>
+        <aside class="hero-panel">
+          <h2>你可以在这里完成什么</h2>
           <ul>
-            <li>只想先知道自己什么时候退休。</li>
-            <li>已经能查到缴费年限和个人账户余额，想估算养老金。</li>
-            <li>想对比法定退休与计划退休年龄下的结果差异。</li>
+            <li>快速查询自己大概几岁退休、哪一年哪一月退休。</li>
+            <li>按城镇职工养老保险口径估算养老金。</li>
+            <li>按城乡居民养老保险口径估算养老金。</li>
           </ul>
-        </div>
+        </aside>
       </div>
-    </div>
+    </section>
 
-    <div class="section-stack">
-      <section id="retire-quick" class="card">
+    <main class="section-stack">
+      <section id="retire-quick" class="card" aria-labelledby="retire-quick-title">
         <div class="mini-hero">
           <div>
-            <h2>退休年龄速查</h2>
-            <p class="muted">只想知道自己大概什么时候退休，直接在这里查。</p>
+            <h2 id="retire-quick-title">退休年龄速查</h2>
+            <p class="muted">只想知道自己几岁退休，直接在这里查。填写出生年月和人员类型即可快速得到退休年龄和退休时间。</p>
           </div>
-          <div class="mode-tag">高频入口</div>
+          <div class="mode-tag">优先入口</div>
         </div>
 
         <div class="grid">
@@ -247,13 +322,13 @@
         </div>
       </section>
 
-      <section id="employee-panel" class="card">
+      <section id="employee-panel" class="card" aria-labelledby="employee-title">
         <div class="section-title">
           <div>
-            <h2>城镇职工基本养老保险</h2>
-            <p class="muted">适合企业职工、灵活就业按职工养老参保的人群。</p>
+            <h2 id="employee-title">养老金计算器：城镇职工基本养老保险</h2>
+            <p class="muted">适合企业职工、灵活就业按职工养老参保人群。建议先填写核心数据，得到预计每月养老金后，再按需打开高级选项。</p>
           </div>
-          <div class="mode-tag">推荐先填核心项</div>
+          <div class="mode-tag">先职工后居民</div>
         </div>
 
         <div class="layout">
@@ -267,12 +342,12 @@
               <div class="step">
                 <div class="num">2</div>
                 <div class="title">填写累计缴费与账户数据</div>
-                <div class="sub">这两项建议先查准再填</div>
+                <div class="sub">建议先查询后填写</div>
               </div>
               <div class="step">
                 <div class="num">3</div>
-                <div class="title">需要更精细时打开高级选项</div>
-                <div class="sub">指数、过渡性养老金、地方加发</div>
+                <div class="title">查看预计每月养老金</div>
+                <div class="sub">再决定是否使用高级选项</div>
               </div>
             </div>
 
@@ -304,7 +379,7 @@
                   <option value="xian">西安</option>
                   <option value="manual">其他地区 / 手动填写</option>
                 </select>
-                <div class="input-hint">地区会带出一个默认参数，你仍可自行修改。</div>
+                <div class="input-hint">地区会带出默认参数，你仍可按本地最新口径自行修改。</div>
               </div>
               <div>
                 <label for="emp_base">当地养老金计发基数（月，元）</label>
@@ -315,8 +390,8 @@
                 <label for="emp_years">累计缴费年限（年）</label>
                 <input id="emp_years" type="number" min="0" step="0.1" value="30" />
                 <div class="quick-help">
-                  <div class="help-title">查询路径</div>
-                  支付宝 → 电子社保卡 / 市民中心 → 社保查询 / 养老保险 / 个人权益记录。<br/>
+                  <div class="help-title">如何查询累计缴费年限</div>
+                  可在支付宝电子社保卡、市民中心或当地人社渠道查看养老保险个人权益记录。<br/>
                   常见字段名：累计缴费月数、缴费年限、实际缴费年限、视同缴费年限。
                 </div>
               </div>
@@ -324,8 +399,8 @@
                 <label for="emp_account">个人账户累计储存额（元）</label>
                 <input id="emp_account" type="number" min="0" step="0.01" value="120000" />
                 <div class="quick-help">
-                  <div class="help-title">查询路径</div>
-                  支付宝 → 电子社保卡 / 市民中心 → 养老保险账户查询或个人权益记录。<br/>
+                  <div class="help-title">如何查询个人账户累计储存额</div>
+                  可在电子社保卡、养老保险账户查询或个人权益记录中查看。<br/>
                   常见字段名：个人账户余额、个人账户累计储存额、个人账户储存额。
                 </div>
               </div>
@@ -345,8 +420,8 @@
 
             <div class="advanced collapsed" id="emp_advanced_box">
               <div class="advanced-head" onclick="toggleAdvanced('emp_advanced_box')">
-                <span>高级选项</span>
-                <span class="muted" style="font-size:12px;">能找到更准数据时再填写</span>
+                <span>高级选项（默认折叠）</span>
+                <span class="muted" style="font-size:12px;">仅在你有更准确数据时填写</span>
               </div>
               <div class="advanced-body">
                 <div class="grid">
@@ -358,12 +433,12 @@
                   <div>
                     <label for="emp_transition">过渡性养老金（月，元）</label>
                     <input id="emp_transition" type="number" min="0" step="0.01" value="0" />
-                    <div class="input-hint">主要影响部分有历史衔接情况的人群，不清楚可先填 0。</div>
+                    <div class="input-hint">主要影响历史衔接人群，不清楚可先填 0。</div>
                   </div>
                   <div class="span-2">
                     <label for="emp_extra">地方加发 / 其他月补贴（元）</label>
                     <input id="emp_extra" type="number" min="0" step="0.01" value="0" />
-                    <div class="input-hint">部分地区或特定人群可能存在额外加发，不确定时可先填 0。</div>
+                    <div class="input-hint">部分地区或特定人群存在额外加发，不确定可先填 0。</div>
                   </div>
                   <div class="span-2">
                     <div class="formula">
@@ -380,7 +455,7 @@
             <div class="btns">
               <button class="action" onclick="calcEmployee()">开始计算</button>
               <button class="secondary" onclick="resetEmployee()">重置</button>
-              <button class="linkish" onclick="document.getElementById('emp_advanced_box').classList.remove('collapsed')">打开高级选项</button>
+              <button class="linkish" onclick="document.getElementById('emp_advanced_box').classList.remove('collapsed')">展开高级选项</button>
             </div>
           </div>
 
@@ -423,19 +498,19 @@
 
             <div class="explain" style="margin-top:16px;">
               <strong>结果说明</strong><br/>
-              测算结果会把基础养老金、个人账户养老金和其他部分拆开显示，便于理解主要影响因素。
+              系统会拆分展示基础养老金、个人账户养老金和其他部分，便于你判断影响结果的关键因素。
             </div>
           </div>
         </div>
       </section>
 
-      <section id="resident-panel" class="card">
+      <section id="resident-panel" class="card" aria-labelledby="resident-title">
         <div class="section-title">
           <div>
-            <h2>城乡居民基本养老保险</h2>
-            <p class="muted">适合参加城乡居民养老保险的人群。</p>
+            <h2 id="resident-title">养老金计算器：城乡居民基本养老保险</h2>
+            <p class="muted">适合参加城乡居民养老保险的人群。若你不属于职工养老体系，可直接使用本模块估算预计每月养老金。</p>
           </div>
-          <div class="mode-tag">简洁测算</div>
+          <div class="mode-tag">居民养老</div>
         </div>
 
         <div class="layout">
@@ -461,7 +536,7 @@
                 <input id="res_account" type="number" min="0" step="0.01" value="60000" />
                 <div class="quick-help">
                   <div class="help-title">查询路径</div>
-                  支付宝 → 电子社保卡 / 市民中心 → 居民养老账户查询 / 社保权益记录。
+                  支付宝电子社保卡 / 市民中心 / 社保权益记录中，通常可查询居民养老个人账户累计储存额。
                 </div>
               </div>
               <div>
@@ -501,21 +576,52 @@
         </div>
       </section>
 
-      <section id="faq" class="card">
-        <h2>说明</h2>
-        <div class="callout">
-          <strong>适用范围</strong><br/>
-          本工具用于养老金估算。不同地区口径、历史衔接规则、地方补贴政策可能存在差异，最终仍以当地社保经办机构核定结果为准。
-        </div>
-        <div class="footer">
-          你可以先用退休年龄速查确定退休时间，再回到对应测算模块继续估算养老金。
+      <section id="faq" class="card" aria-labelledby="faq-title">
+        <h2 id="faq-title">说明与常见问题</h2>
+        <p class="muted">下面这些问题是养老金计算和退休年龄查询中最常见的疑问。先把关键数据查清，再测算会更接近实际。</p>
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>我怎么查累计缴费年限？</h3>
+            <p>你可以在支付宝电子社保卡、市民中心或当地人社官方渠道，查看养老保险个人权益记录。常见字段有“累计缴费月数”“缴费年限”“实际缴费年限”。如果看到月份，可按 12 个月折算为 1 年。</p>
+          </article>
+          <article class="faq-item">
+            <h3>我怎么查个人账户累计储存额？</h3>
+            <p>在电子社保卡、社保查询或个人权益记录中，通常会展示“个人账户余额”“个人账户累计储存额”等字段。优先填写最近一次可查询到账的金额，可以提升测算参考价值。</p>
+          </article>
+          <article class="faq-item">
+            <h3>为什么不同地区结果会不同？</h3>
+            <p>不同地区的养老金计发基数、基础养老金标准、地方加发政策和历史衔接规则会有差异，所以即使个人条件接近，测算结果也可能不同。最终金额以当地社保经办机构核定为准。</p>
+          </article>
+          <article class="faq-item">
+            <h3>提前退休和延迟退休会怎样影响结果？</h3>
+            <p>提前退休通常意味着累计缴费和账户积累更少，且计发月数更大，月养老金可能偏低；延迟退休通常会增加累计缴费和账户积累，计发月数更小，月养老金可能更高。</p>
+          </article>
         </div>
       </section>
-    </div>
 
-    <div class="site-footer">
-      本工具为测算工具，结果仅供参考，最终以社保经办机构核定结果为准。
-    </div>
+      <section id="related" class="card" aria-labelledby="related-title">
+        <h2 id="related-title">相关内容</h2>
+        <p class="muted">你可以继续查看以下主题，进一步理解退休和养老规划中的关键问题。</p>
+        <div class="related-list">
+          <div class="related-card">
+            <h3>退休年龄政策说明</h3>
+            <p class="muted">了解退休年龄规则、常见人群分类和时间口径。</p>
+          </div>
+          <div class="related-card">
+            <h3>养老金怎么算</h3>
+            <p class="muted">从基础养老金、个人账户养老金和地方加发三个部分理解计算逻辑。</p>
+          </div>
+          <div class="related-card">
+            <h3>灵活就业养老怎么交</h3>
+            <p class="muted">了解按职工养老参保时常见的缴费方式与注意事项。</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      本页面为养老金测算与退休年龄查询工具，结果仅供参考，不构成政策认定或待遇承诺。实际退休时间与养老金待遇以参保地社保经办机构最终核定为准。
+    </footer>
   </div>
 
   <script>
