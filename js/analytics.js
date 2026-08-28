@@ -1,3 +1,5 @@
+import './launch-polish.js';
+
 const SESSION_KEY = 'yanglao-v2-analytics-session';
 
 function sessionId() {
