@@ -10,6 +10,7 @@ on:
       - 'tests_js/**'
       - 'tests_e2e/test_v2_launch.py'
       - 'package.json'
+      - 'requirements-test.txt'
       - '.github/workflows/v2-quality.yml'
   push:
     branches:
@@ -21,6 +22,7 @@ on:
       - 'tests_js/**'
       - 'tests_e2e/test_v2_launch.py'
       - 'package.json'
+      - 'requirements-test.txt'
       - '.github/workflows/v2-quality.yml'
 
 permissions:
@@ -61,7 +63,7 @@ jobs:
       - name: Install browser test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest playwright
+          pip install -r requirements-test.txt
           python -m playwright install --with-deps chromium
       - name: Run V2 browser smoke
         run: |
