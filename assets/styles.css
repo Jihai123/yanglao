@@ -45,7 +45,7 @@ p { margin: 0; }
 }
 .intent:hover { border-color: #bdc7f3; transform: translateY(-1px); }
 .intent-icon { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: var(--brand-soft); font-size: 20px; }
-.intent .sub { margin-top: 3px; color: var(--muted); font-size: 13px; }
+.intent .sub { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.45; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px; box-shadow: var(--shadow); }
 .wizard-head { margin-bottom: 18px; }
 .progress { height: 6px; background: #e8ebf1; border-radius: 999px; overflow: hidden; margin-bottom: 16px; }
