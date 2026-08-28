@@ -43,9 +43,12 @@ jobs:
         run: |
           node --check js/policy.js
           node --check js/projection.js
+          node --check js/projection-v3.js
           node --check js/app.js
+          node --check js/employee-v3.js
           node --check js/sources.js
           node --check js/trust.js
+          node --check js/trust-v3.js
           node --check js/resident.js
           node --check js/resident-ui.js
           node --check js/guidance.js
