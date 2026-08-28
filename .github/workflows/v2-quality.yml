@@ -1,0 +1,43 @@
+name: V2 Quality
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'js/**'
+      - 'tests_js/**'
+      - 'package.json'
+      - '.github/workflows/v2-quality.yml'
+  push:
+    branches:
+      - 'refactor/v2-retirement-planner'
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'js/**'
+      - 'tests_js/**'
+      - 'package.json'
+      - '.github/workflows/v2-quality.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run V2 tests
+        run: npm run test:v2
+      - name: Check browser modules syntax
+        run: |
+          node --check js/policy.js
+          node --check js/projection.js
+          node --check js/app.js
+          node --check js/sources.js
+          node --check js/trust.js
