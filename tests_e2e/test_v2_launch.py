@@ -75,7 +75,7 @@ def test_qualification_only_mode_reaches_result_without_amount(browser):
     page.locator('[data-amount-mode="skip"]').click()
     page.locator('#nextBtn').click()
     expect(page.locator('#resultView')).to_be_visible()
-    expect(page.locator('#resultView')).to_contain_text('本次先不估')
+    expect(page.locator('#resultView')).to_contain_text('未估算')
     assert errors == []
     page.close()
 
@@ -95,5 +95,6 @@ def test_front_page_has_user_copy_not_internal_seo_copy(browser):
     expect(page.locator('#homeTrustCard')).to_be_visible()
     expect(page.locator('body')).not_to_contain_text('工具优先给结果')
     expect(page.locator('body')).not_to_contain_text('方便搜索')
+    expect(page.locator('body')).not_to_contain_text('不会每天把日期自动改成')
     assert errors == []
     page.close()
