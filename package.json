@@ -1,0 +1,8 @@
+{
+  "name": "yanglao-v2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:v2": "node --test tests_js/*.test.js"
+  }
+}
