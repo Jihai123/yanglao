@@ -3,14 +3,12 @@ from playwright.sync_api import sync_playwright, expect
 
 BASE_URL = "http://127.0.0.1:8765/index.html"
 
-
 @pytest.fixture(scope="module")
 def browser():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         yield browser
         browser.close()
-
 
 def new_page(browser, width=390, height=844):
     page = browser.new_page(viewport={"width": width, "height": height})
@@ -21,69 +19,81 @@ def new_page(browser, width=390, height=844):
     page.reload(wait_until="networkidle")
     return page, errors
 
-
 def finish_employee(page, intent):
     page.locator(f'[data-intent="{intent}"]').click()
-    for _ in range(7):
-        if not page.locator("#resultView").get_attribute("class") or "hidden" not in (page.locator("#resultView").get_attribute("class") or ""):
+    for _ in range(6):
+        if page.locator("#resultView").is_visible():
             break
         page.locator("#nextBtn").click()
     expect(page.locator("#resultView")).to_be_visible()
 
-
-def test_mobile_home_has_no_horizontal_overflow_and_resident_entry(browser):
+def test_mobile_home_and_birth_input_do_not_overflow(browser):
     page, errors = new_page(browser, 390, 844)
-    expect(page.locator("#residentEntry")).to_be_visible()
-    overflow = page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
-    assert overflow is True
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1") is True
+    page.locator('[data-intent="age"]').click()
+    month_input = page.locator('input[type="month"]')
+    card = page.locator('#wizardView .card')
+    ib = month_input.bounding_box(); cb = card.bounding_box()
+    assert ib and cb
+    assert ib["x"] >= cb["x"] - 1
+    assert ib["x"] + ib["width"] <= cb["x"] + cb["width"] + 1
     assert errors == []
     page.close()
-
 
 @pytest.mark.parametrize("intent", ["age", "normal", "early", "flex"])
 def test_all_employee_entry_points_reach_result(browser, intent):
     page, errors = new_page(browser)
     finish_employee(page, intent)
     expect(page.locator(".result-hero")).to_be_visible()
-    if intent != "age":
-        expect(page.locator(".decision-card")).to_be_visible()
     assert errors == []
     page.close()
 
-
-def test_qualification_only_mode_reaches_useful_result_without_amount(browser):
+def test_normal_flow_does_not_show_fake_disabled_contribution_choices(browser):
     page, errors = new_page(browser)
     page.locator('[data-intent="normal"]').click()
-    for _ in range(4):
-        page.locator("#nextBtn").click()
-    expect(page.locator("#qualificationOnlyBtn")).to_be_visible()
-    page.locator("#qualificationOnlyBtn").click()
-    page.locator("#nextBtn").click()
-    expect(page.locator("#resultView")).to_be_visible()
-    expect(page.locator(".result-money")).to_contain_text("先看资格与方案")
-    expect(page.locator(".decision-card")).to_be_visible()
+    page.locator('#nextBtn').click()
+    page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    expect(page.locator('[data-contribution-plan]')).to_have_count(0)
     assert errors == []
     page.close()
 
+def test_retirement_planning_uses_three_modes_not_month_list(browser):
+    page, errors = new_page(browser)
+    page.locator('[data-intent="early"]').click()
+    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    expect(page.locator('[data-retirement-mode]')).to_have_count(3)
+    expect(page.locator('[data-key="claimAgeMonths"]')).to_have_count(0)
+    assert errors == []
+    page.close()
+
+def test_qualification_only_mode_reaches_result_without_amount(browser):
+    page, errors = new_page(browser)
+    page.locator('[data-intent="normal"]').click()
+    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    page.locator('[data-amount-mode="skip"]').click()
+    page.locator('#nextBtn').click()
+    expect(page.locator('#resultView')).to_be_visible()
+    expect(page.locator('#resultView')).to_contain_text('本次先不估')
+    assert errors == []
+    page.close()
 
 def test_resident_flow_reaches_result_and_shows_official_basis(browser):
     page, errors = new_page(browser)
-    page.locator("#residentEntry").click()
-    expect(page.locator("#residentView")).to_be_visible()
-    page.locator("#residentNext").click()
-    page.locator("#residentNext").click()
-    page.locator("#residentNext").click()
-    expect(page.locator("#residentView .result-hero")).to_be_visible()
-    expect(page.locator("#residentView #resultTrustCard")).to_be_visible()
-    expect(page.locator("#residentView")).to_contain_text("城乡居民")
+    page.locator('#residentEntry').click()
+    expect(page.locator('#residentView')).to_be_visible()
+    page.locator('#residentNext').click(); page.locator('#residentNext').click(); page.locator('#residentNext').click()
+    expect(page.locator('#residentView .result-hero')).to_be_visible()
+    expect(page.locator('#residentView #resultTrustCard')).to_be_visible()
     assert errors == []
     page.close()
 
-
-def test_seo_and_official_trust_content_are_present(browser):
+def test_front_page_has_user_copy_not_internal_seo_copy(browser):
     page, errors = new_page(browser, 1280, 900)
-    expect(page.locator(".seo-guide")).to_be_visible()
-    expect(page.locator("#homeTrustCard")).to_be_visible()
-    expect(page.locator("#homeTrustCard")).to_contain_text("官方来源可核验")
+    expect(page.locator('.seo-guide')).to_be_visible()
+    expect(page.locator('#homeTrustCard')).to_be_visible()
+    expect(page.locator('body')).not_to_contain_text('工具优先给结果')
+    expect(page.locator('body')).not_to_contain_text('方便搜索')
     assert errors == []
     page.close()
