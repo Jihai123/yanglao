@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="退休规划助手：查询2026职工退休年龄，估算职工养老金和城乡居民养老金，规划提前停止工作后的社保缴费、最低缴费年限与养老金领取。" />
   <title>退休规划助手_养老金计算器_2026退休年龄查询</title>
-  <link rel="stylesheet" href="./assets/styles.css" />
-  <link rel="stylesheet" href="./assets/trust.css" />
-  <link rel="stylesheet" href="./assets/launch.css" />
-  <link rel="stylesheet" href="./assets/product-v3.css" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260828-p14" />
+  <link rel="stylesheet" href="./assets/trust.css?v=20260828-p14" />
+  <link rel="stylesheet" href="./assets/launch.css?v=20260828-p14" />
+  <link rel="stylesheet" href="./assets/product-v3.css?v=20260828-p14" />
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -35,29 +35,29 @@
           <div class="hero">
             <span class="eyebrow">退休年龄 · 缴费年限 · 养老金</span>
             <h1>退休这件事，<br/>按你的实际情况算</h1>
-            <p class="muted">先回答普通人能回答的问题。系统自己处理退休规则、实际缴费月数和金额不确定性；信息不够时，不硬给一个看似精确却没意义的数字。</p>
+            <p class="muted">查退休时间、算还要缴多久，也可以估算以后每月养老金。</p>
           </div>
           <div id="resumeBox" class="resume hidden">
             <strong>继续上次的退休方案</strong><p class="muted" id="resumeText" style="margin-top:4px"></p><button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续测算 →</button>
           </div>
           <div class="intent-grid">
-            <button class="intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">按出生年月和实际身份判断法定退休时间</span></span><span>›</span></button>
-            <button class="intent" data-intent="normal" type="button"><span><strong>正常工作到退休，能领多少？</strong><span class="sub">默认按法定退休年龄、持续参保来规划</span></span><span>›</span></button>
-            <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">停止工作、实际缴费和办理退休分开算</span></span><span>›</span></button>
-            <button class="intent" data-intent="flex" type="button"><span><strong>我已离职 / 灵活就业</strong><span class="sub">可直接填写未来实际还会缴多少个月，允许中间断缴</span></span><span>›</span></button>
-            <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">独立制度，不套用职工渐进式退休和职工15→20年规则</span></span><span>›</span></button>
+            <button class="intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">按出生年月和身份计算</span></span><span>›</span></button>
+            <button class="intent" data-intent="normal" type="button"><span><strong>正常工作到退休，能领多少？</strong><span class="sub">按法定退休年龄估算</span></span><span>›</span></button>
+            <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">可以继续按灵活就业缴社保</span></span><span>›</span></button>
+            <button class="intent" data-intent="flex" type="button"><span><strong>我已离职 / 灵活就业</strong><span class="sub">按以后实际准备缴多久来算</span></span><span>›</span></button>
+            <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">按居民养老规则单独计算</span></span><span>›</span></button>
           </div>
-          <p class="source-box" style="margin-top:20px"><strong>先分清参保制度：</strong>渐进式延迟法定退休年龄，以及2030年起职工最低缴费年限逐步由15年提高到20年的规则，针对职工按月领取基本养老金。城乡居民基本养老保险使用独立规则，两套制度不能混算。</p>
+          <p class="source-box" style="margin-top:20px"><strong>注意：</strong>职工养老和城乡居民养老是两套不同制度，不能混算。</p>
           <section class="seo-guide" aria-labelledby="seoTitle">
             <h2 id="seoTitle">2026退休与养老金，几个关键规则</h2>
             <div class="seo-faq">
-              <details><summary>2026年职工退休年龄为什么不是统一一个数字？</summary><p>2025年起职工渐进式延迟法定退休年龄已经实施。具体法定退休年龄和退休年月取决于出生年月以及原法定退休年龄类别，所以要按个人情况计算。女性原50岁或55岁口径不能只凭年龄安全推断。</p></details>
-              <details><summary>提前不工作，为什么不等于提前退休？</summary><p>对职工养老规划，停止工作、实际缴纳职工养老保险的月数、办理退休领取养老金是不同概念。中间断缴的月份不能当成缴费月份。</p></details>
-              <details><summary>职工养老保险最低缴费年限什么时候到20年？</summary><p>不是2026年直接变成20年。2025年至2029年职工最低缴费年限仍为15年；2030年起逐步提高，每年增加6个月，到2039年达到20年。</p></details>
-              <details><summary>为什么有时不显示养老金金额？</summary><p>长期养老金金额取决于历史平均缴费水平、个人账户、地区计发参数和未来变化。如果输入不足导致区间过宽，工具会先不给金额，只保留退休资格和缴费计划，避免用一个跨度过大的数字误导决策。</p></details>
-              <details><summary>城乡居民养老金也延迟退休、也要逐步交满20年吗？</summary><p>按目前国家现行统一制度，不能这样套用。城乡居民基本养老保险按独立制度执行，现行国家统一框架仍按60周岁、累计缴费满15年等条件判断领取资格；地方规则以当地最新政策为准。</p></details>
+              <details><summary>2026年职工退休年龄为什么不是统一一个数字？</summary><p>2025年起实施渐进式延迟法定退休年龄。具体退休年月取决于出生年月以及原法定退休年龄类别。</p></details>
+              <details><summary>提前不工作，等于提前退休吗？</summary><p>不等于。停止工作、继续缴社保和办理退休可以是不同时间。</p></details>
+              <details><summary>职工养老保险最低缴费年限什么时候到20年？</summary><p>2025年至2029年仍为15年；2030年起逐步提高，到2039年达到20年。</p></details>
+              <details><summary>养老金金额为什么只能估算？</summary><p>未来金额还会受到缴费年限、缴费基数、个人账户、退休地计发参数等影响，所以规划结果不是最终核定金额。</p></details>
+              <details><summary>城乡居民养老金也执行职工延迟退休和20年规则吗？</summary><p>不能直接套用。城乡居民基本养老保险按独立制度执行。</p></details>
             </div>
-            <p class="seo-footnote">本站为退休规划工具，不替代人社经办机构最终待遇核定。国家政策和已收录地区参数提供官方来源与最近核验日期。</p>
+            <p class="seo-footnote">本站为退休规划工具，不替代人社经办机构最终待遇核定。</p>
           </section>
         </section>
         <section id="wizardView" class="hidden"><div class="card"><div class="wizard-head"><div class="progress"><span id="progressBar"></span></div><div class="step-kicker" id="stepKicker">第 1 步</div><h2 id="stepTitle"></h2><p class="muted" id="stepDesc"></p></div><div id="stepBody" class="form-stack"></div></div></section>
@@ -67,10 +67,10 @@
     </div>
   </div>
   <div class="sticky-actions hidden" id="stickyActions"><div class="sticky-inner"><button class="btn secondary" id="backBtn" type="button">上一步</button><button class="btn primary" id="nextBtn" type="button">下一步</button></div></div>
-  <script type="module" src="./js/analytics.js"></script>
-  <script type="module" src="./js/employee-v3.js"></script>
-  <script type="module" src="./js/trust-v3.js"></script>
-  <script type="module" src="./js/resident-ui.js"></script>
-  <script type="module" src="./js/launch-polish.js"></script>
+  <script type="module" src="./js/analytics.js?v=20260828-p14"></script>
+  <script type="module" src="./js/employee-v3.js?v=20260828-p14"></script>
+  <script type="module" src="./js/trust-v3.js?v=20260828-p14"></script>
+  <script type="module" src="./js/resident-ui.js?v=20260828-p14"></script>
+  <script type="module" src="./js/launch-polish.js?v=20260828-p14"></script>
 </body>
 </html>
