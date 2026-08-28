@@ -3,22 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="退休规划助手：查询2026职工退休年龄，估算职工养老金和城乡居民养老金，规划提前停止工作后的社保缴费、最低缴费年限与养老金领取。" />
+  <meta name="description" content="退休规划助手：查询2026职工退休年龄，估算职工养老金和城乡居民养老金，规划停止工作后的社保缴费。" />
   <title>退休规划助手_养老金计算器_2026退休年龄查询</title>
-  <link rel="stylesheet" href="./assets/styles.css?v=20260828-p14" />
-  <link rel="stylesheet" href="./assets/trust.css?v=20260828-p14" />
-  <link rel="stylesheet" href="./assets/launch.css?v=20260828-p14" />
-  <link rel="stylesheet" href="./assets/product-v3.css?v=20260828-p14" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260828-p15" />
+  <link rel="stylesheet" href="./assets/trust.css?v=20260828-p15" />
+  <link rel="stylesheet" href="./assets/launch.css?v=20260828-p15" />
+  <link rel="stylesheet" href="./assets/product-v3.css?v=20260828-p15" />
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"FAQPage",
     "mainEntity":[
-      {"@type":"Question","name":"2026年职工多少岁退休？","acceptedAnswer":{"@type":"Answer","text":"2025年起实施职工渐进式延迟法定退休年龄。具体法定退休年龄取决于出生年月和原法定退休年龄类别，不能只用一个统一年龄回答。"}},
-      {"@type":"Question","name":"职工养老保险最低要交多少年？","acceptedAnswer":{"@type":"Answer","text":"2025年至2029年，职工按月领取基本养老金最低缴费年限仍为15年；从2030年起每年增加6个月，到2039年达到20年。弹性延迟退休的最低缴费年限按本人法定退休年龄对应年份确定。"}},
-      {"@type":"Question","name":"提前不工作等于提前退休吗？","acceptedAnswer":{"@type":"Answer","text":"不等于。停止工作年龄、实际缴纳职工养老保险的月数和办理退休领取养老金的时间可以不同。"}},
-      {"@type":"Question","name":"职工养老金怎么计算？","acceptedAnswer":{"@type":"Answer","text":"企业职工基本养老金通常由基础养老金、个人账户养老金以及符合条件时的过渡性养老金等组成。未来金额还取决于退休地计发参数、缴费年限、缴费指数和个人账户余额。"}},
-      {"@type":"Question","name":"城乡居民养老金怎么领、怎么计算？","acceptedAnswer":{"@type":"Answer","text":"城乡居民基本养老保险使用独立制度规则。现行国家统一制度框架下，年满60周岁、累计缴费满15年且符合其他条件的参保居民可以按月领取；待遇由基础养老金和个人账户养老金构成，个人账户养老金目前按个人账户全部储存额除以139计发。职工渐进式延迟退休和2030年至2039年职工最低缴费年限提高规则不能直接套用到城乡居民养老。"}}
+      {"@type":"Question","name":"2026年职工多少岁退休？","acceptedAnswer":{"@type":"Answer","text":"2025年起实施渐进式延迟法定退休年龄。具体退休年月取决于出生年月和原法定退休年龄类别。"}},
+      {"@type":"Question","name":"职工养老保险最低要交多少年？","acceptedAnswer":{"@type":"Answer","text":"2025年至2029年最低缴费年限仍为15年；2030年起每年增加6个月，到2039年达到20年。"}},
+      {"@type":"Question","name":"提前不工作等于提前退休吗？","acceptedAnswer":{"@type":"Answer","text":"不等于。停止工作、继续缴养老保险和办理退休可以是不同时间。"}},
+      {"@type":"Question","name":"职工养老金怎么计算？","acceptedAnswer":{"@type":"Answer","text":"企业职工基本养老金通常由基础养老金、个人账户养老金以及符合条件时的过渡性养老金等组成。"}},
+      {"@type":"Question","name":"城乡居民养老金怎么领？","acceptedAnswer":{"@type":"Answer","text":"城乡居民基本养老保险使用独立规则，不能直接套用职工渐进式退休和职工最低缴费年限提高规则。"}}
     ]
   }
   </script>
@@ -34,30 +34,28 @@
         <section id="homeView">
           <div class="hero">
             <span class="eyebrow">退休年龄 · 缴费年限 · 养老金</span>
-            <h1>退休这件事，<br/>按你的实际情况算</h1>
-            <p class="muted">查退休时间、算还要缴多久，也可以估算以后每月养老金。</p>
+            <h1>退休这件事，<br/>按你的情况算</h1>
+            <p class="muted">查退休时间，算缴费年限和养老金。</p>
           </div>
           <div id="resumeBox" class="resume hidden">
-            <strong>继续上次的退休方案</strong><p class="muted" id="resumeText" style="margin-top:4px"></p><button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续测算 →</button>
+            <strong>继续上次的规划</strong><p class="muted" id="resumeText" style="margin-top:4px"></p><button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续 →</button>
           </div>
           <div class="intent-grid">
-            <button class="intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">按出生年月和身份计算</span></span><span>›</span></button>
-            <button class="intent" data-intent="normal" type="button"><span><strong>正常工作到退休，能领多少？</strong><span class="sub">按法定退休年龄估算</span></span><span>›</span></button>
-            <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">可以继续按灵活就业缴社保</span></span><span>›</span></button>
-            <button class="intent" data-intent="flex" type="button"><span><strong>我已离职 / 灵活就业</strong><span class="sub">按以后实际准备缴多久来算</span></span><span>›</span></button>
-            <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">按居民养老规则单独计算</span></span><span>›</span></button>
+            <button class="intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">查法定退休时间</span></span><span>›</span></button>
+            <button class="intent" data-intent="normal" type="button"><span><strong>正常工作到退休，能领多少？</strong><span class="sub">按持续参保估算</span></span><span>›</span></button>
+            <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">规划停止工作后的社保</span></span><span>›</span></button>
+            <button class="intent" data-intent="flex" type="button"><span><strong>我已离职 / 灵活就业</strong><span class="sub">按实际缴费计划测算</span></span><span>›</span></button>
+            <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">按居民养老规则计算</span></span><span>›</span></button>
           </div>
-          <p class="source-box" style="margin-top:20px"><strong>注意：</strong>职工养老和城乡居民养老是两套不同制度，不能混算。</p>
           <section class="seo-guide" aria-labelledby="seoTitle">
-            <h2 id="seoTitle">2026退休与养老金，几个关键规则</h2>
+            <h2 id="seoTitle">2026退休与养老金</h2>
             <div class="seo-faq">
-              <details><summary>2026年职工退休年龄为什么不是统一一个数字？</summary><p>2025年起实施渐进式延迟法定退休年龄。具体退休年月取决于出生年月以及原法定退休年龄类别。</p></details>
-              <details><summary>提前不工作，等于提前退休吗？</summary><p>不等于。停止工作、继续缴社保和办理退休可以是不同时间。</p></details>
-              <details><summary>职工养老保险最低缴费年限什么时候到20年？</summary><p>2025年至2029年仍为15年；2030年起逐步提高，到2039年达到20年。</p></details>
-              <details><summary>养老金金额为什么只能估算？</summary><p>未来金额还会受到缴费年限、缴费基数、个人账户、退休地计发参数等影响，所以规划结果不是最终核定金额。</p></details>
-              <details><summary>城乡居民养老金也执行职工延迟退休和20年规则吗？</summary><p>不能直接套用。城乡居民基本养老保险按独立制度执行。</p></details>
+              <details><summary>退休年龄为什么不是统一一个数字？</summary><p>渐进式延迟退休已经实施，具体退休年月要结合出生年月和人员类别计算。</p></details>
+              <details><summary>职工最低缴费年限什么时候到20年？</summary><p>2025年至2029年仍为15年；2030年起逐年增加6个月，到2039年达到20年。</p></details>
+              <details><summary>停止工作后还能继续缴吗？</summary><p>可以按实际情况规划，例如转为灵活就业继续缴，也可以中间断缴。</p></details>
+              <details><summary>养老金金额为什么是估算？</summary><p>最终金额还取决于退休地参数、历年缴费基数、个人账户和未来政策数据。</p></details>
+              <details><summary>城乡居民养老也按职工退休规则吗？</summary><p>不是。城乡居民基本养老保险按独立制度执行。</p></details>
             </div>
-            <p class="seo-footnote">本站为退休规划工具，不替代人社经办机构最终待遇核定。</p>
           </section>
         </section>
         <section id="wizardView" class="hidden"><div class="card"><div class="wizard-head"><div class="progress"><span id="progressBar"></span></div><div class="step-kicker" id="stepKicker">第 1 步</div><h2 id="stepTitle"></h2><p class="muted" id="stepDesc"></p></div><div id="stepBody" class="form-stack"></div></div></section>
@@ -67,10 +65,10 @@
     </div>
   </div>
   <div class="sticky-actions hidden" id="stickyActions"><div class="sticky-inner"><button class="btn secondary" id="backBtn" type="button">上一步</button><button class="btn primary" id="nextBtn" type="button">下一步</button></div></div>
-  <script type="module" src="./js/analytics.js?v=20260828-p14"></script>
-  <script type="module" src="./js/employee-v3.js?v=20260828-p14"></script>
-  <script type="module" src="./js/trust-v3.js?v=20260828-p14"></script>
-  <script type="module" src="./js/resident-ui.js?v=20260828-p14"></script>
-  <script type="module" src="./js/launch-polish.js?v=20260828-p14"></script>
+  <script type="module" src="./js/analytics.js?v=20260828-p15"></script>
+  <script type="module" src="./js/employee-v3.js?v=20260828-p15"></script>
+  <script type="module" src="./js/trust-v3.js?v=20260828-p15"></script>
+  <script type="module" src="./js/resident-ui.js?v=20260828-p15"></script>
+  <script type="module" src="./js/launch-polish.js?v=20260828-p15"></script>
 </body>
 </html>
