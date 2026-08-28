@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="退休规划助手：查询退休年龄，估算养老金，规划提前停止工作后的社保缴费与养老金领取。" />
+  <title>退休规划助手_养老金计算器_退休年龄查询</title>
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">退休规划助手</div>
+        <button class="small-link" id="restartBtn" type="button">重新规划</button>
+      </header>
+
+      <main>
+        <section id="homeView">
+          <div class="hero">
+            <span class="eyebrow">养老金计算器 V2</span>
+            <h1>把退休这件事<br/>真正算清楚</h1>
+            <p class="muted">什么时候能退、提前不工作后社保怎么缴、到时大约能领多少养老金，按你的计划一步步算。</p>
+          </div>
+
+          <div id="resumeBox" class="resume hidden">
+            <strong>继续上次的退休方案</strong>
+            <p class="muted" id="resumeText" style="margin-top:4px"></p>
+            <button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续测算 →</button>
+          </div>
+
+          <div class="intent-grid">
+            <button class="intent" data-intent="age" type="button">
+              <span class="intent-icon">🗓️</span><span><strong>我什么时候能退休？</strong><span class="sub">查法定、最早和最晚退休时间</span></span><span>›</span>
+            </button>
+            <button class="intent" data-intent="normal" type="button">
+              <span class="intent-icon">💰</span><span><strong>正常工作到退休，能领多少？</strong><span class="sub">按未来继续缴费预测养老金</span></span><span>›</span>
+            </button>
+            <button class="intent" data-intent="early" type="button">
+              <span class="intent-icon">🌤️</span><span><strong>我想几年后不工作</strong><span class="sub">停止工作不等于马上领养老金</span></span><span>›</span>
+            </button>
+            <button class="intent" data-intent="flex" type="button">
+              <span class="intent-icon">🧭</span><span><strong>我已离职 / 灵活就业</strong><span class="sub">比较停缴、再缴几年、缴到退休</span></span><span>›</span>
+            </button>
+          </div>
+          <p class="source-box" style="margin-top:20px">政策规则依据国家现行渐进式延迟退休制度。养老金金额为测算值，精度取决于你提供的数据。</p>
+        </section>
+
+        <section id="wizardView" class="hidden">
+          <div class="card">
+            <div class="wizard-head">
+              <div class="progress"><span id="progressBar"></span></div>
+              <div class="step-kicker" id="stepKicker">第 1 步</div>
+              <h2 id="stepTitle"></h2>
+              <p class="muted" id="stepDesc"></p>
+            </div>
+            <div id="stepBody" class="form-stack"></div>
+          </div>
+        </section>
+
+        <section id="resultView" class="hidden"></section>
+      </main>
+    </div>
+  </div>
+
+  <div class="sticky-actions hidden" id="stickyActions">
+    <div class="sticky-inner">
+      <button class="btn secondary" id="backBtn" type="button">上一步</button>
+      <button class="btn primary" id="nextBtn" type="button">下一步</button>
+    </div>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
