@@ -45,7 +45,7 @@ test('历史缴费水平不确定时仍输出中心估算并降低可信度', ()
   assert.ok(result.pensionLow < result.pensionCenter);
   assert.ok(result.pensionHigh > result.pensionCenter);
   assert.equal(result.amountConfidence, '粗略估算');
-  assert.ok(result.amountNotes.some(item => item.includes('历史平均缴费水平未知')));
+  assert.ok(result.amountNotes.some(item => item.includes('历史缴费水平不清楚')));
 });
 
 test('宽区间只降低可信度，不再吞掉用户请求的金额结果', () => {
@@ -71,4 +71,33 @@ test('信息较完整时输出中心估算和受控区间', () => {
   assert.ok(result.pensionLow < result.pensionCenter);
   assert.ok(result.pensionHigh > result.pensionCenter);
   assert.ok(result.uncertaintyRatio <= 0.45);
+});
+
+test('停止工作后按较低灵活就业基数缴费，会降低养老金估算', () => {
+  const common = {
+    ...base,
+    amountMode: 'estimate',
+    avgIndex: 1,
+    avgIndexConfidence: 'exact',
+    currentCalcBase: 10000,
+    accountKnown: true,
+    currentAccount: 100000,
+  };
+  const sameBase = projectPlanV3({
+    ...common,
+    futureContributionSegments: [
+      { months: 24, monthlyContributionBase: 7000, startOffsetMonths: 0, label: '单位' },
+      { months: 36, monthlyContributionBase: 7000, startOffsetMonths: 24, label: '继续缴' },
+    ],
+  });
+  const flexBase = projectPlanV3({
+    ...common,
+    futureContributionSegments: [
+      { months: 24, monthlyContributionBase: 7000, startOffsetMonths: 0, label: '单位' },
+      { months: 36, monthlyContributionBase: 4000, startOffsetMonths: 24, label: '灵活就业' },
+    ],
+  });
+  assert.equal(flexBase.futureContributionMonths, sameBase.futureContributionMonths);
+  assert.ok(flexBase.pensionCenter < sameBase.pensionCenter);
+  assert.ok(flexBase.amountNotes.some(item => item.includes('分段计算')));
 });
