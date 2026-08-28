@@ -81,7 +81,13 @@ function historyIndexRange(avgIndex, confidence) {
       high: Math.min(3, center * 1.1),
     };
   }
-  return { center, low: null, high: null };
+  // 用户不知道历史平均缴费指数时，仍给中心估算，但扩大敏感性范围。
+  // 这只是规划假设，不冒充真实本人平均缴费工资指数。
+  return {
+    center,
+    low: Math.max(0.3, center * 0.6),
+    high: Math.min(3, center * 1.4),
+  };
 }
 
 export function projectPlanV3(input) {
@@ -127,10 +133,13 @@ export function projectPlanV3(input) {
     : inferCurrentAccount(monthlyContributionBase, paidMonths);
 
   const missing = [];
+  const notes = [];
   if (input.amountMode === 'skip') missing.push('本次选择了先不估金额');
-  if (avgIndexConfidence === 'unknown') missing.push('历史平均缴费水平变化较大或尚不确定');
   if (!(monthlyContributionBase > 0)) missing.push('缺少当前养老保险缴费基数');
   if (!(currentCalcBase > 0)) missing.push('缺少可用的养老金计发基准');
+  if (avgIndexConfidence === 'unknown') notes.push('历史平均缴费水平未知，暂按中性水平做宽范围敏感性估算');
+  if (!accountKnown) notes.push('个人账户余额未知，暂按已缴年限和当前缴费基数估算');
+  if (inferredCalcBase) notes.push('当地计发基准未填写，暂由当前缴费基数做规划性反推');
 
   const divisorInfo = divisorRangeForAgeMonths(claimAgeMonths);
   const divisorCenter = (divisorInfo.maxDivisor + divisorInfo.minDivisor) / 2;
@@ -140,7 +149,7 @@ export function projectPlanV3(input) {
   let pensionLow = 0;
   let pensionHigh = 0;
   let todayPowerCenter = 0;
-  let amountAvailable = missing.length === 0;
+  const amountAvailable = missing.length === 0;
   let amountConfidence = '暂不估金额';
   let uncertaintyRatio = null;
 
@@ -191,10 +200,8 @@ export function projectPlanV3(input) {
     todayPowerCenter = pensionCenter / Math.pow(1 + inflation, yearsToClaim);
     uncertaintyRatio = pensionCenter > 0 ? (pensionHigh - pensionLow) / pensionCenter : 1;
 
-    if (uncertaintyRatio > 0.45) {
-      amountAvailable = false;
-      missing.push('当前信息下金额波动范围过大，继续给数字没有决策意义');
-      amountConfidence = '信息不足';
+    if (avgIndexConfidence === 'unknown' || uncertaintyRatio > 0.45) {
+      amountConfidence = '粗略估算';
     } else if (uncertaintyRatio <= 0.2 && accountKnown && avgIndexConfidence === 'exact' && !inferredCalcBase) {
       amountConfidence = '较高';
     } else if (uncertaintyRatio <= 0.3) {
@@ -226,6 +233,7 @@ export function projectPlanV3(input) {
     amountAvailable,
     amountConfidence,
     amountMissingReasons: missing,
+    amountNotes: notes,
     uncertaintyRatio,
     inferredCalcBase,
     divisorExact: divisorInfo.exact,
