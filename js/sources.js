@@ -82,6 +82,7 @@ export const REGION_DATA = {
       year: 2026,
       min: 7270,
       max: 36348,
+      current: true,
       published: '2026-08-21',
       issuer: '北京市人力资源和社会保障局等',
       url: 'https://rsj.beijing.gov.cn/xxgk/2024zcwj/202608/t20260821_4831461.html',
@@ -94,6 +95,7 @@ export const REGION_DATA = {
       year: 2026,
       min: 7546,
       max: 37731,
+      current: true,
       published: '2026-08-24',
       issuer: '上海市人力资源和社会保障局',
       url: 'https://rsj.sh.gov.cn/tdjjf_17554/20260824/t0035_1443297.html',
@@ -117,6 +119,41 @@ export const REGION_DATA = {
     },
     note: '已核验养老金计发公式来源；当前不自动带入未核验为2026最新的数值参数。',
   },
+  hubei: {
+    name: '湖北',
+    level: 'verified-subregional',
+    needsSubregion: true,
+    note: '湖北官方缴费基数按地区分档。当前可核验到的最新公开数值为2025年度，2026年度新标准尚未在本次核验中找到，因此只展示参考，不用于2026输入自动校验。',
+    subregions: {
+      tier1: {
+        name: '武汉市 / 省直',
+        contribution: {
+          year: 2025, standard: 7496, min: 4498, max: 22488, current: false,
+          published: '2025-09-19',
+          issuer: '湖北省人力资源和社会保障厅等',
+          url: 'https://rst.hubei.gov.cn/zfxxgk/zc/qtzdgkwj/202509/t20250919_5775307.shtml',
+        },
+      },
+      tier2: {
+        name: '黄石 / 十堰 / 襄阳 / 宜昌 / 荆门 / 随州 / 恩施',
+        contribution: {
+          year: 2025, standard: 7226, min: 4299, max: 21678, current: false,
+          published: '2025-09-19',
+          issuer: '湖北省人力资源和社会保障厅等',
+          url: 'https://rst.hubei.gov.cn/zfxxgk/zc/qtzdgkwj/202509/t20250919_5775307.shtml',
+        },
+      },
+      tier3: {
+        name: '荆州 / 鄂州 / 孝感 / 黄冈 / 咸宁 / 仙桃 / 天门 / 潜江 / 神农架',
+        contribution: {
+          year: 2025, standard: 7154, min: 4254, max: 21462, current: false,
+          published: '2025-09-19',
+          issuer: '湖北省人力资源和社会保障厅等',
+          url: 'https://rst.hubei.gov.cn/zfxxgk/zc/qtzdgkwj/202509/t20250919_5775307.shtml',
+        },
+      },
+    },
+  },
 };
 
 export function getRegion(key) {
@@ -127,9 +164,18 @@ export function getRegion(key) {
   };
 }
 
+export function getSubregion(regionKey, subregionKey) {
+  return getRegion(regionKey).subregions?.[subregionKey] || null;
+}
+
 export function regionOptions() {
   return [
     ...Object.entries(REGION_NAMES).map(([key, name]) => ({ key, name })),
     { key: 'other', name: '其他 / 暂不确定' },
   ];
+}
+
+export function subregionOptions(regionKey) {
+  const subregions = getRegion(regionKey).subregions || {};
+  return Object.entries(subregions).map(([key, item]) => ({ key, name: item.name }));
 }
