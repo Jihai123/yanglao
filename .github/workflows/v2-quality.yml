@@ -8,7 +8,7 @@ on:
       - 'assets/**'
       - 'js/**'
       - 'tests_js/**'
-      - 'tests_e2e/test_v2_launch.py'
+      - 'tests_e2e/**'
       - 'package.json'
       - 'requirements-test.txt'
       - '.github/workflows/v2-quality.yml'
@@ -20,7 +20,7 @@ on:
       - 'assets/**'
       - 'js/**'
       - 'tests_js/**'
-      - 'tests_e2e/test_v2_launch.py'
+      - 'tests_e2e/**'
       - 'package.json'
       - 'requirements-test.txt'
       - '.github/workflows/v2-quality.yml'
@@ -50,6 +50,7 @@ jobs:
           node --check js/resident-ui.js
           node --check js/guidance.js
           node --check js/launch.js
+          node --check js/launch-polish.js
           node --check js/analytics.js
 
   browser-smoke:
@@ -68,4 +69,4 @@ jobs:
       - name: Run V2 browser smoke
         run: |
           python -m http.server 8765 --bind 127.0.0.1 >/tmp/yanglao-http.log 2>&1 &
-          python -m pytest tests_e2e/test_v2_launch.py -q
+          python -m pytest tests_e2e/test_v2_*.py -q
