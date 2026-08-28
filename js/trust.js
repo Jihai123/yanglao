@@ -3,11 +3,15 @@ import {
   NATIONAL_POLICY_SOURCES,
   OFFICIAL_UPDATES,
   getRegion,
+  getSubregion,
   regionOptions,
+  subregionOptions,
 } from './sources.js';
 
 const REGION_STORAGE_KEY = 'yanglao-v2-region';
+const SUBREGION_STORAGE_KEY = 'yanglao-v2-subregion';
 let regionKey = localStorage.getItem(REGION_STORAGE_KEY) || 'other';
+let subregionKey = localStorage.getItem(SUBREGION_STORAGE_KEY) || '';
 
 function sourceLink(item, label) {
   return `<a class="official-link" href="${item.url}" target="_blank" rel="noopener noreferrer">${label || item.title} ↗</a>`;
@@ -49,17 +53,49 @@ function regionSelectHtml() {
   return regionOptions().map(item => `<option value="${item.key}" ${item.key === regionKey ? 'selected' : ''}>${item.name}</option>`).join('');
 }
 
-function regionDataHtml(region, monthlyBase) {
+function normalizeSubregion() {
+  const options = subregionOptions(regionKey);
+  if (!options.length) {
+    subregionKey = '';
+    localStorage.removeItem(SUBREGION_STORAGE_KEY);
+    return;
+  }
+  if (!options.some(item => item.key === subregionKey)) {
+    subregionKey = options[0].key;
+    localStorage.setItem(SUBREGION_STORAGE_KEY, subregionKey);
+  }
+}
+
+function effectiveRegionData() {
+  const region = getRegion(regionKey);
+  const subregion = getSubregion(regionKey, subregionKey);
+  return {
+    region,
+    subregion,
+    contribution: subregion?.contribution || region.contribution,
+    displayName: subregion ? `${region.name} · ${subregion.name}` : region.name,
+  };
+}
+
+function regionDataHtml(region, contribution, monthlyBase, subregion) {
   const parts = [];
+  if (subregion) {
+    parts.push(`<div class="region-line"><span>当前地区档次</span><strong>${subregion.name}</strong></div>`);
+  }
   if (region.calcBase) {
     parts.push(`<div class="region-line"><span>${region.calcBase.label}</span><strong>¥${region.calcBase.value.toLocaleString('zh-CN')} / 月</strong></div>`);
     parts.push(`<div class="region-meta">适用年度 ${region.calcBase.year} · 发布 ${region.calcBase.published} · ${sourceLink(region.calcBase, '官方来源')}</div>`);
   }
-  if (region.contribution) {
-    parts.push(`<div class="region-line"><span>${region.contribution.year}年缴费基数范围</span><strong>¥${region.contribution.min.toLocaleString('zh-CN')} – ¥${region.contribution.max.toLocaleString('zh-CN')}</strong></div>`);
-    parts.push(`<div class="region-meta">发布 ${region.contribution.published} · ${sourceLink(region.contribution, '官方来源')}</div>`);
-    if (Number(monthlyBase) > 0 && (Number(monthlyBase) < region.contribution.min || Number(monthlyBase) > region.contribution.max)) {
-      parts.push(`<div class="region-warning">你当前填写的月缴费基数 ¥${Number(monthlyBase).toLocaleString('zh-CN')} 不在已核验的 ${region.contribution.year} 年官方上下限内，请确认是否使用了其他年度数据。</div>`);
+  if (contribution) {
+    const freshness = contribution.current ? '当前年度已核验' : '历史最新已核验，仅供参考';
+    parts.push(`<div class="region-line"><span>${contribution.year}年缴费基数范围</span><strong>¥${contribution.min.toLocaleString('zh-CN')} – ¥${contribution.max.toLocaleString('zh-CN')}</strong></div>`);
+    if (contribution.standard) parts.push(`<div class="region-line"><span>${contribution.year}年缴费基数月标准</span><strong>¥${contribution.standard.toLocaleString('zh-CN')}</strong></div>`);
+    parts.push(`<div class="region-meta">${freshness} · 发布 ${contribution.published} · ${sourceLink(contribution, '官方来源')}</div>`);
+    if (contribution.current && Number(monthlyBase) > 0 && (Number(monthlyBase) < contribution.min || Number(monthlyBase) > contribution.max)) {
+      parts.push(`<div class="region-warning">你当前填写的月缴费基数 ¥${Number(monthlyBase).toLocaleString('zh-CN')} 不在已核验的 ${contribution.year} 年官方上下限内，请确认是否使用了其他年度数据。</div>`);
+    }
+    if (!contribution.current) {
+      parts.push(`<div class="region-note">该数值不是 ${new Date().getFullYear()} 年自动计算参数，系统不会用它校验你当前输入，也不会自动代入未来养老金金额。</div>`);
     }
   }
   if (region.method) {
@@ -71,11 +107,33 @@ function regionDataHtml(region, monthlyBase) {
   return parts.join('');
 }
 
+function renderSubregionField(field) {
+  const old = field.querySelector('#subregionWrap');
+  if (old) old.remove();
+  normalizeSubregion();
+  const options = subregionOptions(regionKey);
+  if (!options.length) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'subregionWrap';
+  wrap.className = 'subregion-wrap';
+  wrap.innerHTML = `
+    <label>城市 / 地区档次</label>
+    <select id="subregionSelect">${options.map(item => `<option value="${item.key}" ${item.key === subregionKey ? 'selected' : ''}>${item.name}</option>`).join('')}</select>
+    <div class="help">该省官方参数存在地区差异，必须继续选择城市/档次，不能按全省统一值计算。</div>`;
+  const panel = field.querySelector('#regionDataPanel');
+  field.insertBefore(wrap, panel);
+  wrap.querySelector('#subregionSelect').addEventListener('change', event => {
+    subregionKey = event.target.value;
+    localStorage.setItem(SUBREGION_STORAGE_KEY, subregionKey);
+    updateRegionPanel(field);
+  });
+}
+
 function updateRegionPanel(field) {
-  const region = getRegion(regionKey);
+  const { region, subregion, contribution } = effectiveRegionData();
   const panel = field.querySelector('#regionDataPanel');
   const monthlyInput = document.querySelector('#stepBody [data-key="monthlyContributionBase"]');
-  panel.innerHTML = regionDataHtml(region, monthlyInput?.value);
+  panel.innerHTML = regionDataHtml(region, contribution, monthlyInput?.value, subregion);
 
   if (region.calcBase) {
     const preciseInput = document.querySelector('#stepBody [data-key="currentCalcBase"]');
@@ -114,21 +172,29 @@ function injectRegionField() {
   select.addEventListener('change', () => {
     regionKey = select.value;
     localStorage.setItem(REGION_STORAGE_KEY, regionKey);
+    subregionKey = '';
+    localStorage.removeItem(SUBREGION_STORAGE_KEY);
+    renderSubregionField(field);
     updateRegionPanel(field);
   });
   const monthlyInput = stepBody.querySelector('[data-key="monthlyContributionBase"]');
   if (monthlyInput) monthlyInput.addEventListener('change', () => updateRegionPanel(field));
+  renderSubregionField(field);
   updateRegionPanel(field);
 }
 
 function resultTrustHtml() {
-  const region = getRegion(regionKey);
+  const { region, subregion, contribution, displayName } = effectiveRegionData();
   const calcSources = NATIONAL_POLICY_SOURCES.filter(item => item.type === 'calculation');
   const crosscheck = NATIONAL_POLICY_SOURCES.find(item => item.type === 'crosscheck');
   const regionLines = [];
   if (region.calcBase) regionLines.push(`${region.calcBase.label}：¥${region.calcBase.value.toLocaleString('zh-CN')}（${region.calcBase.year}，${region.calcBase.issuer}）`);
-  if (region.contribution) regionLines.push(`${region.contribution.year}缴费基数：¥${region.contribution.min.toLocaleString('zh-CN')}–¥${region.contribution.max.toLocaleString('zh-CN')}（${region.contribution.issuer}）`);
+  if (contribution) {
+    const freshness = contribution.current ? '当前年度' : '历史参考';
+    regionLines.push(`${contribution.year}缴费基数：¥${contribution.min.toLocaleString('zh-CN')}–¥${contribution.max.toLocaleString('zh-CN')}（${freshness}，${contribution.issuer}）`);
+  }
   if (region.method) regionLines.push(`${region.method.label}：${region.method.issuer}，发布于 ${region.method.published}`);
+  if (subregion) regionLines.unshift(`地区档次：${subregion.name}`);
 
   return `
     <div class="card section" id="resultTrustCard">
@@ -136,10 +202,10 @@ function resultTrustHtml() {
       <p class="muted">最后核验：${DATA_VERIFIED_AT}。国家政策规则与金额预测假设分开管理；官方没有给出的未来数值，不会伪装成确定值。</p>
       <div class="evidence-grid">
         <div class="evidence-box"><span>退休年龄 / 弹性退休</span><strong>国家政策规则</strong></div>
-        <div class="evidence-box"><span>地区参数</span><strong>${region.name} · ${region.level === 'manual' ? '手动/估算' : '官方源已核验'}</strong></div>
+        <div class="evidence-box"><span>地区参数</span><strong>${displayName} · ${region.level === 'manual' ? '手动/估算' : '官方源已核验'}</strong></div>
         <div class="evidence-box"><span>未来养老金金额</span><strong>规划预测，不是待遇承诺</strong></div>
       </div>
-      ${regionLines.length ? `<div class="region-result"><strong>${region.name}地区依据</strong>${regionLines.map(line => `<span>${line}</span>`).join('')}</div>` : `<div class="region-note">${region.note || '当前地区没有自动参数，结果使用用户输入与公开的国家规则。'}</div>`}
+      ${regionLines.length ? `<div class="region-result"><strong>${displayName}地区依据</strong>${regionLines.map(line => `<span>${line}</span>`).join('')}</div>` : `<div class="region-note">${region.note || '当前地区没有自动参数，结果使用用户输入与公开的国家规则。'}</div>`}
       <div class="source-list compact">
         ${calcSources.map(item => `<div class="source-item"><div><strong>${item.title}</strong><span>${item.issuer} · ${item.date}</span></div>${sourceLink(item, '官方原文')}</div>`).join('')}
       </div>
