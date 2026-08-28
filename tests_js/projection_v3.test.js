@@ -38,10 +38,21 @@ test('未来实际缴费月数足够时满足最低年限', () => {
   assert.equal(result.eligible, true);
 });
 
-test('历史缴费水平不确定时不输出无意义金额', () => {
+test('历史缴费水平不确定时仍输出中心估算并降低可信度', () => {
   const result = projectPlanV3({ ...base, amountMode: 'estimate', futureContributionMonths: 120 });
-  assert.equal(result.amountAvailable, false);
-  assert.ok(result.amountMissingReasons.some(item => item.includes('历史平均缴费水平')));
+  assert.equal(result.amountAvailable, true);
+  assert.ok(result.pensionCenter > 0);
+  assert.ok(result.pensionLow < result.pensionCenter);
+  assert.ok(result.pensionHigh > result.pensionCenter);
+  assert.equal(result.amountConfidence, '粗略估算');
+  assert.ok(result.amountNotes.some(item => item.includes('历史平均缴费水平未知')));
+});
+
+test('宽区间只降低可信度，不再吞掉用户请求的金额结果', () => {
+  const result = projectPlanV3({ ...base, amountMode: 'estimate', futureContributionMonths: 120 });
+  assert.equal(result.amountAvailable, true);
+  assert.ok(result.uncertaintyRatio > 0);
+  assert.ok(result.pensionCenter > 0);
 });
 
 test('信息较完整时输出中心估算和受控区间', () => {
