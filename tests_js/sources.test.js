@@ -7,7 +7,9 @@ import {
   OFFICIAL_UPDATES,
   REGION_DATA,
   getRegion,
+  getSubregion,
   regionOptions,
+  subregionOptions,
 } from '../js/sources.js';
 
 const OFFICIAL_HOSTS = [
@@ -17,6 +19,7 @@ const OFFICIAL_HOSTS = [
   'rsj.beijing.gov.cn',
   'rsj.sh.gov.cn',
   'jiangsu.gov.cn',
+  'rst.hubei.gov.cn',
 ];
 
 function officialUrl(url) {
@@ -50,6 +53,7 @@ test('Beijing verified values retain source year and official URLs', () => {
   assert.equal(beijing.calcBase.value, 12049);
   assert.equal(beijing.calcBase.year, 2025);
   assert.equal(beijing.contribution.year, 2026);
+  assert.equal(beijing.contribution.current, true);
   assert.equal(beijing.contribution.min, 7270);
   assert.equal(beijing.contribution.max, 36348);
   assert.ok(officialUrl(beijing.calcBase.url));
@@ -60,9 +64,23 @@ test('Shanghai does not invent a pension calculation base', () => {
   const shanghai = REGION_DATA.shanghai;
   assert.equal(shanghai.calcBase, undefined);
   assert.equal(shanghai.contribution.year, 2026);
+  assert.equal(shanghai.contribution.current, true);
   assert.equal(shanghai.contribution.min, 7546);
   assert.equal(shanghai.contribution.max, 37731);
   assert.ok(officialUrl(shanghai.method.url));
+});
+
+test('Hubei requires a subregion and keeps 2025 values non-current', () => {
+  const hubei = REGION_DATA.hubei;
+  assert.equal(hubei.needsSubregion, true);
+  assert.equal(subregionOptions('hubei').length, 3);
+  const wuhan = getSubregion('hubei', 'tier1');
+  assert.equal(wuhan.contribution.year, 2025);
+  assert.equal(wuhan.contribution.current, false);
+  assert.equal(wuhan.contribution.standard, 7496);
+  assert.equal(wuhan.contribution.min, 4498);
+  assert.equal(wuhan.contribution.max, 22488);
+  assert.ok(officialUrl(wuhan.contribution.url));
 });
 
 test('all mainland provincial regions are selectable even without auto parameters', () => {
@@ -76,4 +94,5 @@ test('all mainland provincial regions are selectable even without auto parameter
 
 test('unknown region falls back to manual mode', () => {
   assert.equal(getRegion('not-supported').level, 'manual');
+  assert.equal(getSubregion('not-supported', 'tier1'), null);
 });
