@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./assets/styles.css" />
   <link rel="stylesheet" href="./assets/trust.css" />
   <link rel="stylesheet" href="./assets/launch.css" />
+  <link rel="stylesheet" href="./assets/product-v3.css" />
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -15,7 +16,7 @@
     "mainEntity":[
       {"@type":"Question","name":"2026年职工多少岁退休？","acceptedAnswer":{"@type":"Answer","text":"2025年起实施职工渐进式延迟法定退休年龄。具体法定退休年龄取决于出生年月和原法定退休年龄类别，不能只用一个统一年龄回答。"}},
       {"@type":"Question","name":"职工养老保险最低要交多少年？","acceptedAnswer":{"@type":"Answer","text":"2025年至2029年，职工按月领取基本养老金最低缴费年限仍为15年；从2030年起每年增加6个月，到2039年达到20年。弹性延迟退休的最低缴费年限按本人法定退休年龄对应年份确定。"}},
-      {"@type":"Question","name":"提前不工作等于提前退休吗？","acceptedAnswer":{"@type":"Answer","text":"不等于。停止工作年龄、停止缴纳职工养老保险年龄和办理退休领取养老金年龄可以是三个不同时间点。"}},
+      {"@type":"Question","name":"提前不工作等于提前退休吗？","acceptedAnswer":{"@type":"Answer","text":"不等于。停止工作年龄、实际缴纳职工养老保险的月数和办理退休领取养老金的时间可以不同。"}},
       {"@type":"Question","name":"职工养老金怎么计算？","acceptedAnswer":{"@type":"Answer","text":"企业职工基本养老金通常由基础养老金、个人账户养老金以及符合条件时的过渡性养老金等组成。未来金额还取决于退休地计发参数、缴费年限、缴费指数和个人账户余额。"}},
       {"@type":"Question","name":"城乡居民养老金怎么领、怎么计算？","acceptedAnswer":{"@type":"Answer","text":"城乡居民基本养老保险使用独立制度规则。现行国家统一制度框架下，年满60周岁、累计缴费满15年且符合其他条件的参保居民可以按月领取；待遇由基础养老金和个人账户养老金构成，个人账户养老金目前按个人账户全部储存额除以139计发。职工渐进式延迟退休和2030年至2039年职工最低缴费年限提高规则不能直接套用到城乡居民养老。"}}
     ]
@@ -29,83 +30,47 @@
         <div class="brand">退休规划助手</div>
         <button class="small-link" id="restartBtn" type="button">重新规划</button>
       </header>
-
       <main>
         <section id="homeView">
           <div class="hero">
-            <span class="eyebrow">养老金计算器 V2</span>
-            <h1>把退休这件事<br/>真正算清楚</h1>
-            <p class="muted">什么时候能退、提前不工作后社保怎么缴、到时大约能领多少养老金，按你的参保制度和计划一步步算。</p>
+            <span class="eyebrow">退休年龄 · 缴费年限 · 养老金</span>
+            <h1>退休这件事，<br/>按你的实际情况算</h1>
+            <p class="muted">先回答普通人能回答的问题。系统自己处理退休规则、实际缴费月数和金额不确定性；信息不够时，不硬给一个看似精确却没意义的数字。</p>
           </div>
-
           <div id="resumeBox" class="resume hidden">
-            <strong>继续上次的退休方案</strong>
-            <p class="muted" id="resumeText" style="margin-top:4px"></p>
-            <button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续测算 →</button>
+            <strong>继续上次的退休方案</strong><p class="muted" id="resumeText" style="margin-top:4px"></p><button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续测算 →</button>
           </div>
-
           <div class="intent-grid">
-            <button class="intent" data-intent="age" type="button">
-              <span class="intent-icon">🗓️</span><span><strong>我什么时候能退休？</strong><span class="sub">职工养老：按出生年月和人员类别查询</span></span><span>›</span>
-            </button>
-            <button class="intent" data-intent="normal" type="button">
-              <span class="intent-icon">💰</span><span><strong>正常工作到退休，能领多少？</strong><span class="sub">职工养老：按法定退休年龄和未来继续缴费预测</span></span><span>›</span>
-            </button>
-            <button class="intent" data-intent="early" type="button">
-              <span class="intent-icon">🌤️</span><span><strong>我想几年后不工作</strong><span class="sub">职工养老：停止工作不等于马上领养老金</span></span><span>›</span>
-            </button>
-            <button class="intent" data-intent="flex" type="button">
-              <span class="intent-icon">🧭</span><span><strong>我已离职 / 灵活就业</strong><span class="sub">职工养老：比较停缴、再缴几年、缴到退休</span></span><span>›</span>
-            </button>
-            <button class="intent secondary-intent" id="residentEntry" type="button">
-              <span class="intent-icon">🏡</span><span><strong>我交的是城乡居民养老保险</strong><span class="sub">独立制度：现行国家规则按60周岁、15年领取条件测算</span></span><span>›</span>
-            </button>
+            <button class="intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">按出生年月和实际身份判断法定退休时间</span></span><span>›</span></button>
+            <button class="intent" data-intent="normal" type="button"><span><strong>正常工作到退休，能领多少？</strong><span class="sub">默认按法定退休年龄、持续参保来规划</span></span><span>›</span></button>
+            <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">停止工作、实际缴费和办理退休分开算</span></span><span>›</span></button>
+            <button class="intent" data-intent="flex" type="button"><span><strong>我已离职 / 灵活就业</strong><span class="sub">可直接填写未来实际还会缴多少个月，允许中间断缴</span></span><span>›</span></button>
+            <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">独立制度，不套用职工渐进式退休和职工15→20年规则</span></span><span>›</span></button>
           </div>
-          <p class="source-box" style="margin-top:20px"><strong>先分清参保制度：</strong>渐进式延迟法定退休年龄，以及2030年起最低缴费年限逐步由15年提高到20年的规则，针对职工按月领取基本养老金。城乡居民基本养老保险使用独立规则，现行国家统一制度仍为年满60周岁、累计缴费满15年等领取条件。两套制度不能混算。</p>
-
+          <p class="source-box" style="margin-top:20px"><strong>先分清参保制度：</strong>渐进式延迟法定退休年龄，以及2030年起职工最低缴费年限逐步由15年提高到20年的规则，针对职工按月领取基本养老金。城乡居民基本养老保险使用独立规则，两套制度不能混算。</p>
           <section class="seo-guide" aria-labelledby="seoTitle">
-            <h2 id="seoTitle">2026退休与养老金，先把这几件事分清</h2>
-            <p class="muted">工具优先给结果；下面保留关键政策解释，方便搜索和自己核对。</p>
+            <h2 id="seoTitle">2026退休与养老金，几个关键规则</h2>
             <div class="seo-faq">
-              <details><summary>2026年职工退休年龄为什么不是统一一个数字？</summary><p>2025年起职工渐进式延迟法定退休年龄已经实施。具体法定退休年龄和退休年月取决于出生年月以及原法定退休年龄类别，所以最稳妥的方式是按出生年月逐月计算。城乡居民养老不是这套退休年龄模型。</p></details>
-              <details><summary>提前不工作，为什么不能直接填“提前退休年龄”？</summary><p>对职工养老规划，停止工作、停止缴职工养老保险、办理退休领取养老金是三件不同的事。比如50岁停止工作、55岁停止缴费、达到政策允许年龄后办理退休，在现实规划中可以同时存在。</p></details>
-              <details><summary>职工养老保险最低缴费年限什么时候到20年？</summary><p>不是2026年直接变成20年。2025年至2029年职工最低缴费年限仍为15年；2030年起逐步提高，每年增加6个月，到2039年达到20年。选择弹性延迟退休时，最低缴费年限按本人法定退休年龄对应年份确定。</p></details>
-              <details><summary>为什么养老金金额只能给区间？</summary><p>退休年龄和最低缴费年限属于可以按现行政策精确计算的规则；但十几年后的当地计发参数、工资增长、个人账户收益并不存在一个今天就能确定的最终数字。因此长期规划应该给透明区间，而不是伪装成精确到个位数的待遇承诺。</p></details>
-              <details><summary>城乡居民养老金也延迟退休、也要逐步交满20年吗？</summary><p>按目前国家现行统一制度，不能这样套用。职工渐进式延迟退休及2030年至2039年最低缴费年限提高规则明确针对职工。城乡居民基本养老保险目前仍按独立制度执行：年满60周岁、累计缴费满15年且符合其他条件，可按月领取；地方过渡、补缴和加发规则以当地最新政策为准。</p></details>
+              <details><summary>2026年职工退休年龄为什么不是统一一个数字？</summary><p>2025年起职工渐进式延迟法定退休年龄已经实施。具体法定退休年龄和退休年月取决于出生年月以及原法定退休年龄类别，所以要按个人情况计算。女性原50岁或55岁口径不能只凭年龄安全推断。</p></details>
+              <details><summary>提前不工作，为什么不等于提前退休？</summary><p>对职工养老规划，停止工作、实际缴纳职工养老保险的月数、办理退休领取养老金是不同概念。中间断缴的月份不能当成缴费月份。</p></details>
+              <details><summary>职工养老保险最低缴费年限什么时候到20年？</summary><p>不是2026年直接变成20年。2025年至2029年职工最低缴费年限仍为15年；2030年起逐步提高，每年增加6个月，到2039年达到20年。</p></details>
+              <details><summary>为什么有时不显示养老金金额？</summary><p>长期养老金金额取决于历史平均缴费水平、个人账户、地区计发参数和未来变化。如果输入不足导致区间过宽，工具会先不给金额，只保留退休资格和缴费计划，避免用一个跨度过大的数字误导决策。</p></details>
+              <details><summary>城乡居民养老金也延迟退休、也要逐步交满20年吗？</summary><p>按目前国家现行统一制度，不能这样套用。城乡居民基本养老保险按独立制度执行，现行国家统一框架仍按60周岁、累计缴费满15年等条件判断领取资格；地方规则以当地最新政策为准。</p></details>
             </div>
-            <p class="seo-footnote">本站为退休规划工具，不替代人社经办机构最终待遇核定。页面中的国家政策和已收录地区参数均提供官方来源及核验日期。</p>
+            <p class="seo-footnote">本站为退休规划工具，不替代人社经办机构最终待遇核定。国家政策和已收录地区参数提供官方来源与最近核验日期。</p>
           </section>
         </section>
-
-        <section id="wizardView" class="hidden">
-          <div class="card">
-            <div class="wizard-head">
-              <div class="progress"><span id="progressBar"></span></div>
-              <div class="step-kicker" id="stepKicker">第 1 步</div>
-              <h2 id="stepTitle"></h2>
-              <p class="muted" id="stepDesc"></p>
-            </div>
-            <div id="stepBody" class="form-stack"></div>
-          </div>
-        </section>
-
+        <section id="wizardView" class="hidden"><div class="card"><div class="wizard-head"><div class="progress"><span id="progressBar"></span></div><div class="step-kicker" id="stepKicker">第 1 步</div><h2 id="stepTitle"></h2><p class="muted" id="stepDesc"></p></div><div id="stepBody" class="form-stack"></div></div></section>
         <section id="resultView" class="hidden"></section>
         <section id="residentView" class="hidden"></section>
       </main>
     </div>
   </div>
-
-  <div class="sticky-actions hidden" id="stickyActions">
-    <div class="sticky-inner">
-      <button class="btn secondary" id="backBtn" type="button">上一步</button>
-      <button class="btn primary" id="nextBtn" type="button">下一步</button>
-    </div>
-  </div>
-
+  <div class="sticky-actions hidden" id="stickyActions"><div class="sticky-inner"><button class="btn secondary" id="backBtn" type="button">上一步</button><button class="btn primary" id="nextBtn" type="button">下一步</button></div></div>
   <script type="module" src="./js/analytics.js"></script>
-  <script type="module" src="./js/app.js"></script>
-  <script type="module" src="./js/trust.js"></script>
-  <script type="module" src="./js/launch.js"></script>
+  <script type="module" src="./js/employee-v3.js"></script>
+  <script type="module" src="./js/trust-v3.js"></script>
   <script type="module" src="./js/resident-ui.js"></script>
+  <script type="module" src="./js/launch-polish.js"></script>
 </body>
 </html>
