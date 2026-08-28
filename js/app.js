@@ -415,6 +415,17 @@ function renderResult() {
   const divisorText = result.divisorExact
     ? `${result.divisor}`
     : `${result.divisorMax} ～ ${result.divisorMin}（非整岁相邻档边界）`;
+  const timelineHtml = state.intent === 'normal'
+    ? `${timelineItem('现在', `${ageText(result.currentAgeMonths)} · 已缴 ${yearsText(state.paidYears)}`)}${timelineItem(ageText(state.claimAgeMonths), `${result.claimDate.year}年${result.claimDate.month}月停止工作、停止缴费并办理退休`)}`
+    : `${timelineItem('现在', `${ageText(result.currentAgeMonths)} · 已缴 ${yearsText(state.paidYears)}`)}${timelineItem(ageYearsText(state.stopWorkAge), '停止工作')}${timelineItem(ageYearsText(state.contributionEndAge), '停止养老保险缴费')}${timelineItem(ageText(state.claimAgeMonths), `${result.claimDate.year}年${result.claimDate.month}月办理退休，审核通过后按规定领取`)}`;
+  const scenarioSection = scenarios.length > 1 ? `
+    <div class="card section">
+      <h2>换一种缴法，会差多少？</h2>
+      <p class="muted">保持其他假设一致，只改变停止缴费时间，方便看“多缴几年”的影响。</p>
+      <div class="scenarios">
+        ${scenarios.map(s => scenarioCard(s)).join('')}
+      </div>
+    </div>` : '';
 
   resultView.innerHTML = `
     <div class="result-hero">
@@ -435,20 +446,11 @@ function renderResult() {
       <h2>你的退休时间轴</h2>
       <p class="muted">把“停止工作、停止缴费、领取养老金”分开看，计划会清楚很多。</p>
       <div class="timeline">
-        ${timelineItem('现在', `${ageText(result.currentAgeMonths)} · 已缴 ${yearsText(state.paidYears)}`)}
-        ${timelineItem(ageYearsText(state.stopWorkAge), '停止工作')}
-        ${timelineItem(ageYearsText(state.contributionEndAge), '停止养老保险缴费')}
-        ${timelineItem(ageText(state.claimAgeMonths), `${result.claimDate.year}年${result.claimDate.month}月办理退休，审核通过后按规定领取`)}
+        ${timelineHtml}
       </div>
     </div>
 
-    <div class="card section">
-      <h2>换一种缴法，会差多少？</h2>
-      <p class="muted">保持其他假设一致，只改变停止缴费时间，方便看“多缴几年”的影响。</p>
-      <div class="scenarios">
-        ${scenarios.map(s => scenarioCard(s)).join('')}
-      </div>
-    </div>
+    ${scenarioSection}
 
     <div class="card section">
       <h2>这个结果有多准？</h2>
