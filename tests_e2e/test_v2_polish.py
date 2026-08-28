@@ -2,7 +2,6 @@ from playwright.sync_api import sync_playwright, expect
 
 BASE_URL = "http://127.0.0.1:8765/index.html"
 
-
 def fresh_page(width=390, height=844):
     p = sync_playwright().start()
     browser = p.chromium.launch(headless=True)
@@ -14,42 +13,46 @@ def fresh_page(width=390, height=844):
     page.reload(wait_until="networkidle")
     return p, browser, page, errors
 
-
 def close_all(p, browser, page):
-    page.close()
-    browser.close()
-    p.stop()
+    page.close(); browser.close(); p.stop()
 
-
-def test_resident_flow_explicitly_separates_employee_retirement_rules():
+def test_female_unsure_shows_two_possible_retirement_results():
     p, browser, page, errors = fresh_page()
-    page.locator("#residentEntry").click()
-    expect(page.locator("#residentPolicyClarity")).to_be_visible()
-    expect(page.locator("#residentPolicyClarity")).to_contain_text("不套用职工渐进式延迟退休")
-    expect(page.locator("#residentPolicyClarity")).to_contain_text("60周岁、累计缴费满15年")
-
-    page.locator("#residentNext").click()
-    page.locator("#residentNext").click()
-    page.locator("#residentNext").click()
-    expect(page.locator("#residentView .result-hero")).to_be_visible()
-    expect(page.locator("#residentPolicyClarity")).to_be_visible()
+    page.locator('[data-intent="age"]').click()
+    page.locator('[data-sex="female"]').click()
+    page.locator('[data-female-category="unsure"]').click()
+    page.locator('#nextBtn').click()
+    expect(page.locator('#resultView')).to_be_visible()
+    expect(page.locator('#resultView')).to_contain_text('先看两种可能')
+    expect(page.locator('.age-result-card')).to_have_count(2)
     assert errors == []
     close_all(p, browser, page)
 
+def test_future_gap_plan_asks_for_actual_contribution_months():
+    p, browser, page, errors = fresh_page()
+    page.locator('[data-intent="flex"]').click()
+    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    expect(page.locator('[data-contribution-plan="actual_months"]')).to_be_visible()
+    expect(page.locator('[data-key="actualFutureYears"]')).to_be_visible()
+    expect(page.locator('#stepBody')).to_contain_text('真正缴费的累计月数')
+    assert errors == []
+    close_all(p, browser, page)
 
-def test_qualification_result_can_return_directly_to_amount_inputs():
+def test_variable_history_does_not_emit_huge_pension_range():
     p, browser, page, errors = fresh_page()
     page.locator('[data-intent="normal"]').click()
-    for _ in range(4):
-        page.locator("#nextBtn").click()
-    expect(page.locator("#qualificationOnlyBtn")).to_be_visible()
-    page.locator("#qualificationOnlyBtn").click()
-    page.locator("#nextBtn").click()
-    expect(page.locator("#addAmountDataBtn")).to_be_visible()
+    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    page.locator('[data-history="variable"]').click()
+    page.locator('#nextBtn').click()
+    expect(page.locator('#resultView')).to_be_visible()
+    expect(page.locator('#resultView')).to_contain_text('当前信息不足，先不报数字')
+    assert errors == []
+    close_all(p, browser, page)
 
-    page.locator("#addAmountDataBtn").click()
-    expect(page.locator("#wizardView")).to_be_visible()
-    expect(page.locator("#stepTitle")).to_contain_text("最后补两项")
-    expect(page.locator('[data-key="monthlyContributionBase"]')).to_be_visible()
+def test_resident_flow_explicitly_separates_employee_retirement_rules():
+    p, browser, page, errors = fresh_page()
+    page.locator('#residentEntry').click()
+    expect(page.locator('#residentPolicyClarity')).to_be_visible()
+    expect(page.locator('#residentPolicyClarity')).to_contain_text('不套用职工渐进式延迟退休')
     assert errors == []
     close_all(p, browser, page)
