@@ -7,6 +7,7 @@ import {
   OFFICIAL_UPDATES,
   REGION_DATA,
   getRegion,
+  regionOptions,
 } from '../js/sources.js';
 
 const OFFICIAL_HOSTS = [
@@ -62,6 +63,15 @@ test('Shanghai does not invent a pension calculation base', () => {
   assert.equal(shanghai.contribution.min, 7546);
   assert.equal(shanghai.contribution.max, 37731);
   assert.ok(officialUrl(shanghai.method.url));
+});
+
+test('all mainland provincial regions are selectable even without auto parameters', () => {
+  const options = regionOptions();
+  assert.ok(options.length >= 32);
+  assert.ok(options.some(item => item.key === 'shaanxi' && item.name === '陕西'));
+  assert.ok(options.some(item => item.key === 'guangdong' && item.name === '广东'));
+  assert.equal(getRegion('shaanxi').name, '陕西');
+  assert.equal(getRegion('shaanxi').level, 'manual');
 });
 
 test('unknown region falls back to manual mode', () => {
