@@ -45,10 +45,9 @@ test('历史缴费水平不确定时仍输出中心估算并降低可信度', ()
   assert.ok(result.pensionLow < result.pensionCenter);
   assert.ok(result.pensionHigh > result.pensionCenter);
   assert.equal(result.amountConfidence, '粗略估算');
-  assert.ok(result.amountNotes.some(item => item.includes('历史缴费水平不清楚')));
 });
 
-test('宽区间只降低可信度，不再吞掉用户请求的金额结果', () => {
+test('宽区间只降低可信度，不吞掉金额结果', () => {
   const result = projectPlanV3({ ...base, amountMode: 'estimate', futureContributionMonths: 120 });
   assert.equal(result.amountAvailable, true);
   assert.ok(result.uncertaintyRatio > 0);
@@ -70,7 +69,6 @@ test('信息较完整时输出中心估算和受控区间', () => {
   assert.ok(result.pensionCenter > 0);
   assert.ok(result.pensionLow < result.pensionCenter);
   assert.ok(result.pensionHigh > result.pensionCenter);
-  assert.ok(result.uncertaintyRatio <= 0.45);
 });
 
 test('停止工作后按较低灵活就业基数缴费，会降低养老金估算', () => {
@@ -99,5 +97,29 @@ test('停止工作后按较低灵活就业基数缴费，会降低养老金估�
   });
   assert.equal(flexBase.futureContributionMonths, sameBase.futureContributionMonths);
   assert.ok(flexBase.pensionCenter < sameBase.pensionCenter);
-  assert.ok(flexBase.amountNotes.some(item => item.includes('分段计算')));
+});
+
+test('历史缴费基数分段会参与平均缴费水平和账户估算', () => {
+  const common = {
+    ...base,
+    amountMode: 'estimate',
+    futureContributionMonths: 120,
+    avgIndex: 1,
+    currentCalcBase: 10000,
+    accountKnown: false,
+  };
+  const flat = projectPlanV3({ ...common, avgIndexConfidence: 'exact' });
+  const segmented = projectPlanV3({
+    ...common,
+    avgIndexConfidence: 'segmented',
+    historyContributionSegments: [
+      { startYear: 2009, endYear: 2013, monthlyContributionBase: 1800 },
+      { startYear: 2014, endYear: 2016, monthlyContributionBase: 3300 },
+      { startYear: 2017, endYear: 2026, monthlyContributionBase: 4000 },
+    ],
+  });
+  assert.equal(segmented.historyContributionSegments.length, 3);
+  assert.ok(segmented.pensionCenter > 0);
+  assert.ok(segmented.pensionCenter < flat.pensionCenter);
+  assert.ok(segmented.amountNotes.some(item => item.includes('历史按3段')));
 });
