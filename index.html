@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="退休规划助手：查询2026职工退休年龄，估算职工养老金和城乡居民养老金，规划停止工作后的社保缴费。" />
+  <meta name="description" content="退休规划助手：查询2026职工退休年龄，估算职工养老金和城乡居民养老金，比较不同缴费年限的退休方案。" />
   <title>退休规划助手_养老金计算器_2026退休年龄查询</title>
-  <link rel="stylesheet" href="./assets/styles.css?v=20260828-p15" />
-  <link rel="stylesheet" href="./assets/trust.css?v=20260828-p15" />
-  <link rel="stylesheet" href="./assets/launch.css?v=20260828-p15" />
-  <link rel="stylesheet" href="./assets/product-v3.css?v=20260828-p15" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260829-v4" />
+  <link rel="stylesheet" href="./assets/trust.css?v=20260829-v4" />
+  <link rel="stylesheet" href="./assets/launch.css?v=20260829-v4" />
+  <link rel="stylesheet" href="./assets/product-v4.css?v=20260829-v4" />
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -28,47 +28,97 @@
     <div class="shell">
       <header class="topbar">
         <div class="brand">退休规划助手</div>
-        <button class="small-link" id="restartBtn" type="button">重新规划</button>
+        <div class="topbar-actions">
+          <button class="small-link" id="homeBtn" type="button">首页</button>
+          <button class="small-link quiet-link" id="restartBtn" type="button">清空重算</button>
+        </div>
       </header>
+
       <main>
         <section id="homeView">
           <div class="hero">
             <span class="eyebrow">退休年龄 · 缴费年限 · 养老金</span>
-            <h1>退休这件事，<br/>按你的情况算</h1>
-            <p class="muted">查退休时间，算缴费年限和养老金。</p>
+            <h1>什么时候退休，能领多少？</h1>
+            <p class="muted">按你的出生时间、缴费记录和未来计划，一步一步算清楚。</p>
           </div>
+
           <div id="resumeBox" class="resume hidden">
-            <strong>继续上次的规划</strong><p class="muted" id="resumeText" style="margin-top:4px"></p><button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续 →</button>
+            <strong>上次填写的信息还在</strong>
+            <p class="muted" id="resumeText" style="margin-top:4px"></p>
+            <button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续上次测算 →</button>
           </div>
-          <div class="intent-grid">
-            <button class="intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">查法定退休时间</span></span><span>›</span></button>
-            <button class="intent" data-intent="normal" type="button"><span><strong>正常工作到退休，能领多少？</strong><span class="sub">按持续参保估算</span></span><span>›</span></button>
-            <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">规划停止工作后的社保</span></span><span>›</span></button>
-            <button class="intent" data-intent="flex" type="button"><span><strong>我已离职 / 灵活就业</strong><span class="sub">按实际缴费计划测算</span></span><span>›</span></button>
-            <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">按居民养老规则计算</span></span><span>›</span></button>
+
+          <section class="home-block" aria-labelledby="mainTaskTitle">
+            <div class="home-block-head">
+              <span class="label" id="mainTaskTitle">先选你最想知道的</span>
+            </div>
+            <div class="intent-grid two-up">
+              <button class="intent primary-intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">查法定退休年月</span></span><span class="intent-arrow">›</span></button>
+              <button class="intent primary-intent" data-intent="normal" type="button"><span><strong>退休后每月大概能领多少？</strong><span class="sub">按你的缴费情况估算</span></span><span class="intent-arrow">›</span></button>
+            </div>
+          </section>
+
+          <section class="home-block" aria-labelledby="planTaskTitle">
+            <div class="home-block-head">
+              <span class="label" id="planTaskTitle">如果你不准备一直工作到退休</span>
+            </div>
+            <div class="intent-grid two-up">
+              <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">看看停工后社保怎么接着缴</span></span><span class="intent-arrow">›</span></button>
+              <button class="intent" data-intent="flex" type="button"><span><strong>我已经离职 / 灵活就业</strong><span class="sub">按未来实际缴费计划算</span></span><span class="intent-arrow">›</span></button>
+            </div>
+          </section>
+
+          <div class="resident-row">
+            <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">按居民养老规则单独计算</span></span><span class="intent-arrow">›</span></button>
           </div>
-          <section class="seo-guide" aria-labelledby="seoTitle">
-            <h2 id="seoTitle">2026退休与养老金</h2>
+
+          <div class="trust-slot" id="trustSlot"></div>
+
+          <section class="seo-guide" aria-labelledby="policyTitle">
+            <h2 id="policyTitle">几个常见问题</h2>
             <div class="seo-faq">
               <details><summary>退休年龄为什么不是统一一个数字？</summary><p>渐进式延迟退休已经实施，具体退休年月要结合出生年月和人员类别计算。</p></details>
-              <details><summary>职工最低缴费年限什么时候到20年？</summary><p>2025年至2029年仍为15年；2030年起逐年增加6个月，到2039年达到20年。</p></details>
-              <details><summary>停止工作后还能继续缴吗？</summary><p>可以按实际情况规划，例如转为灵活就业继续缴，也可以中间断缴。</p></details>
-              <details><summary>养老金金额为什么是估算？</summary><p>最终金额还取决于退休地参数、历年缴费基数、个人账户和未来政策数据。</p></details>
+              <details><summary>最低缴费年限什么时候到20年？</summary><p>2025年至2029年仍为15年；2030年起逐年增加6个月，到2039年达到20年。</p></details>
+              <details><summary>停止工作后还能继续缴吗？</summary><p>可以根据实际情况转为灵活就业继续参保，也可以有断缴期。</p></details>
+              <details><summary>养老金金额为什么是估算？</summary><p>未来金额会受到缴费年限、缴费基数、个人账户、待遇领取地参数和未来工资水平等影响。</p></details>
               <details><summary>城乡居民养老也按职工退休规则吗？</summary><p>不是。城乡居民基本养老保险按独立制度执行。</p></details>
             </div>
           </section>
+
+          <section class="feedback-wall" id="feedbackWall" aria-labelledby="feedbackTitle">
+            <div class="feedback-head"><div><h2 id="feedbackTitle">吐槽区</h2><p>哪里难用、哪里算得不对，直接说。</p></div></div>
+            <div class="feedback-compose">
+              <textarea id="feedbackInput" maxlength="1200" placeholder="例如：这个选项看不懂，或者这个结果明显不对……"></textarea>
+              <button id="feedbackSubmit" type="button">提交吐槽</button>
+            </div>
+            <div class="feedback-login-note">公开提交会进入项目反馈列表，需要登录 GitHub；提交后大家都能在这里看到。</div>
+            <div class="feedback-list" id="feedbackList"><div class="feedback-empty">正在加载大家的反馈…</div></div>
+          </section>
         </section>
-        <section id="wizardView" class="hidden"><div class="card"><div class="wizard-head"><div class="progress"><span id="progressBar"></span></div><div class="step-kicker" id="stepKicker">第 1 步</div><h2 id="stepTitle"></h2><p class="muted" id="stepDesc"></p></div><div id="stepBody" class="form-stack"></div></div></section>
+
+        <section id="wizardView" class="hidden">
+          <div class="card">
+            <div class="wizard-head">
+              <div class="progress"><span id="progressBar"></span></div>
+              <div class="step-kicker" id="stepKicker">第 1 步</div>
+              <h2 id="stepTitle"></h2>
+              <p class="muted" id="stepDesc"></p>
+            </div>
+            <div id="stepBody" class="form-stack"></div>
+          </div>
+        </section>
         <section id="resultView" class="hidden"></section>
         <section id="residentView" class="hidden"></section>
       </main>
     </div>
   </div>
+
   <div class="sticky-actions hidden" id="stickyActions"><div class="sticky-inner"><button class="btn secondary" id="backBtn" type="button">上一步</button><button class="btn primary" id="nextBtn" type="button">下一步</button></div></div>
-  <script type="module" src="./js/analytics.js?v=20260828-p15"></script>
-  <script type="module" src="./js/employee-v3.js?v=20260828-p15"></script>
-  <script type="module" src="./js/trust-v3.js?v=20260828-p15"></script>
-  <script type="module" src="./js/resident-ui.js?v=20260828-p15"></script>
-  <script type="module" src="./js/launch-polish.js?v=20260828-p15"></script>
+
+  <script type="module" src="./js/analytics.js?v=20260829-v4"></script>
+  <script type="module" src="./js/employee-v4.js?v=20260829-v4"></script>
+  <script type="module" src="./js/trust-v4.js?v=20260829-v4"></script>
+  <script type="module" src="./js/resident-ui.js?v=20260829-v4"></script>
+  <script type="module" src="./js/feedback.js?v=20260829-v4"></script>
 </body>
 </html>
