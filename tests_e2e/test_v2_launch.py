@@ -21,9 +21,11 @@ def new_page(browser, width=390, height=844):
 
 def finish_employee(page, intent):
     page.locator(f'[data-intent="{intent}"]').click()
-    for _ in range(6):
+    for _ in range(8):
         if page.locator("#resultView").is_visible():
             break
+        if page.locator('#stepBody').get_attribute('data-step') == 'amount' and page.locator('[data-amount-mode="skip"]').count():
+            page.locator('[data-amount-mode="skip"]').click()
         page.locator("#nextBtn").click()
     expect(page.locator("#resultView")).to_be_visible()
 
@@ -92,7 +94,7 @@ def test_resident_flow_reaches_result_and_shows_official_basis(browser):
 def test_front_page_has_user_copy_not_internal_seo_copy(browser):
     page, errors = new_page(browser, 1280, 900)
     expect(page.locator('.seo-guide')).to_be_visible()
-    expect(page.locator('#homeTrustCard')).to_be_visible()
+    expect(page.locator('#trustSlot .trust-strip')).to_be_visible()
     expect(page.locator('body')).not_to_contain_text('工具优先给结果')
     expect(page.locator('body')).not_to_contain_text('方便搜索')
     expect(page.locator('body')).not_to_contain_text('不会每天把日期自动改成')
