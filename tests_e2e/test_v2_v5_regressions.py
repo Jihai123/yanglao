@@ -32,6 +32,16 @@ def go_to_early_amount(page):
     page.locator('[data-history-mode="segments"]').click()
 
 
+def go_normal_to_amount_without_future(page):
+    page.locator('[data-intent="normal"]').click()
+    page.locator('#nextBtn').click()  # identity -> status
+    page.locator('#nextBtn').click()  # status -> explicit future plan
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    page.locator('[data-contribution-plan="stop_with_work"]').click()
+    page.locator('#nextBtn').click()  # plan -> amount
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+
+
 def test_history_months_survive_add_row(browser):
     page, errors = fresh_page(browser)
     go_to_early_amount(page)
@@ -79,10 +89,7 @@ def test_history_months_survive_back_and_forward(browser):
 
 def test_complete_visible_history_is_not_rejected_as_incomplete(browser):
     page, errors = fresh_page(browser)
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click()  # identity -> status
-    page.locator('#nextBtn').click()  # status -> amount
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    go_normal_to_amount_without_future(page)
 
     page.locator('#regionSelect').select_option('shaanxi')
     page.locator('[data-key="monthlyContributionBase"]').fill('10000')
@@ -110,7 +117,9 @@ def test_approximate_paid_years_accept_detailed_same_year_history(browser):
     page.locator('[data-key="paidYears"]').press('Tab')
     page.locator('[data-key="paidMonthsExtra"]').fill('0')
     page.locator('[data-key="paidMonthsExtra"]').press('Tab')
-    page.locator('#nextBtn').click()  # status -> amount
+    page.locator('#nextBtn').click()  # status -> future plan
+    page.locator('[data-contribution-plan="stop_with_work"]').click()
+    page.locator('#nextBtn').click()  # plan -> amount
 
     page.locator('#regionSelect').select_option('shaanxi')
     page.locator('[data-key="monthlyContributionBase"]').fill('20000')
@@ -137,6 +146,55 @@ def test_approximate_paid_years_accept_detailed_same_year_history(browser):
     expect(page.locator('#resultView')).not_to_have_class('hidden')
     expect(page.locator('#resultView')).to_contain_text('16年8个月')
     expect(page.locator('#stepError')).to_have_count(0)
+    assert errors == []
+    page.close()
+
+
+def test_normal_amount_flow_respects_total_20_year_plan_and_future_base(browser):
+    page, errors = fresh_page(browser)
+    page.locator('[data-intent="normal"]').click()
+    page.locator('#nextBtn').click()  # identity -> status
+
+    page.locator('[data-key="paidYears"]').fill('16')
+    page.locator('[data-key="paidYears"]').press('Tab')
+    page.locator('[data-key="paidMonthsExtra"]').fill('0')
+    page.locator('[data-key="paidMonthsExtra"]').press('Tab')
+    page.locator('#nextBtn').click()  # status -> future plan
+
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    expect(page.locator('#stepTitle')).to_contain_text('养老保险准备怎么缴')
+    page.locator('[data-contribution-plan="to_minimum"]').click()
+    page.locator('[data-after-stop="flex"]').click()
+    page.locator('[data-flex-base-mode="custom"]').click()
+    page.locator('[data-key="flexMonthlyContributionBase"]').fill('2000')
+    page.locator('[data-key="flexMonthlyContributionBase"]').press('Tab')
+    page.locator('#nextBtn').click()  # plan -> amount
+
+    page.locator('#regionSelect').select_option('shaanxi')
+    page.locator('[data-key="monthlyContributionBase"]').fill('20000')
+    page.locator('[data-key="monthlyContributionBase"]').press('Tab')
+    page.locator('[data-history-mode="segments"]').click()
+
+    rows = [
+        ('2010-01', '2014-02', '10000'),
+        ('2014-03', '2019-06', '3000'),
+        ('2019-07', '2026-08', '20000'),
+    ]
+    for index, (start, end, base) in enumerate(rows):
+        if index:
+            page.locator('#historyAddBtn').click()
+        page.locator('[data-history-field="startMonth"]').nth(index).fill(start)
+        page.locator('[data-history-field="endMonth"]').nth(index).fill(end)
+        page.locator('[data-history-field="monthlyContributionBase"]').nth(index).fill(base)
+
+    page.locator('#nextBtn').click()
+
+    expect(page.locator('#resultView')).not_to_have_class('hidden')
+    expect(page.locator('#resultView')).to_contain_text('已缴 16年8个月')
+    expect(page.locator('#resultView')).to_contain_text('未来计划 3年4个月')
+    expect(page.locator('#resultView')).to_contain_text('未来缴费 3年4个月')
+    expect(page.locator('#resultView')).to_contain_text('¥2,000')
+    expect(page.locator('#resultView')).not_to_contain_text('未来计划 20年')
     assert errors == []
     page.close()
 
