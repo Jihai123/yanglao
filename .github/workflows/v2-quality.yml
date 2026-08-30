@@ -7,6 +7,7 @@ on:
       - 'index.html'
       - 'assets/**'
       - 'js/**'
+      - 'api/**'
       - 'tests_js/**'
       - 'tests_e2e/**'
       - 'package.json'
@@ -19,6 +20,7 @@ on:
       - 'index.html'
       - 'assets/**'
       - 'js/**'
+      - 'api/**'
       - 'tests_js/**'
       - 'tests_e2e/**'
       - 'package.json'
@@ -48,11 +50,13 @@ jobs:
           node --check js/app.js
           node --check js/employee-v3.js
           node --check js/employee-v4.js
+          node --check js/hotfix-v5.js
           node --check js/sources.js
           node --check js/sources-v4.js
           node --check js/trust.js
           node --check js/trust-v3.js
           node --check js/trust-v4.js
+          node --check js/trust-v5.js
           node --check js/resident.js
           node --check js/resident-ui.js
           node --check js/guidance.js
@@ -60,6 +64,13 @@ jobs:
           node --check js/launch-polish.js
           node --check js/analytics.js
           node --check js/feedback.js
+      - name: Check PHP API syntax when available
+        run: |
+          if command -v php >/dev/null 2>&1; then
+            php -l api/bootstrap.php
+            php -l api/feedback.php
+            php -l api/event.php
+          fi
 
   browser-smoke:
     runs-on: ubuntu-latest
