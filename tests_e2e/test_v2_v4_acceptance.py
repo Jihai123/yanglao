@@ -25,9 +25,11 @@ def new_page(browser, width=390, height=844):
 def goto_amount(page, intent="normal"):
     page.locator(f'[data-intent="{intent}"]').click()
     page.locator('#nextBtn').click()  # identity -> status
-    page.locator('#nextBtn').click()  # status -> amount/plan
-    if intent != "normal":
-        page.locator('#nextBtn').click()  # plan -> amount
+    page.locator('#nextBtn').click()  # status -> plan
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    if intent == "normal":
+        page.locator('[data-contribution-plan="stop_with_work"]').click()
+    page.locator('#nextBtn').click()  # plan -> amount
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
 
 
