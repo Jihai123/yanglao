@@ -22,6 +22,15 @@ def fresh_page(browser, width=390, height=844):
     return page, errors
 
 
+def normal_to_amount(page):
+    page.locator('[data-intent="normal"]').click()
+    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    page.locator('[data-contribution-plan="stop_with_work"]').click()
+    page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+
+
 def test_female_unsure_shows_two_possible_retirement_results(browser):
     page, errors = fresh_page(browser)
     page.locator('[data-intent="age"]').click()
@@ -53,8 +62,7 @@ def test_future_gap_plan_supports_flexible_employment_base(browser):
 
 def test_unknown_history_still_emits_estimate_when_region_anchor_is_available(browser):
     page, errors = fresh_page(browser)
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    normal_to_amount(page)
     page.locator('#regionSelect').select_option('shaanxi')
     base = page.locator('[data-key="monthlyContributionBase"]')
     base.fill('8000'); base.dispatch_event('change')
@@ -70,8 +78,7 @@ def test_unknown_history_still_emits_estimate_when_region_anchor_is_available(br
 
 def test_segmented_history_editor_adds_month_rows(browser):
     page, errors = fresh_page(browser)
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    normal_to_amount(page)
     page.locator('[data-history-mode="segments"]').click()
     expect(page.locator('.history-row')).to_have_count(1)
     expect(page.locator('[data-history-field="startMonth"]')).to_have_count(1)
