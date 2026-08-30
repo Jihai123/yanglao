@@ -2,6 +2,8 @@ const PLAN_KEY = 'yanglao-v4-plan';
 const HISTORY_DRAFT_KEY = 'yanglao-v5-history-draft';
 const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
 const NORMAL_CURRENT_AGE_KEY = 'yanglao-v6-normal-current-age';
+const FUTURE_GROWTH_OVERRIDE_KEY = 'yanglao-v6-future-growth-override';
+const STATIC_RATE = Number.EPSILON;
 
 const KNOWN_CALC_BASES = {
   beijing: { value: 12049, year: 2025, sourceQuality: 'direct' },
@@ -221,6 +223,52 @@ function relabelNormalPlanStep() {
   }
 }
 
+function setLegacyBoundState(input, key, value) {
+  const originalKey = input.dataset.key;
+  const originalValue = input.value;
+  input.dataset.v6InternalAssumption = '1';
+  input.dataset.key = key;
+  input.value = String(value);
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  input.dataset.key = originalKey;
+  input.value = originalValue;
+  delete input.dataset.v6InternalAssumption;
+}
+
+function enforceStaticFutureAssumptions() {
+  const input = document.querySelector('#stepBody[data-step="amount"] [data-key="socialWageGrowthPercent"]');
+  if (!input || input.dataset.v6StaticApplied === '1') return;
+
+  const explicit = sessionStorage.getItem(FUTURE_GROWTH_OVERRIDE_KEY);
+  const requestedPercent = explicit === null ? 0 : Number(explicit);
+  const effectiveRate = requestedPercent === 0 ? STATIC_RATE : requestedPercent / 100;
+
+  input.dataset.v6InternalAssumption = '1';
+  input.value = String(requestedPercent === 0 ? Number.EPSILON * 100 : requestedPercent);
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  input.value = String(requestedPercent);
+  delete input.dataset.v6InternalAssumption;
+
+  // accountInterest has no user-facing control in the legacy calculator. Reuse an
+  // already-bound input listener to set the internal state without adding a hidden
+  // 3% assumption. Number.EPSILON is used because the legacy code treats literal 0
+  // as "missing" and falls back to 3%; numerically it behaves as zero.
+  setLegacyBoundState(input, 'accountInterest', STATIC_RATE);
+  input.dataset.v6StaticApplied = '1';
+}
+
+function annotateStaticProjectionResult() {
+  const result = document.getElementById('resultView');
+  if (!result || result.classList.contains('hidden') || result.querySelector('[data-v6-static-assumption]')) return;
+  const amountCard = [...result.querySelectorAll('.card.section')].find(card => card.textContent.includes('养老金金额'));
+  if (!amountCard) return;
+  const note = document.createElement('div');
+  note.className = 'plain-note section';
+  note.dataset.v6StaticAssumption = '1';
+  note.innerHTML = '<strong>默认静态估算口径</strong><span>未来养老金计发基准、未来缴费基数和个人账户记账利率均按0%增长/计息估算，不预设2046年的工资或利率涨幅。高级参数可自行调整未来社会工资增长率。</span>';
+  amountCard.before(note);
+}
+
 function relabelNormalResult() {
   if (!normalAmountFlowActive()) return;
   const result = document.getElementById('resultView');
@@ -272,6 +320,7 @@ document.addEventListener('click', event => {
 
   if (event.target.closest('#restartBtn, #newPlanBtn')) {
     sessionStorage.removeItem(HISTORY_DRAFT_KEY);
+    sessionStorage.removeItem(FUTURE_GROWTH_OVERRIDE_KEY);
     markNormalAmountFlow(false);
     return;
   }
@@ -282,6 +331,10 @@ document.addEventListener('click', event => {
 
 document.addEventListener('change', event => {
   if (event.target.matches('[data-history-index][data-history-field]')) collectHistoryRows();
+  if (event.target.matches('[data-key="socialWageGrowthPercent"]') && event.target.dataset.v6InternalAssumption !== '1') {
+    const value = Number(event.target.value);
+    if (Number.isFinite(value)) sessionStorage.setItem(FUTURE_GROWTH_OVERRIDE_KEY, String(value));
+  }
 }, true);
 
 document.addEventListener('input', event => {
@@ -297,7 +350,9 @@ const observer = new MutationObserver(() => {
     restoreVisibleHistoryDraft();
     explainCalcBaseError();
     relabelNormalPlanStep();
+    enforceStaticFutureAssumptions();
     relabelNormalResult();
+    annotateStaticProjectionResult();
   });
 });
 observer.observe(document.documentElement, { childList: true, subtree: true });
