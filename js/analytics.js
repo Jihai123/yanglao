@@ -1,6 +1,6 @@
 import './launch-polish.js?v=20260830-v5';
 
-const API = './api/event.php';
+const API = '/api/event.php';
 const VISITOR_KEY = 'yanglao-v5-visitor';
 const SESSION_KEY = 'yanglao-v5-session';
 const APP_VERSION = 'v5-preview';
