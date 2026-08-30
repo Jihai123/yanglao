@@ -50,13 +50,16 @@ def test_all_employee_entry_points_reach_result(browser, intent):
     assert errors == []
     page.close()
 
-def test_normal_flow_does_not_show_fake_disabled_contribution_choices(browser):
+def test_normal_flow_uses_real_future_contribution_choices(browser):
     page, errors = new_page(browser)
     page.locator('[data-intent="normal"]').click()
     page.locator('#nextBtn').click()
     page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
-    expect(page.locator('[data-contribution-plan]')).to_have_count(0)
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    expect(page.locator('[data-contribution-plan]')).to_have_count(4)
+    for index in range(4):
+        expect(page.locator('[data-contribution-plan]').nth(index)).to_be_enabled()
+    expect(page.locator('#stepTitle')).to_contain_text('养老保险准备怎么缴')
     assert errors == []
     page.close()
 
@@ -74,6 +77,10 @@ def test_qualification_only_mode_reaches_result_without_amount(browser):
     page, errors = new_page(browser)
     page.locator('[data-intent="normal"]').click()
     page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    page.locator('[data-contribution-plan="stop_with_work"]').click()
+    page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
     page.locator('[data-amount-mode="skip"]').click()
     page.locator('#nextBtn').click()
     expect(page.locator('#resultView')).to_be_visible()
