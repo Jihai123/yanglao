@@ -101,6 +101,46 @@ def test_complete_visible_history_is_not_rejected_as_incomplete(browser):
     page.close()
 
 
+def test_approximate_paid_years_accept_detailed_same_year_history(browser):
+    page, errors = fresh_page(browser)
+    page.locator('[data-intent="normal"]').click()
+    page.locator('#nextBtn').click()  # identity -> status
+
+    page.locator('[data-key="paidYears"]').fill('16')
+    page.locator('[data-key="paidYears"]').press('Tab')
+    page.locator('[data-key="paidMonthsExtra"]').fill('0')
+    page.locator('[data-key="paidMonthsExtra"]').press('Tab')
+    page.locator('#nextBtn').click()  # status -> amount
+
+    page.locator('#regionSelect').select_option('shaanxi')
+    page.locator('[data-key="monthlyContributionBase"]').fill('20000')
+    page.locator('[data-key="monthlyContributionBase"]').press('Tab')
+    page.locator('[data-history-mode="segments"]').click()
+
+    rows = [
+        ('2010-01', '2014-02', '10000'),
+        ('2014-03', '2019-06', '3000'),
+        ('2019-07', '2026-08', '20000'),
+    ]
+    for index, (start, end, base) in enumerate(rows):
+        if index:
+            page.locator('#historyAddBtn').click()
+        page.locator('[data-history-field="startMonth"]').nth(index).fill(start)
+        page.locator('[data-history-field="endMonth"]').nth(index).fill(end)
+        page.locator('[data-history-field="monthlyContributionBase"]').nth(index).fill(base)
+
+    expect(page.locator('#historyTotalText')).to_contain_text('分段合计 16年8个月')
+    expect(page.locator('#historyTotalText')).to_contain_text('将按分段合计计算')
+
+    page.locator('#nextBtn').click()
+
+    expect(page.locator('#resultView')).not_to_have_class('hidden')
+    expect(page.locator('#resultView')).to_contain_text('16年8个月')
+    expect(page.locator('#stepError')).to_have_count(0)
+    assert errors == []
+    page.close()
+
+
 def test_old_shaanxi_blank_manual_calc_base_is_migrated(browser):
     page, errors = fresh_page(browser)
     page.evaluate("""
