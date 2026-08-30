@@ -74,9 +74,28 @@ function loadHistoryDraft() {
 }
 
 function pushVisibleValuesIntoCalculator() {
-  for (const input of historyInputs()) {
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+  const inputs = historyInputs();
+  if (!inputs.length) return;
+
+  // employee-v4 currently recalculates the history total after every single input.
+  // Its legacy year->month migration treats a partially filled row as old data and
+  // can erase the month that was just entered. Temporarily hide the total target so
+  // all visible values reach the in-memory state first; then recalculate once the row
+  // is complete. The DOM is the source of truth at navigation/validation boundaries.
+  const total = document.getElementById('historyTotalText');
+  const originalId = total?.id || '';
+  if (total) total.id = 'historyTotalText-syncing';
+  try {
+    for (const input of inputs) {
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  } finally {
+    if (total) total.id = originalId;
   }
+
+  // One final input is safe now: all start/end/base fields have already been copied
+  // into state, so employee-v4 can calculate totals without deleting partial values.
+  inputs[inputs.length - 1]?.dispatchEvent(new Event('input', { bubbles: true }));
   collectHistoryRows();
 }
 
@@ -97,10 +116,10 @@ function restoreVisibleHistoryDraft() {
     const value = draft[index]?.[field];
     if (value === undefined || value === null || value === '') continue;
     input.value = String(value);
-    input.dispatchEvent(new Event('input', { bubbles: true }));
     restored = true;
   }
-  if (restored) collectHistoryRows();
+  if (restored) pushVisibleValuesIntoCalculator();
+  else collectHistoryRows();
 }
 
 function explainCalcBaseError() {
@@ -116,7 +135,8 @@ function explainCalcBaseError() {
 
 migrateSavedPlan();
 
-// Flush the values the user can see before any V4 action that may rebuild the form.
+// Flush the values the user can see before any V4 action that may rebuild or
+// validate the form. This prevents visible values and internal state diverging.
 document.addEventListener('click', event => {
   if (event.target.closest('#restartBtn')) {
     sessionStorage.removeItem(HISTORY_DRAFT_KEY);
