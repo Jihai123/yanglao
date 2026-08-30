@@ -1,4 +1,4 @@
-const API = './api/feedback.php';
+const API = '/api/feedback.php';
 const VISITOR_KEY = 'yanglao-v5-visitor';
 const APP_VERSION = 'v5-preview';
 
@@ -53,7 +53,7 @@ async function loadFeedback() {
     const payload = await response.json();
     renderItems(Array.isArray(payload.items) ? payload.items : []);
   } catch {
-    list.innerHTML = '<div class="feedback-empty">吐槽区数据库正在配置，稍后即可直接在这里提交。</div>';
+    list.innerHTML = '<div class="feedback-empty">吐槽区暂时连接不上，请稍后再试。</div>';
   }
 }
 
