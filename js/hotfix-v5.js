@@ -103,10 +103,20 @@ function restoreVisibleHistoryDraft() {
   if (restored) collectHistoryRows();
 }
 
+function explainCalcBaseError() {
+  const error = document.getElementById('stepError');
+  if (!error || !error.textContent.includes('计发基准')) return;
+  const input = document.querySelector('[data-key="currentCalcBase"]');
+  if (!input) return;
+  const details = input.closest('details');
+  if (details) details.open = true;
+  input.closest('.field')?.classList.add('v5-needs-attention');
+  error.textContent = '这个地区暂未收录可自动带入的计发基准。请在下面“当前养老金计发基准”填写当地人社公布值；如果只是想先看退休资格，可切换为“只看资格”。';
+}
+
 migrateSavedPlan();
 
-// The V4 month controls can visually contain a value before that value reaches its
-// internal state. Flush the visible editor before any action that may re-render it.
+// Flush the values the user can see before any V4 action that may rebuild the form.
 document.addEventListener('click', event => {
   if (event.target.closest('#restartBtn')) {
     sessionStorage.removeItem(HISTORY_DRAFT_KEY);
@@ -131,6 +141,7 @@ const observer = new MutationObserver(() => {
   queueMicrotask(() => {
     restoreQueued = false;
     restoreVisibleHistoryDraft();
+    explainCalcBaseError();
   });
 });
 observer.observe(document.documentElement, { childList: true, subtree: true });
