@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="退休规划助手：查询2026职工退休年龄，估算职工养老金和城乡居民养老金，比较不同缴费年限的退休方案。" />
   <title>退休规划助手_养老金计算器_2026退休年龄查询</title>
-  <link rel="stylesheet" href="./assets/styles.css?v=20260829-v4" />
-  <link rel="stylesheet" href="./assets/trust.css?v=20260829-v4" />
-  <link rel="stylesheet" href="./assets/launch.css?v=20260829-v4" />
-  <link rel="stylesheet" href="./assets/product-v4.css?v=20260829-v4" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260830-v5" />
+  <link rel="stylesheet" href="./assets/trust.css?v=20260830-v5" />
+  <link rel="stylesheet" href="./assets/launch.css?v=20260830-v5" />
+  <link rel="stylesheet" href="./assets/product-v4.css?v=20260830-v5" />
+  <link rel="stylesheet" href="./assets/product-v5.css?v=20260830-v5" />
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -49,9 +50,7 @@
           </div>
 
           <section class="home-block" aria-labelledby="mainTaskTitle">
-            <div class="home-block-head">
-              <span class="label" id="mainTaskTitle">先选你最想知道的</span>
-            </div>
+            <div class="home-block-head"><span class="label" id="mainTaskTitle">先选你最想知道的</span></div>
             <div class="intent-grid two-up">
               <button class="intent primary-intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">查法定退休年月</span></span><span class="intent-arrow">›</span></button>
               <button class="intent primary-intent" data-intent="normal" type="button"><span><strong>退休后每月大概能领多少？</strong><span class="sub">按你的缴费情况估算</span></span><span class="intent-arrow">›</span></button>
@@ -59,9 +58,7 @@
           </section>
 
           <section class="home-block" aria-labelledby="planTaskTitle">
-            <div class="home-block-head">
-              <span class="label" id="planTaskTitle">如果你不准备一直工作到退休</span>
-            </div>
+            <div class="home-block-head"><span class="label" id="planTaskTitle">如果你不准备一直工作到退休</span></div>
             <div class="intent-grid two-up">
               <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">看看停工后社保怎么接着缴</span></span><span class="intent-arrow">›</span></button>
               <button class="intent" data-intent="flex" type="button"><span><strong>我已经离职 / 灵活就业</strong><span class="sub">按未来实际缴费计划算</span></span><span class="intent-arrow">›</span></button>
@@ -91,7 +88,7 @@
               <textarea id="feedbackInput" maxlength="1200" placeholder="例如：这个选项看不懂，或者这个结果明显不对……"></textarea>
               <button id="feedbackSubmit" type="button">提交吐槽</button>
             </div>
-            <div class="feedback-login-note">公开提交会进入项目反馈列表，需要登录 GitHub；提交后大家都能在这里看到。</div>
+            <div class="feedback-login-note">匿名提交。页面会展示反馈内容和时间；简单使用统计只记录访问、所选功能和是否到达结果页，不记录你填写的养老金数据。</div>
             <div class="feedback-list" id="feedbackList"><div class="feedback-empty">正在加载大家的反馈…</div></div>
           </section>
         </section>
@@ -115,10 +112,11 @@
 
   <div class="sticky-actions hidden" id="stickyActions"><div class="sticky-inner"><button class="btn secondary" id="backBtn" type="button">上一步</button><button class="btn primary" id="nextBtn" type="button">下一步</button></div></div>
 
-  <script type="module" src="./js/analytics.js?v=20260829-v4"></script>
-  <script type="module" src="./js/employee-v4.js?v=20260829-v4"></script>
-  <script type="module" src="./js/trust-v4.js?v=20260829-v4"></script>
-  <script type="module" src="./js/resident-ui.js?v=20260829-v4"></script>
-  <script type="module" src="./js/feedback.js?v=20260829-v4"></script>
+  <script type="module" src="./js/hotfix-v5.js?v=20260830-v5"></script>
+  <script type="module" src="./js/analytics.js?v=20260830-v5"></script>
+  <script type="module" src="./js/employee-v4.js?v=20260830-v5"></script>
+  <script type="module" src="./js/trust-v5.js?v=20260830-v5"></script>
+  <script type="module" src="./js/resident-ui.js?v=20260830-v5"></script>
+  <script type="module" src="./js/feedback.js?v=20260830-v5"></script>
 </body>
 </html>
