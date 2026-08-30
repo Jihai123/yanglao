@@ -1,6 +1,7 @@
 const PLAN_KEY = 'yanglao-v4-plan';
 const HISTORY_DRAFT_KEY = 'yanglao-v5-history-draft';
 const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
+const NORMAL_CURRENT_AGE_KEY = 'yanglao-v6-normal-current-age';
 
 const KNOWN_CALC_BASES = {
   beijing: { value: 12049, year: 2025, sourceQuality: 'direct' },
@@ -133,13 +134,44 @@ function normalAmountFlowActive() {
 
 function markNormalAmountFlow(active) {
   if (active) localStorage.setItem(NORMAL_AMOUNT_FLOW_KEY, '1');
-  else localStorage.removeItem(NORMAL_AMOUNT_FLOW_KEY);
+  else {
+    localStorage.removeItem(NORMAL_AMOUNT_FLOW_KEY);
+    sessionStorage.removeItem(NORMAL_CURRENT_AGE_KEY);
+  }
+}
+
+function captureNormalCurrentAge() {
+  if (!normalAmountFlowActive()) return;
+  const birthInput = document.querySelector('#stepBody[data-step="identity"] [data-key="birth"]');
+  const value = String(birthInput?.value || '');
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  if (!match) return;
+  const birthYear = Number(match[1]);
+  const birthMonth = Number(match[2]);
+  const now = new Date();
+  const currentMonths = (now.getFullYear() * 12 + now.getMonth()) - (birthYear * 12 + birthMonth - 1);
+  if (currentMonths >= 0) sessionStorage.setItem(NORMAL_CURRENT_AGE_KEY, String(currentMonths / 12));
+}
+
+function alignNormalPlanToCurrentMonth(body) {
+  const stopInput = body.querySelector('[data-key="stopWorkAge"]');
+  const exactAge = Number(sessionStorage.getItem(NORMAL_CURRENT_AGE_KEY));
+  if (!stopInput || !Number.isFinite(exactAge) || exactAge < 0) return false;
+  if (Math.abs(Number(stopInput.value) - exactAge) < 0.000001) return false;
+  stopInput.value = String(exactAge);
+  stopInput.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
 }
 
 function relabelNormalPlanStep() {
   if (!normalAmountFlowActive()) return;
   const body = document.querySelector('#stepBody[data-step="plan"]');
   if (!body || body.querySelector('[data-v6-normal-plan-marker]')) return;
+
+  // Flex planning internally splits "before stop" vs "after stop". For the normal
+  // pension amount flow there is no hidden pre-stop period: the user's chosen future
+  // base applies from the current month. Align the hidden stop point exactly to now.
+  if (alignNormalPlanToCurrentMonth(body)) return;
 
   const marker = document.createElement('span');
   marker.hidden = true;
@@ -232,6 +264,10 @@ document.addEventListener('click', event => {
     } else {
       markNormalAmountFlow(false);
     }
+  }
+
+  if (normalAmountFlowActive() && event.target.closest('#nextBtn') && document.querySelector('#stepBody[data-step="identity"]')) {
+    captureNormalCurrentAge();
   }
 
   if (event.target.closest('#restartBtn, #newPlanBtn')) {
