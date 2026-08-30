@@ -1,0 +1,29 @@
+CREATE TABLE IF NOT EXISTS feedback (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  visitor_id VARCHAR(64) NOT NULL DEFAULT '',
+  content VARCHAR(1200) NOT NULL,
+  page VARCHAR(255) NOT NULL DEFAULT '',
+  app_version VARCHAR(32) NOT NULL DEFAULT '',
+  status ENUM('visible','hidden') NOT NULL DEFAULT 'visible',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_feedback_status_created (status, created_at),
+  KEY idx_feedback_visitor_created (visitor_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS usage_event (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  visitor_id VARCHAR(64) NOT NULL DEFAULT '',
+  session_id VARCHAR(64) NOT NULL DEFAULT '',
+  event_name VARCHAR(48) NOT NULL,
+  feature VARCHAR(48) NOT NULL DEFAULT '',
+  page VARCHAR(255) NOT NULL DEFAULT '',
+  app_version VARCHAR(32) NOT NULL DEFAULT '',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_usage_created (created_at),
+  KEY idx_usage_event_created (event_name, created_at),
+  KEY idx_usage_feature_created (feature, created_at),
+  KEY idx_usage_visitor_created (visitor_id, created_at),
+  KEY idx_usage_session_created (session_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
