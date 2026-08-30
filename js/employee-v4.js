@@ -206,7 +206,7 @@ function futureContributionSegments(category = mapCategory()) {
   if (state.contributionPlan === 'continuous_to_claim') afterMonths = window.afterStop;
   if (state.contributionPlan === 'actual_months') afterMonths = Math.min(actualAfterStopMonths(), window.afterStop);
   if (state.contributionPlan === 'to_minimum') {
-    const needed = Math.max(0, minimumRequiredMonths(category) - paidMonths() - beforeStop);
+    const needed = Math.max(0, minimumRequiredMonths(category) - effectivePaidMonths() - beforeStop);
     afterMonths = Math.min(needed, window.afterStop);
   }
 
@@ -229,7 +229,16 @@ function futureContributionMonths(category = mapCategory()) {
 function migrateHistorySegments() {
   if (!Array.isArray(state.historySegments)) state.historySegments = [];
   state.historySegments = state.historySegments.map(item => {
-    if (item.startMonth && item.endMonth) return item;
+    const startMonth = item.startMonth || '';
+    const endMonth = item.endMonth || '';
+    if (startMonth || endMonth) {
+      return {
+        ...item,
+        startMonth,
+        endMonth,
+        monthlyContributionBase: item.monthlyContributionBase ?? '',
+      };
+    }
     const startYear = Number(item.startYear);
     const endYear = Number(item.endYear);
     return {
@@ -276,6 +285,12 @@ function historySegmentMonthsTotal() {
   return historySegmentsForCalculation().reduce((sum, item) => sum + segmentMonths(item), 0);
 }
 
+function effectivePaidMonths() {
+  if (state.historyMode !== 'segments') return paidMonths();
+  const detailed = historySegmentMonthsTotal();
+  return detailed > 0 ? detailed : paidMonths();
+}
+
 function avgIndexInfo() {
   if (state.historyMode === 'exact') return { value: Math.max(0.3, Math.min(3, Number(state.avgIndex || 1))), confidence: 'exact' };
   if (state.historyMode === 'segments') return { value: 1, confidence: 'segmented' };
@@ -292,7 +307,7 @@ function calculationInput(category = mapCategory()) {
     ...state,
     category,
     now: NOW,
-    paidMonths: paidMonths(),
+    paidMonths: effectivePaidMonths(),
     deemedMonths: deemedMonths(),
     claimAgeMonths: claimAgeMonths(category),
     historyContributionSegments: historySegmentsForCalculation(),
@@ -404,9 +419,9 @@ function accountGuideHtml() {
 
 function renderStatus() {
   stepTitle.textContent = '你已经缴了多久？';
-  stepDesc.textContent = '按社保权益记录里的累计实际缴费时间填写。';
+  stepDesc.textContent = '这里先填大概累计年限即可；后面如果按历史记录分段填写，会以分段合计为准。';
   stepBody.innerHTML = `
-    <div class="field"><label>累计实际缴费</label><div class="number-pair"><div><input data-key="paidYears" type="number" min="0" step="1" value="${state.paidYears}"><span>年</span></div><div><input data-key="paidMonthsExtra" type="number" min="0" max="11" step="1" value="${state.paidMonthsExtra}"><span>个月</span></div></div></div>
+    <div class="field"><label>累计缴费（大约）</label><div class="number-pair"><div><input data-key="paidYears" type="number" min="0" step="1" value="${state.paidYears}"><span>年</span></div><div><input data-key="paidMonthsExtra" type="number" min="0" max="11" step="1" value="${state.paidMonthsExtra}"><span>个月</span></div></div></div>
     <div class="field"><label>个人账户余额</label><div class="segment"><button type="button" data-account="known" class="${state.knowsAccount ? 'active' : ''}">我知道</button><button type="button" data-account="unknown" class="${!state.knowsAccount ? 'active' : ''}">不知道</button></div>${accountGuideHtml()}</div>
     ${state.knowsAccount ? `<div class="field"><label>个人账户余额（元）</label><input data-key="currentAccount" type="number" min="0" step="1" value="${state.currentAccount}"></div>` : ''}
     <details class="disclosure"><summary>我有视同缴费年限</summary><div class="detail-stack"><div class="segment"><button type="button" data-deemed="no" class="${!state.hasDeemed ? 'active' : ''}">没有 / 不适用</button><button type="button" data-deemed="yes" class="${state.hasDeemed ? 'active' : ''}">有</button></div>${state.hasDeemed ? `<div class="field"><label>视同缴费年限</label><div class="number-pair"><div><input data-key="deemedYears" type="number" min="0" step="1" value="${state.deemedYears}"><span>年</span></div><div><input data-key="deemedMonthsExtra" type="number" min="0" max="11" step="1" value="${state.deemedMonthsExtra}"><span>个月</span></div></div></div>` : ''}</div></details>`;
@@ -477,8 +492,10 @@ function updateHistoryTotalText() {
   if (!target) return;
   const total = historySegmentMonthsTotal();
   if (!total) { target.textContent = ''; target.classList.remove('history-total-warn'); return; }
-  target.textContent = `分段合计 ${monthsText(total)} · 累计实际缴费 ${monthsText(paidMonths())}`;
-  target.classList.toggle('history-total-warn', Math.abs(total - paidMonths()) > 1);
+  const approximate = paidMonths();
+  const wholeYearsMatch = Math.floor(total / 12) === Math.floor(approximate / 12);
+  target.textContent = `分段合计 ${monthsText(total)} · 前面约 ${monthsText(approximate)}${wholeYearsMatch ? ' · 将按分段合计计算' : ''}`;
+  target.classList.toggle('history-total-warn', !wholeYearsMatch);
 }
 
 function regionFieldHtml() {
@@ -600,7 +617,10 @@ function validateHistorySegments() {
     if (intervals[i].startIndex <= intervals[i - 1].endIndex) return '历史缴费时间段不能重叠。';
   }
   const total = historySegmentMonthsTotal();
-  if (Math.abs(total - paidMonths()) > 1) return `历史分段合计${monthsText(total)}，和前面填写的累计实际缴费${monthsText(paidMonths())}不一致。`;
+  const approximate = paidMonths();
+  if (Math.floor(total / 12) !== Math.floor(approximate / 12)) {
+    return `历史分段合计${monthsText(total)}，和前面填写的约${monthsText(approximate)}相差超过整年口径。请检查是否漏填或多填了一段。`;
+  }
   return '';
 }
 
