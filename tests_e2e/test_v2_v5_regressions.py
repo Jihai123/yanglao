@@ -77,6 +77,30 @@ def test_history_months_survive_back_and_forward(browser):
     page.close()
 
 
+def test_complete_visible_history_is_not_rejected_as_incomplete(browser):
+    page, errors = fresh_page(browser)
+    page.locator('[data-intent="normal"]').click()
+    page.locator('#nextBtn').click()  # identity -> status
+    page.locator('#nextBtn').click()  # status -> amount
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+
+    page.locator('#regionSelect').select_option('shaanxi')
+    page.locator('[data-key="monthlyContributionBase"]').fill('10000')
+    page.locator('[data-key="monthlyContributionBase"]').press('Tab')
+    page.locator('[data-history-mode="segments"]').click()
+
+    page.locator('[data-history-field="startMonth"]').first.fill('2008-09')
+    page.locator('[data-history-field="endMonth"]').first.fill('2026-08')
+    page.locator('[data-history-field="monthlyContributionBase"]').first.fill('10000')
+
+    page.locator('#nextBtn').click()
+
+    expect(page.locator('#resultView')).not_to_have_class('hidden')
+    expect(page.locator('#stepError')).to_have_count(0)
+    assert errors == []
+    page.close()
+
+
 def test_old_shaanxi_blank_manual_calc_base_is_migrated(browser):
     page, errors = fresh_page(browser)
     page.evaluate("""
