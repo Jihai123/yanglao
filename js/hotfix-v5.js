@@ -228,7 +228,7 @@ document.addEventListener('click', event => {
     if (requestedIntent === 'normal') {
       markNormalAmountFlow(true);
       intentButton.dataset.intent = 'flex';
-      queueMicrotask(() => { intentButton.dataset.intent = 'normal'; });
+      setTimeout(() => { intentButton.dataset.intent = 'normal'; }, 0);
     } else {
       markNormalAmountFlow(false);
     }
