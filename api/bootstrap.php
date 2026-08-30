@@ -24,25 +24,24 @@ function clean_string(mixed $value, int $maxLength): string
 function request_json(): array
 {
     $raw = file_get_contents('php://input');
-    if ($raw === false || trim($raw) === '') {
-        return [];
-    }
+    if ($raw === false || trim($raw) === '') return [];
     $decoded = json_decode($raw, true);
-    if (!is_array($decoded)) {
-        respond(['ok' => false, 'error' => 'invalid_json'], 400);
-    }
+    if (!is_array($decoded)) respond(['ok' => false, 'error' => 'invalid_json'], 400);
     return $decoded;
 }
 
-$configFile = __DIR__ . '/config.php';
+$documentRoot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+$defaultConfig = $documentRoot !== ''
+    ? dirname($documentRoot) . '/.yanglao-db.php'
+    : dirname(__DIR__, 2) . '/.yanglao-db.php';
+$configFile = getenv('YANGLAO_DB_CONFIG') ?: $defaultConfig;
+
 if (!is_file($configFile)) {
     respond(['ok' => false, 'error' => 'api_not_configured'], 503);
 }
 
 $config = require $configFile;
-if (!is_array($config)) {
-    respond(['ok' => false, 'error' => 'invalid_config'], 500);
-}
+if (!is_array($config)) respond(['ok' => false, 'error' => 'invalid_config'], 500);
 
 try {
     $host = (string)($config['db_host'] ?? '127.0.0.1');
