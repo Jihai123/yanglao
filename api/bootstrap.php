@@ -5,14 +5,14 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 
-function respond(array $payload, int $status = 200): never
+function respond(array $payload, int $status = 200)
 {
     http_response_code($status);
     echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-function clean_string(mixed $value, int $maxLength): string
+function clean_string($value, int $maxLength): string
 {
     $text = trim((string)($value ?? ''));
     if (function_exists('mb_substr')) {
