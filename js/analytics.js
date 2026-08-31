@@ -6,6 +6,7 @@ const SESSION_KEY = 'yanglao-v5-session';
 const FLOW_KEY = 'yanglao-v6-flow';
 const FLOW_FEATURE_KEY = 'yanglao-v6-flow-feature';
 const SOURCE_KEY = 'yanglao-v6-source';
+const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
 const APP_VERSION = 'v2-prod-20260831-a2';
 
 let volatileVisitor = '';
@@ -111,6 +112,16 @@ function setFlow(id, feature) {
   safeSet(sessionStorage, FLOW_FEATURE_KEY, feature);
 }
 
+function userFacingIntent(internalIntent) {
+  const intent = String(internalIntent || 'unknown');
+  // hotfix-v5 temporarily changes the normal pension-amount entry to "flex" so it
+  // can reuse the planning-capable engine. The hotfix sets this marker before this
+  // listener runs. Analytics must describe what the user actually chose, not the
+  // internal compatibility route. A real flex click clears the marker first.
+  if (intent === 'flex' && safeGet(localStorage, NORMAL_AMOUNT_FLOW_KEY) === '1') return 'normal';
+  return intent;
+}
+
 function send(payload) {
   const body = JSON.stringify(payload);
   if (navigator.sendBeacon) {
@@ -209,7 +220,7 @@ if (residentView && window.MutationObserver) {
 document.addEventListener('click', event => {
   const intent = event.target.closest('[data-intent]');
   if (intent) {
-    const feature = intent.dataset.intent || 'unknown';
+    const feature = userFacingIntent(intent.dataset.intent);
     startFlow(feature);
     track('intent_click', { feature });
     setTimeout(recordVisibleStep, 0);
