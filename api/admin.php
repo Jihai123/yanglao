@@ -39,6 +39,14 @@ function int_fields(array $row, array $keys): array
     return $row;
 }
 
+function add_conversion(array $row): array
+{
+    $starts = (int)($row['starts'] ?? 0);
+    $results = (int)($row['results'] ?? 0);
+    $row['conversion'] = $starts > 0 ? round(($results / $starts) * 100, 1) : 0.0;
+    return $row;
+}
+
 function dashboard_data(PDO $pdo): array
 {
     $pdo->exec("SET time_zone = '+08:00'");
@@ -131,54 +139,60 @@ function dashboard_data(PDO $pdo): array
     $sourceSql = "
         SELECT
             CASE WHEN source = '' THEN 'unknown' ELSE source END AS source,
-            COUNT(DISTINCT visitor_id) AS visitors,
-            COUNT(*) AS page_views
+            COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
+            COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS starts,
+            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS results
         FROM usage_event
-        WHERE event_name = 'page_view'
-          AND created_at >= CURDATE() - INTERVAL 29 DAY
+        WHERE created_at >= CURDATE() - INTERVAL 29 DAY
         GROUP BY CASE WHEN source = '' THEN 'unknown' ELSE source END
+        HAVING visitors > 0 OR starts > 0
         ORDER BY visitors DESC, source ASC
     ";
     $sources = array_map(static function (array $row): array {
-        return [
+        return add_conversion([
             'source' => (string)$row['source'],
             'visitors' => (int)$row['visitors'],
-            'page_views' => (int)$row['page_views'],
-        ];
+            'starts' => (int)$row['starts'],
+            'results' => (int)$row['results'],
+        ]);
     }, $pdo->query($sourceSql)->fetchAll());
 
     $deviceSql = "
         SELECT
             CASE WHEN device = '' THEN 'unknown' ELSE device END AS device,
-            COUNT(DISTINCT visitor_id) AS visitors
+            COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
+            COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS starts,
+            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS results
         FROM usage_event
-        WHERE event_name = 'page_view'
-          AND created_at >= CURDATE() - INTERVAL 29 DAY
+        WHERE created_at >= CURDATE() - INTERVAL 29 DAY
         GROUP BY CASE WHEN device = '' THEN 'unknown' ELSE device END
+        HAVING visitors > 0 OR starts > 0
         ORDER BY visitors DESC, device ASC
     ";
     $devices = array_map(static function (array $row): array {
-        return [
+        return add_conversion([
             'device' => (string)$row['device'],
             'visitors' => (int)$row['visitors'],
-        ];
+            'starts' => (int)$row['starts'],
+            'results' => (int)$row['results'],
+        ]);
     }, $pdo->query($deviceSql)->fetchAll());
 
     $funnelSql = "
         SELECT
             flow_start_event.feature,
             COUNT(DISTINCT flow_start_event.flow_id) AS starts,
-            COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'identity' THEN events.flow_id END) AS identity,
-            COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'status' THEN events.flow_id END) AS status_step,
-            COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'plan' THEN events.flow_id END) AS plan_step,
-            COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'amount' THEN events.flow_id END) AS amount_step,
-            COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'local' THEN events.flow_id END) AS local_step,
-            COUNT(DISTINCT CASE WHEN events.event_name = 'result_view' THEN events.flow_id END) AS results,
-            COUNT(DISTINCT CASE WHEN events.event_name = 'client_error' THEN events.flow_id END) AS error_flows
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'identity' THEN flow_event.flow_id END) AS identity,
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'status' THEN flow_event.flow_id END) AS status_step,
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'plan' THEN flow_event.flow_id END) AS plan_step,
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'amount' THEN flow_event.flow_id END) AS amount_step,
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'local' THEN flow_event.flow_id END) AS local_step,
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'result_view' THEN flow_event.flow_id END) AS results,
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'client_error' THEN flow_event.flow_id END) AS error_flows
         FROM usage_event flow_start_event
-        LEFT JOIN usage_event events
-          ON events.flow_id = flow_start_event.flow_id
-         AND events.created_at >= CURDATE() - INTERVAL 29 DAY
+        LEFT JOIN usage_event flow_event
+          ON flow_event.flow_id = flow_start_event.flow_id
+         AND flow_event.created_at >= CURDATE() - INTERVAL 29 DAY
         WHERE flow_start_event.event_name = 'flow_start'
           AND flow_start_event.flow_id <> ''
           AND flow_start_event.created_at >= CURDATE() - INTERVAL 29 DAY
@@ -197,8 +211,7 @@ function dashboard_data(PDO $pdo): array
             'results' => (int)$row['results'],
             'error_flows' => (int)$row['error_flows'],
         ];
-        $item['conversion'] = $item['starts'] > 0 ? round(($item['results'] / $item['starts']) * 100, 1) : 0.0;
-        return $item;
+        return add_conversion($item);
     }, $pdo->query($funnelSql)->fetchAll());
 
     $stepSql = "
