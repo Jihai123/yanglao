@@ -7,6 +7,8 @@ on:
       - 'index.html'
       - 'robots.txt'
       - 'sitemap.xml'
+      - '*.txt'
+      - 'scripts/**'
       - 'assets/**'
       - 'js/**'
       - 'api/**'
@@ -23,6 +25,8 @@ on:
       - 'index.html'
       - 'robots.txt'
       - 'sitemap.xml'
+      - '*.txt'
+      - 'scripts/**'
       - 'assets/**'
       - 'js/**'
       - 'api/**'
@@ -47,6 +51,8 @@ jobs:
           node-version: '22'
       - name: Run V2 tests
         run: npm run test:v2
+      - name: Check IndexNow script syntax
+        run: bash -n scripts/submit-indexnow.sh
       - name: Check browser modules syntax
         run: |
           node --check js/policy.js
