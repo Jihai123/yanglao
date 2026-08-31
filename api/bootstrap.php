@@ -31,9 +31,9 @@ function request_json(): array
 }
 
 $documentRoot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
-$defaultConfig = $documentRoot !== ''
-    ? dirname($documentRoot) . '/.yanglao-db.php'
-    : dirname(__DIR__, 2) . '/.yanglao-db.php';
+$insideConfig = $documentRoot !== '' ? $documentRoot . '/.yanglao-db.php' : '';
+$outsideConfig = $documentRoot !== '' ? dirname($documentRoot) . '/.yanglao-db.php' : dirname(__DIR__, 2) . '/.yanglao-db.php';
+$defaultConfig = ($insideConfig !== '' && is_file($insideConfig)) ? $insideConfig : $outsideConfig;
 $configFile = getenv('YANGLAO_DB_CONFIG') ?: $defaultConfig;
 
 if (!is_file($configFile)) {
