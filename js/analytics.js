@@ -1,8 +1,8 @@
 import './launch-polish.js?v=20260830-v5';
 
 const API = '/api/event.php';
-const VISITOR_KEY = 'yanglao-v6-visitor';
-const SESSION_KEY = 'yanglao-v6-session';
+const VISITOR_KEY = 'yanglao-v5-visitor';
+const SESSION_KEY = 'yanglao-v5-session';
 const FLOW_KEY = 'yanglao-v6-flow';
 const FLOW_FEATURE_KEY = 'yanglao-v6-flow-feature';
 const SOURCE_KEY = 'yanglao-v6-source';
@@ -163,9 +163,17 @@ function visibleStep() {
   return String(document.getElementById('stepBody')?.dataset.step || '');
 }
 
-function recordVisibleStep() {
+function visibleResidentStep() {
+  const resident = document.getElementById('residentView');
+  if (!resident || resident.classList.contains('hidden')) return '';
+  const text = String(resident.querySelector('.step-kicker')?.textContent || '');
+  const match = text.match(/第\s*(\d+)\s*\/\s*3\s*步/);
+  if (!match) return '';
+  return ({ 1: 'identity', 2: 'amount', 3: 'local' })[Number(match[1])] || '';
+}
+
+function recordStep(step) {
   const flow = currentFlowId();
-  const step = visibleStep();
   if (!flow || !step) return;
   const token = `${flow}:${step}`;
   if (token === lastStepToken) return;
@@ -173,11 +181,28 @@ function recordVisibleStep() {
   track('step_view', { feature: currentFlowFeature(), step });
 }
 
+function recordVisibleStep() {
+  recordStep(visibleStep());
+}
+
+function recordResidentStep() {
+  if (currentFlowFeature() !== 'resident') return;
+  recordStep(visibleResidentStep());
+}
+
 const stepBody = document.getElementById('stepBody');
 if (stepBody && window.MutationObserver) {
   new MutationObserver(recordVisibleStep).observe(stepBody, {
     attributes: true,
     attributeFilter: ['data-step'],
+  });
+}
+
+const residentView = document.getElementById('residentView');
+if (residentView && window.MutationObserver) {
+  new MutationObserver(recordResidentStep).observe(residentView, {
+    childList: true,
+    subtree: true,
   });
 }
 
@@ -193,6 +218,7 @@ document.addEventListener('click', event => {
   if (event.target.closest('#residentEntry')) {
     startFlow('resident');
     track('intent_click', { feature: 'resident' });
+    setTimeout(recordResidentStep, 0);
   }
 
   if (event.target.closest('#resumeBtn')) {
@@ -207,7 +233,14 @@ document.addEventListener('click', event => {
     setTimeout(recordVisibleStep, 0);
   }
 
+  if (event.target.closest('#residentNext')) {
+    const step = visibleResidentStep();
+    track('wizard_next', { feature: 'resident', step });
+    setTimeout(recordResidentStep, 0);
+  }
+
   if (event.target.closest('#backBtn')) setTimeout(recordVisibleStep, 0);
+  if (event.target.closest('#residentBack')) setTimeout(recordResidentStep, 0);
   if (event.target.closest('#homeBtn, #homeResultBtn')) track('home_click', { feature: 'home' });
 }, { capture: true });
 
@@ -219,15 +252,20 @@ window.addEventListener('yanglao:v4-result', event => {
 window.addEventListener('yanglao:track', event => {
   const detail = event.detail || {};
   const { event: name, ...params } = detail;
-  if (name) track(name, params);
+  if (!name) return;
+  if (name === 'resident_result') {
+    track('result_view', { feature: 'resident', step: 'result' });
+    return;
+  }
+  track(name, params);
 });
 
 window.addEventListener('error', () => {
-  track('client_error', { feature: 'javascript', step: visibleStep() });
+  track('client_error', { feature: 'javascript', step: visibleStep() || visibleResidentStep() });
 });
 
 window.addEventListener('unhandledrejection', () => {
-  track('client_error', { feature: 'promise', step: visibleStep() });
+  track('client_error', { feature: 'promise', step: visibleStep() || visibleResidentStep() });
 });
 
 track('page_view', { feature: 'home' });
