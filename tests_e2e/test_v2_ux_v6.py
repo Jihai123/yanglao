@@ -16,25 +16,29 @@ def test_ux_v6_month_input_category_help_and_product_promise():
 
         page.locator('[data-intent="age"]').click()
         birth = page.locator('[data-key="birth"]')
-        expect(birth).to_have_attribute('type', 'text')
-        expect(birth).to_have_attribute('placeholder', '例如 1983-01')
+        manual = page.locator('.v6-month-text')
+        expect(birth).to_have_attribute('type', 'month')
+        expect(manual).to_have_attribute('placeholder', '例如 1983-01')
         expect(page.locator('.v6-month-help')).to_contain_text('可以直接输入')
+        expect(page.locator('.v6-native-month-label')).to_contain_text('系统日期选择')
 
-        birth.fill('1983/1')
-        birth.press('Tab')
+        manual.fill('1983/1')
+        manual.press('Tab')
+        expect(manual).to_have_value('1983-01')
         expect(birth).to_have_value('1983-01')
 
         page.locator('.v6-month-choose').click()
         year = page.locator('.v6-picker-year')
         year.fill('1984')
         page.locator('[data-v6-month="9"]').click()
+        expect(manual).to_have_value('1984-09')
         expect(birth).to_have_value('1984-09')
 
         page.locator('[data-sex="female"]').click()
         expect(page.locator('[data-v6-category-help]')).to_have_count(1)
         expect(page.locator('[data-v6-category-help] summary')).to_contain_text('不知道怎么选？去哪里查')
         expect(page.locator('[data-v6-category-help]')).to_contain_text('12333')
-        expect(page.locator('[data-v6-category-help]')).to_contain_text('最终以当地经办机构核定为准')
+        expect(page.locator('[data-v6-category-help]')).to_contain_text('最终办理时间以当地经办机构核定为准')
 
         assert errors == []
         browser.close()
