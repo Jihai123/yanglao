@@ -106,10 +106,14 @@ function dashboard_data(PDO $pdo): array
     $trendRows = $pdo->query($trendSql)->fetchAll();
     $trendMap = [];
     foreach ($trendRows as $row) {
-        $trendMap[(string)$row['day']] = int_fields([
+        $trendMap[(string)$row['day']] = [
             'day' => (string)$row['day'],
-            ...$row,
-        ], ['visitors', 'started_flows', 'result_flows', 'result_visitors', 'page_views']);
+            'visitors' => (int)$row['visitors'],
+            'started_flows' => (int)$row['started_flows'],
+            'result_flows' => (int)$row['result_flows'],
+            'result_visitors' => (int)$row['result_visitors'],
+            'page_views' => (int)$row['page_views'],
+        ];
     }
     $trend = [];
     for ($offset = 6; $offset >= 0; $offset -= 1) {
@@ -162,23 +166,24 @@ function dashboard_data(PDO $pdo): array
 
     $funnelSql = "
         SELECT
-            starts.feature,
-            COUNT(DISTINCT starts.flow_id) AS starts,
+            flow_start_event.feature,
+            COUNT(DISTINCT flow_start_event.flow_id) AS starts,
             COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'identity' THEN events.flow_id END) AS identity,
             COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'status' THEN events.flow_id END) AS status_step,
             COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'plan' THEN events.flow_id END) AS plan_step,
             COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'amount' THEN events.flow_id END) AS amount_step,
+            COUNT(DISTINCT CASE WHEN events.event_name = 'step_view' AND events.step = 'local' THEN events.flow_id END) AS local_step,
             COUNT(DISTINCT CASE WHEN events.event_name = 'result_view' THEN events.flow_id END) AS results,
             COUNT(DISTINCT CASE WHEN events.event_name = 'client_error' THEN events.flow_id END) AS error_flows
-        FROM usage_event starts
+        FROM usage_event flow_start_event
         LEFT JOIN usage_event events
-          ON events.flow_id = starts.flow_id
+          ON events.flow_id = flow_start_event.flow_id
          AND events.created_at >= CURDATE() - INTERVAL 29 DAY
-        WHERE starts.event_name = 'flow_start'
-          AND starts.flow_id <> ''
-          AND starts.created_at >= CURDATE() - INTERVAL 29 DAY
-        GROUP BY starts.feature
-        ORDER BY starts DESC, starts.feature ASC
+        WHERE flow_start_event.event_name = 'flow_start'
+          AND flow_start_event.flow_id <> ''
+          AND flow_start_event.created_at >= CURDATE() - INTERVAL 29 DAY
+        GROUP BY flow_start_event.feature
+        ORDER BY starts DESC, flow_start_event.feature ASC
     ";
     $funnels = array_map(static function (array $row): array {
         $item = [
@@ -188,6 +193,7 @@ function dashboard_data(PDO $pdo): array
             'status' => (int)$row['status_step'],
             'plan' => (int)$row['plan_step'],
             'amount' => (int)$row['amount_step'],
+            'local' => (int)$row['local_step'],
             'results' => (int)$row['results'],
             'error_flows' => (int)$row['error_flows'],
         ];
