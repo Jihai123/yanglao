@@ -146,12 +146,13 @@
       sogou: '搜狗', '360': '360搜索', zhihu: '知乎', wechat: '微信', other: '其他', unknown: '旧数据/未知',
     };
     const deviceNames = { desktop: '电脑', mobile: '手机', tablet: '平板', unknown: '旧数据/未知' };
-    const stepNames = { identity: '身份', status: '参保状态', plan: '未来计划', amount: '金额信息', result: '结果' };
+    const stepNames = { identity: '身份', status: '参保状态', plan: '未来计划', amount: '金额信息', local: '当地标准', result: '结果' };
     const expectedSteps = {
       age: ['identity'],
       normal: ['identity', 'status', 'amount'],
       early: ['identity', 'status', 'plan', 'amount'],
       flex: ['identity', 'status', 'plan', 'amount'],
+      resident: ['identity', 'amount', 'local'],
     };
 
     const $ = id => document.getElementById(id);
@@ -221,7 +222,7 @@
       renderBars('deviceList', data.devices || [], 'device', 'visitors', deviceNames);
 
       const friction = data.step_friction || [];
-      const order = { identity: 1, status: 2, plan: 3, amount: 4 };
+      const order = { identity: 1, status: 2, plan: 3, amount: 4, local: 5 };
       friction.sort((a, b) => (order[a.step] || 99) - (order[b.step] || 99));
       $('frictionList').innerHTML = friction.length ? friction.map(row => {
         const retries = Math.max(0, Number(row.next_attempts || 0) - Number(row.next_flows || 0));
