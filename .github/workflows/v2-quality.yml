@@ -8,6 +8,7 @@ on:
       - 'assets/**'
       - 'js/**'
       - 'api/**'
+      - 'admin/**'
       - 'tests_js/**'
       - 'tests_e2e/**'
       - 'package.json'
@@ -21,6 +22,7 @@ on:
       - 'assets/**'
       - 'js/**'
       - 'api/**'
+      - 'admin/**'
       - 'tests_js/**'
       - 'tests_e2e/**'
       - 'package.json'
@@ -70,6 +72,7 @@ jobs:
             php -l api/bootstrap.php
             php -l api/feedback.php
             php -l api/event.php
+            php -l api/admin.php
           fi
 
   browser-smoke:
