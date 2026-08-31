@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - 'index.html'
+      - 'robots.txt'
+      - 'sitemap.xml'
       - 'assets/**'
       - 'js/**'
       - 'api/**'
@@ -19,6 +21,8 @@ on:
       - 'refactor/v2-retirement-planner'
     paths:
       - 'index.html'
+      - 'robots.txt'
+      - 'sitemap.xml'
       - 'assets/**'
       - 'js/**'
       - 'api/**'
