@@ -16,19 +16,25 @@ def test_analytics_a2_emits_flow_and_step_events():
             """
         )
         page.goto(BASE)
+        page.wait_for_function(
+            """() => (window.dataLayer || []).some(e => e.event === 'page_view' && e.app_version === 'v2-prod-20260831-a2')"""
+        )
+
         page.locator('[data-intent="normal"]').click()
         page.wait_for_function(
-            """() => window.__yanglaoEvents.some(e => e.event === 'step_view' && e.step === 'identity')"""
+            """() => (window.dataLayer || []).some(e => e.event === 'step_view' && e.step === 'identity')"""
         )
 
         events = page.evaluate("window.__yanglaoEvents")
+        data_layer = page.evaluate("window.dataLayer || []")
         starts = [e for e in events if e.get("event") == "flow_start" and e.get("feature") == "normal"]
         clicks = [e for e in events if e.get("event") == "intent_click" and e.get("feature") == "normal"]
         steps = [e for e in events if e.get("event") == "step_view" and e.get("step") == "identity"]
 
-        assert starts
-        assert clicks
-        assert steps
+        debug = {"events": events, "data_layer": data_layer}
+        assert starts, debug
+        assert clicks, debug
+        assert steps, debug
         flow_id = starts[-1]["flow_id"]
         assert flow_id
         assert clicks[-1]["flow_id"] == flow_id
