@@ -76,6 +76,7 @@ jobs:
           node --check js/launch-polish.js
           node --check js/analytics.js
           node --check js/feedback.js
+          node --check js/ux-v6.js
       - name: Check PHP API syntax when available
         run: |
           if command -v php >/dev/null 2>&1; then
