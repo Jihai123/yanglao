@@ -6,39 +6,37 @@ function normalizeMonthText(value) {
 
   let match = raw.match(/^(\d{4})[-/.年](\d{1,2})(?:月)?$/);
   if (!match) match = raw.match(/^(\d{4})(\d{2})$/);
-  if (!match) return raw;
+  if (!match) return null;
 
   const year = Number(match[1]);
   const month = Number(match[2]);
-  if (year < 1900 || year > 2100 || month < 1 || month > 12) return raw;
+  if (year < 1900 || year > 2100 || month < 1 || month > 12) return null;
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}`;
 }
 
-function setMonthValue(input, value) {
-  const normalized = normalizeMonthText(value);
-  input.value = normalized;
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
-}
+function enhanceMonthInput(source) {
+  if (!source || source.dataset.v6MonthEnhanced === '1') return;
+  source.dataset.v6MonthEnhanced = '1';
+  source.classList.add('v6-native-month');
 
-function enhanceMonthInput(input) {
-  if (!input || input.dataset.v6MonthEnhanced === '1') return;
-  input.dataset.v6MonthEnhanced = '1';
-
-  // The native month picker is inconsistent across browsers and hides the fact that
-  // users can type. Keep the same bound input, but make typing the primary interaction
-  // and provide a simple year + 12-month chooser as an explicit alternative.
-  input.type = 'text';
-  input.inputMode = 'numeric';
-  input.autocomplete = 'off';
-  input.maxLength = 7;
-  input.placeholder = '例如 1983-01';
-  input.classList.add('v6-month-text');
+  const editor = document.createElement('div');
+  editor.className = 'v6-month-editor';
+  source.parentNode.insertBefore(editor, source);
 
   const row = document.createElement('div');
   row.className = 'v6-month-row';
-  input.parentNode.insertBefore(row, input);
-  row.appendChild(input);
+  editor.appendChild(row);
+
+  const textInput = document.createElement('input');
+  textInput.type = 'text';
+  textInput.inputMode = 'numeric';
+  textInput.autocomplete = 'off';
+  textInput.maxLength = 8;
+  textInput.placeholder = '例如 1983-01';
+  textInput.className = 'v6-month-text';
+  textInput.value = source.value || '';
+  textInput.setAttribute('aria-label', '年月，可直接输入，例如1983-01');
+  row.appendChild(textInput);
 
   const choose = document.createElement('button');
   choose.type = 'button';
@@ -58,18 +56,46 @@ function enhanceMonthInput(input) {
     <div class="v6-month-grid" aria-label="选择月份">
       ${Array.from({ length: 12 }, (_, index) => `<button type="button" data-v6-month="${index + 1}">${index + 1}月</button>`).join('')}
     </div>`;
-  row.after(panel);
+  editor.appendChild(panel);
 
   const help = document.createElement('div');
   help.className = 'help v6-month-help';
   help.textContent = '可以直接输入“1983-01”（也支持 1983/1），或点“选择年月”；不用在日历里滚动找年份。';
-  panel.after(help);
+  editor.appendChild(help);
+
+  const nativeRow = document.createElement('div');
+  nativeRow.className = 'v6-native-month-row';
+  const nativeLabel = document.createElement('span');
+  nativeLabel.className = 'v6-native-month-label';
+  nativeLabel.textContent = '也可以使用系统日期选择：';
+  nativeRow.appendChild(nativeLabel);
+  nativeRow.appendChild(source);
+  editor.appendChild(nativeRow);
 
   const yearInput = panel.querySelector('.v6-picker-year');
   const close = panel.querySelector('.v6-month-close');
 
+  function applyValue(value) {
+    const normalized = normalizeMonthText(value);
+    if (normalized === null) {
+      textInput.classList.add('v6-input-error');
+      return false;
+    }
+    textInput.classList.remove('v6-input-error');
+    textInput.value = normalized;
+    source.value = normalized;
+    source.dispatchEvent(new Event('input', { bubbles: true }));
+    source.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }
+
+  function syncFromSource() {
+    textInput.value = source.value || '';
+    textInput.classList.remove('v6-input-error');
+  }
+
   function currentYear() {
-    const match = String(input.value || '').match(/^(\d{4})-/);
+    const match = String(textInput.value || source.value || '').match(/^(\d{4})-/);
     return match ? match[1] : String(new Date().getFullYear());
   }
 
@@ -95,8 +121,7 @@ function enhanceMonthInput(input) {
         return;
       }
       yearInput.classList.remove('v6-input-error');
-      setMonthValue(input, `${year}-${String(month).padStart(2, '0')}`);
-      setOpen(false);
+      if (applyValue(`${year}-${String(month).padStart(2, '0')}`)) setOpen(false);
     });
   });
 
@@ -105,13 +130,23 @@ function enhanceMonthInput(input) {
     yearInput.classList.remove('v6-input-error');
   });
 
-  input.addEventListener('blur', () => {
-    const normalized = normalizeMonthText(input.value);
-    if (normalized !== input.value) setMonthValue(input, normalized);
+  textInput.addEventListener('blur', () => {
+    applyValue(textInput.value);
   });
 
+  textInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyValue(textInput.value);
+      textInput.blur();
+    }
+  });
+
+  source.addEventListener('input', syncFromSource);
+  source.addEventListener('change', syncFromSource);
+
   document.addEventListener('click', event => {
-    if (!panel.hidden && !row.contains(event.target) && !panel.contains(event.target)) setOpen(false);
+    if (!panel.hidden && !editor.contains(event.target)) setOpen(false);
   });
 }
 
