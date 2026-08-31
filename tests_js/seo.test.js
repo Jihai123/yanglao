@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
+const indexNowKey = 'e191443aad6ec586a62dbc2c4fd1273e';
 
 async function text(path) {
   return readFile(new URL(path, root), 'utf8');
@@ -38,4 +39,14 @@ test('sitemap contains only the canonical public homepage for now', async () => 
 test('admin dashboard remains noindex', async () => {
   const admin = await text('admin/index.html');
   assert.match(admin, /<meta name="robots" content="noindex,nofollow" \/>/);
+});
+
+test('IndexNow key and submission script stay aligned', async () => {
+  const keyFile = await text(`${indexNowKey}.txt`);
+  const script = await text('scripts/submit-indexnow.sh');
+  assert.equal(keyFile.trim(), indexNowKey);
+  assert.match(script, new RegExp(`KEY="${indexNowKey}"`));
+  assert.match(script, /HOST="yanglao\.zhibeimao\.com"/);
+  assert.match(script, /https:\/\/api\.indexnow\.org\/indexnow/);
+  assert.match(script, /sitemap\.xml/);
 });
