@@ -2,6 +2,10 @@
   min-width: 0;
 }
 
+.v6-month-source-host {
+  position: relative;
+}
+
 .v6-month-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -102,26 +106,25 @@
   margin-top: 7px;
 }
 
-.v6-native-month-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  color: #7b8681;
-  font-size: 12px;
-}
-
-.v6-native-month-label {
-  flex: 0 0 auto;
-}
-
+/* Keep the original month input only as the bound data source for the legacy
+   calculator. It remains technically present for compatibility, but users see
+   only the friendly editor above. */
 .v6-native-month {
-  width: min(210px, 100%);
-  min-width: 0;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  color: #5e6c66;
-  background: #fafbf9;
+  position: absolute !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
 }
 
 .v6-input-error {
@@ -146,6 +149,52 @@
 .v6-category-help-body ol {
   margin: 7px 0 9px;
   padding-left: 20px;
+}
+
+/* Female-category uncertainty result: present the two legal-retirement
+   possibilities as distinct result cards instead of unstyled inline text. */
+.dual-age-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.age-result-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label age"
+    "label date";
+  gap: 3px 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid #d7e3de;
+  border-radius: 15px;
+  background: #fffdf9;
+  box-shadow: 0 8px 22px rgba(54, 72, 63, .045);
+}
+
+.age-result-card > span {
+  grid-area: label;
+  color: #455a51;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.age-result-card > strong {
+  grid-area: age;
+  color: #173f38;
+  font-size: 21px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.age-result-card > em {
+  grid-area: date;
+  color: #66756f;
+  font-size: 13px;
+  font-style: normal;
+  text-align: right;
 }
 
 .v6-mission {
@@ -200,12 +249,12 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .v6-native-month-row {
-    display: grid;
-    gap: 5px;
+  .age-result-card {
+    padding: 14px 15px;
+    gap: 3px 10px;
   }
 
-  .v6-native-month {
-    width: 100%;
+  .age-result-card > strong {
+    font-size: 19px;
   }
 }
