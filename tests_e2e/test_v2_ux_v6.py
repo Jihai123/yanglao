@@ -20,7 +20,8 @@ def test_ux_v6_month_input_category_help_and_product_promise():
         expect(birth).to_have_attribute('type', 'month')
         expect(manual).to_have_attribute('placeholder', '例如 1983-01')
         expect(page.locator('.v6-month-help')).to_contain_text('可以直接输入')
-        expect(page.locator('.v6-native-month-label')).to_contain_text('系统日期选择')
+        expect(page.locator('.v6-native-month-label')).to_have_count(0)
+        assert page.evaluate("getComputedStyle(document.querySelector('[data-key=\"birth\"]')).opacity") == '0'
 
         manual.fill('1983/1')
         manual.press('Tab')
@@ -39,6 +40,16 @@ def test_ux_v6_month_input_category_help_and_product_promise():
         expect(page.locator('[data-v6-category-help] summary')).to_contain_text('不知道怎么选？去哪里查')
         expect(page.locator('[data-v6-category-help]')).to_contain_text('12333')
         expect(page.locator('[data-v6-category-help]')).to_contain_text('最终办理时间以当地经办机构核定为准')
+
+        page.locator('[data-female-category="unsure"]').click()
+        page.locator('#nextBtn').click()
+        expect(page.locator('#resultView')).to_be_visible()
+        cards = page.locator('.age-result-card')
+        expect(cards).to_have_count(2)
+        expect(cards.nth(0)).to_contain_text('原50岁口径')
+        expect(cards.nth(1)).to_contain_text('原55岁口径')
+        assert page.evaluate("getComputedStyle(document.querySelector('.age-result-card')).borderTopStyle") == 'solid'
+        assert page.evaluate("getComputedStyle(document.querySelector('.dual-age-grid')).display") == 'grid'
 
         assert errors == []
         browser.close()
