@@ -18,6 +18,9 @@ function enhanceMonthInput(source) {
   if (!source || source.dataset.v6MonthEnhanced === '1') return;
   source.dataset.v6MonthEnhanced = '1';
   source.classList.add('v6-native-month');
+  source.parentElement?.classList.add('v6-month-source-host');
+  source.tabIndex = -1;
+  source.setAttribute('aria-hidden', 'true');
 
   const editor = document.createElement('div');
   editor.className = 'v6-month-editor';
@@ -62,15 +65,6 @@ function enhanceMonthInput(source) {
   help.className = 'help v6-month-help';
   help.textContent = '可以直接输入“1983-01”（也支持 1983/1），或点“选择年月”；不用在日历里滚动找年份。';
   editor.appendChild(help);
-
-  const nativeRow = document.createElement('div');
-  nativeRow.className = 'v6-native-month-row';
-  const nativeLabel = document.createElement('span');
-  nativeLabel.className = 'v6-native-month-label';
-  nativeLabel.textContent = '也可以使用系统日期选择：';
-  nativeRow.appendChild(nativeLabel);
-  nativeRow.appendChild(source);
-  editor.appendChild(nativeRow);
 
   const yearInput = panel.querySelector('.v6-picker-year');
   const close = panel.querySelector('.v6-month-close');
