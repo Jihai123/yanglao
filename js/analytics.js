@@ -7,7 +7,7 @@ const FLOW_KEY = 'yanglao-v6-flow';
 const FLOW_FEATURE_KEY = 'yanglao-v6-flow-feature';
 const SOURCE_KEY = 'yanglao-v6-source';
 const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
-const APP_VERSION = 'v2-prod-20260831-a2';
+const APP_VERSION = 'v2-prod-20260902-d1';
 
 let volatileVisitor = '';
 let volatileSession = '';
@@ -114,10 +114,6 @@ function setFlow(id, feature) {
 
 function userFacingIntent(internalIntent) {
   const intent = String(internalIntent || 'unknown');
-  // hotfix-v5 temporarily changes the normal pension-amount entry to "flex" so it
-  // can reuse the planning-capable engine. The hotfix sets this marker before this
-  // listener runs. Analytics must describe what the user actually chose, not the
-  // internal compatibility route. A real flex click clears the marker first.
   if (intent === 'flex' && safeGet(localStorage, NORMAL_AMOUNT_FLOW_KEY) === '1') return 'normal';
   return intent;
 }
@@ -150,11 +146,16 @@ export function track(event, params = {}) {
     device: deviceType(),
     page: location.pathname,
     app_version: APP_VERSION,
+    reason_code: String(params.reason_code || '').slice(0, 48),
+    error_type: String(params.error_type || '').slice(0, 32),
+    script_name: String(params.script_name || '').slice(0, 96),
+    line_no: Math.max(0, Number(params.line_no) || 0),
+    column_no: Math.max(0, Number(params.column_no) || 0),
   };
 
   window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({ ...payload, ...params, ts: Date.now() });
-  window.dispatchEvent(new CustomEvent('yanglao:analytics', { detail: { ...payload, ...params } }));
+  window.dataLayer.push({ ...payload, ts: Date.now() });
+  window.dispatchEvent(new CustomEvent('yanglao:analytics', { detail: payload }));
   send(payload);
   return payload;
 }
@@ -201,6 +202,56 @@ function recordResidentStep() {
   recordStep(visibleResidentStep());
 }
 
+function validationReason(message) {
+  const text = String(message || '');
+  if (!text) return '';
+  if (text.includes('出生年月不能晚于当前月份') || text.includes('出生年月')) return 'invalid_birth';
+  if (text.includes('女性退休口径不确定')) return 'uncertain_female_category';
+  if (text.includes('累计缴费年数') || text.includes('累计缴费年限')) return 'invalid_paid_years';
+  if (text.includes('累计缴费月数')) return 'invalid_paid_months';
+  if (text.includes('个人账户余额')) return 'missing_account';
+  if (text.includes('视同缴费月数')) return 'invalid_deemed_months';
+  if (text.includes('停止工作年龄不能早于')) return 'invalid_stop_age';
+  if (text.includes('停止工作年龄不能晚于')) return 'stop_after_retirement';
+  if (text.includes('缴费时间超过了到退休前')) return 'future_months_exceed_window';
+  if (text.includes('现在的养老保险月缴费基数')) return 'missing_current_base';
+  if (text.includes('灵活就业缴费基数')) return 'missing_flex_base';
+  if (text.includes('开始、结束年月填完整') || text.includes('至少填写一段历史缴费')) return 'history_incomplete';
+  if (text.includes('历史缴费结束年月不能早于')) return 'history_invalid_range';
+  if (text.includes('历史缴费结束年月不能晚于')) return 'history_future_range';
+  if (text.includes('每一段的月缴费基数')) return 'history_missing_base';
+  if (text.includes('历史缴费时间段不能重叠')) return 'history_overlap';
+  if (text.includes('历史分段合计')) return 'history_mismatch';
+  if (text.includes('平均缴费工资指数')) return 'invalid_avg_index';
+  if (text.includes('计发基准')) return 'missing_calc_base';
+  if (text.includes('视同缴费年限') && text.includes('过渡性养老金')) return 'missing_transition_info';
+  if (text.includes('年度缴费金额')) return 'invalid_resident_contribution';
+  if (text.includes('未来缴费年数')) return 'invalid_resident_future_years';
+  return 'invalid_input';
+}
+
+function recordValidationError(resident = false) {
+  const node = resident ? document.getElementById('residentError') : document.getElementById('stepError');
+  if (!node || node.classList.contains('hidden')) return;
+  const reason = validationReason(node.textContent);
+  if (!reason) return;
+  track('validation_error', {
+    feature: resident ? 'resident' : currentFlowFeature(),
+    step: resident ? visibleResidentStep() : visibleStep(),
+    reason_code: reason,
+  });
+}
+
+function safeScriptName(filename) {
+  if (!filename) return '';
+  try {
+    const path = new URL(filename, location.href).pathname;
+    return path.split('/').filter(Boolean).pop() || '';
+  } catch {
+    return '';
+  }
+}
+
 const stepBody = document.getElementById('stepBody');
 if (stepBody && window.MutationObserver) {
   new MutationObserver(recordVisibleStep).observe(stepBody, {
@@ -241,13 +292,13 @@ document.addEventListener('click', event => {
   if (event.target.closest('#nextBtn')) {
     const step = String(document.getElementById('stepBody')?.dataset.step || '');
     track('wizard_next', { feature: currentFlowFeature(), step });
-    setTimeout(recordVisibleStep, 0);
+    setTimeout(() => { recordVisibleStep(); recordValidationError(false); }, 0);
   }
 
   if (event.target.closest('#residentNext')) {
     const step = visibleResidentStep();
     track('wizard_next', { feature: 'resident', step });
-    setTimeout(recordResidentStep, 0);
+    setTimeout(() => { recordResidentStep(); recordValidationError(true); }, 0);
   }
 
   if (event.target.closest('#backBtn')) setTimeout(recordVisibleStep, 0);
@@ -271,12 +322,23 @@ window.addEventListener('yanglao:track', event => {
   track(name, params);
 });
 
-window.addEventListener('error', () => {
-  track('client_error', { feature: 'javascript', step: visibleStep() || visibleResidentStep() });
+window.addEventListener('error', event => {
+  track('client_error', {
+    feature: currentFlowFeature() || 'unknown',
+    step: visibleStep() || visibleResidentStep(),
+    error_type: 'javascript_error',
+    script_name: safeScriptName(event.filename),
+    line_no: event.lineno,
+    column_no: event.colno,
+  });
 });
 
 window.addEventListener('unhandledrejection', () => {
-  track('client_error', { feature: 'promise', step: visibleStep() || visibleResidentStep() });
+  track('client_error', {
+    feature: currentFlowFeature() || 'unknown',
+    step: visibleStep() || visibleResidentStep(),
+    error_type: 'unhandled_rejection',
+  });
 });
 
 track('page_view', { feature: 'home' });
