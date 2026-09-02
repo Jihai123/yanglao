@@ -39,6 +39,8 @@ def test_homepage_has_clear_single_line_value_proposition_and_hierarchy(browser)
     assert '<br' not in page.locator('.hero h1').inner_html().lower()
     expect(page.locator('.primary-intent')).to_have_count(2)
     expect(page.locator('#feedbackWall')).to_be_visible()
+    expect(page.locator('#releaseNotes')).to_be_visible()
+    expect(page.locator('#releaseNotes')).to_contain_text('v2.3')
     assert errors == []
     page.close()
 
@@ -62,19 +64,23 @@ def test_account_balance_has_lookup_help(browser):
     page.close()
 
 
-def test_plan_offers_dynamic_minimum_contribution_option_and_no_fake_flex_4000(browser):
+def test_plan_moves_future_base_choice_to_amount_and_offers_verified_minimum(browser):
     page, errors = new_page(browser)
     page.locator('[data-intent="early"]').click()
     page.locator('#nextBtn').click()
     page.locator('#nextBtn').click()
     expect(page.locator('[data-contribution-plan="to_minimum"]')).to_be_visible()
     expect(page.locator('#stepBody')).to_contain_text('缴够最低要求就停')
-    expect(page.locator('[data-flex-base-mode="unknown"]')).to_be_visible()
-    expect(page.locator('[data-key="flexMonthlyContributionBase"]')).to_have_count(0)
-    page.locator('[data-flex-base-mode="custom"]').click()
-    flex_input = page.locator('[data-key="flexMonthlyContributionBase"]')
-    expect(flex_input).to_be_visible()
-    assert flex_input.input_value() == ''
+    expect(page.locator('[data-flex-base-mode="unknown"]')).to_have_count(0)
+    expect(page.locator('#stepBody')).to_contain_text('下一步结合地区标准选择')
+
+    page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    page.locator('#regionSelect').select_option('beijing')
+    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_be_visible()
+    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_contain_text('7,270')
+    expect(page.locator('[data-v23-flex-mode="custom"]')).to_be_visible()
+    expect(page.locator('#stepBody')).not_to_contain_text('还没决定')
     assert errors == []
     page.close()
 
@@ -111,13 +117,13 @@ def test_valid_shaanxi_plan_shows_breakdown_and_multi_year_comparison(browser):
     page.locator('[data-intent="early"]').click()
     page.locator('#nextBtn').click()  # identity -> status
     page.locator('#nextBtn').click()  # status -> plan
-    page.locator('[data-flex-base-mode="custom"]').click()
-    flex = page.locator('[data-key="flexMonthlyContributionBase"]')
-    flex.fill('4000')
-    flex.dispatch_event('change')
     page.locator('#nextBtn').click()  # plan -> amount
 
     page.locator('#regionSelect').select_option('shaanxi')
+    future = page.locator('[data-v23-flex-custom-input]')
+    expect(future).to_be_visible()
+    future.fill('4000')
+    future.dispatch_event('input')
     current_base = page.locator('[data-key="monthlyContributionBase"]')
     current_base.fill('8000')
     current_base.dispatch_event('change')
