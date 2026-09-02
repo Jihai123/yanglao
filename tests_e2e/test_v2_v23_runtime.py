@@ -79,6 +79,12 @@ def test_v23_missing_current_base_highlights_and_focuses_field(browser):
     expect(current).to_have_attribute('aria-invalid', 'true')
     assert 'v23-field-error' in (current.locator('xpath=..').get_attribute('class') or '')
     expect(page.locator('#stepError')).to_contain_text('请填写现在的养老保险月缴费基数')
+
+    current.fill('8000')
+    current.dispatch_event('change')
+    expect(current).not_to_have_attribute('aria-invalid', 'true')
+    expect(page.locator('#stepError')).to_have_count(0)
+    assert 'v23-field-error' not in (current.locator('xpath=..').get_attribute('class') or '')
     assert errors == []
     page.close()
 
