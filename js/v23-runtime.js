@@ -94,6 +94,24 @@ function clearFieldError(target) {
   field?.querySelector('.v23-inline-error[data-runtime-error]')?.remove();
 }
 
+function clearResolvedStepError(target) {
+  const error = document.getElementById('stepError');
+  if (!error || !target?.matches) return;
+  const text = String(error.textContent || '');
+  let resolved = false;
+  if (target.matches('[data-key="monthlyContributionBase"]') && text.includes('现在的养老保险月缴费基数')) {
+    resolved = Number(target.value) > 0;
+  } else if (target.matches('[data-v23-flex-custom-input]') && text.includes('灵活就业缴费基数')) {
+    resolved = Number(target.value) > 0;
+  } else if (target.matches('[data-key="currentCalcBase"]') && text.includes('计发基准')) {
+    resolved = Number(target.value) > 0;
+  } else if (target.matches('[data-key="avgIndex"]') && text.includes('平均缴费工资指数')) {
+    const value = Number(target.value);
+    resolved = value >= 0.3 && value <= 3;
+  }
+  if (resolved) error.remove();
+}
+
 function markFieldError(target, message) {
   if (!target) return null;
   const field = target.closest('.field') || target;
@@ -130,20 +148,26 @@ function enhanceStepError() {
   const text = String(error.textContent || '');
   let primary = null;
   if (text.includes('现在的养老保险月缴费基数')) {
-    primary = markFieldError(document.querySelector('[data-key="monthlyContributionBase"]'), '这里填“缴费基数”，不是每月实际扣款金额。');
+    const input = document.querySelector('[data-key="monthlyContributionBase"]');
+    if (!(Number(input?.value) > 0)) primary = markFieldError(input, '这里填“缴费基数”，不是每月实际扣款金额。');
   } else if (text.includes('灵活就业缴费基数')) {
-    primary = markFieldError(document.querySelector('[data-v23-flex-custom-input]'), '未来基数还未填写。');
+    const input = document.querySelector('[data-v23-flex-custom-input]');
+    if (!(Number(input?.value) > 0)) primary = markFieldError(input, '未来基数还未填写。');
   } else if (text.includes('计发基准')) {
     const input = document.querySelector('[data-key="currentCalcBase"]');
-    const details = input?.closest('details');
-    if (details) details.open = true;
-    primary = markFieldError(input, '请填写当地人社公布的养老金计发基准。');
-    if (!error.dataset.v23Rewritten) {
-      error.textContent = '这个地区暂未收录可自动带入的计发基准。请填写“当前养老金计发基准”；如果只想看退休资格，可切换为“只看资格”。';
-      error.dataset.v23Rewritten = '1';
+    if (!(Number(input?.value) > 0)) {
+      const details = input?.closest('details');
+      if (details) details.open = true;
+      primary = markFieldError(input, '请填写当地人社公布的养老金计发基准。');
+      if (!error.dataset.v23Rewritten) {
+        error.textContent = '这个地区暂未收录可自动带入的计发基准。请填写“当前养老金计发基准”；如果只想看退休资格，可切换为“只看资格”。';
+        error.dataset.v23Rewritten = '1';
+      }
     }
   } else if (text.includes('平均缴费工资指数')) {
-    primary = markFieldError(document.querySelector('[data-key="avgIndex"]'), '请输入 0.3 到 3 之间的指数。');
+    const input = document.querySelector('[data-key="avgIndex"]');
+    const value = Number(input?.value);
+    if (!(value >= 0.3 && value <= 3)) primary = markFieldError(input, '请输入 0.3 到 3 之间的指数。');
   }
 
   const issues = currentAmountIssues();
@@ -262,6 +286,7 @@ function injectFutureBaseChoice() {
     sessionSet(FLEX_MODE_USER_KEY, 'custom');
     applyFutureBase(value);
     clearFieldError(event.target);
+    clearResolvedStepError(event.target);
   });
 }
 
@@ -385,10 +410,17 @@ document.addEventListener('click', event => {
 }, true);
 
 document.addEventListener('input', event => {
-  if (event.target.matches('input,textarea')) clearFieldError(event.target);
+  if (event.target.matches('input,textarea')) {
+    clearFieldError(event.target);
+    clearResolvedStepError(event.target);
+  }
 }, true);
 document.addEventListener('change', event => {
-  if (event.target.matches('input,select,textarea')) clearFieldError(event.target);
+  if (event.target.matches('input,select,textarea')) {
+    clearFieldError(event.target);
+    clearResolvedStepError(event.target);
+    if (event.target.matches('[data-key="currentCalcBase"]')) surfaceCalcBaseRequirement();
+  }
 }, true);
 
 const observer = new MutationObserver(() => {
