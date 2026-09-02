@@ -30,7 +30,6 @@ CREATE TABLE IF NOT EXISTS usage_event (
   column_no INT UNSIGNED NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  KEY idx_feedback_status_created (status, created_at),
   KEY idx_usage_created (created_at),
   KEY idx_usage_event_created (event_name, created_at),
   KEY idx_usage_feature_created (feature, created_at),
