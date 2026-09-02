@@ -51,6 +51,8 @@ jobs:
           node-version: '22'
       - name: Run V2 tests
         run: npm run test:v2
+      - name: Check regional parameter audit
+        run: node scripts/audit-region-parameters.mjs
       - name: Check IndexNow script syntax
         run: bash -n scripts/submit-indexnow.sh
       - name: Check browser modules syntax
@@ -63,6 +65,7 @@ jobs:
           node --check js/employee-v3.js
           node --check js/employee-v4.js
           node --check js/hotfix-v5.js
+          node --check js/v23-runtime.js
           node --check js/sources.js
           node --check js/sources-v4.js
           node --check js/trust.js
