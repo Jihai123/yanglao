@@ -84,6 +84,7 @@ jobs:
             php -l api/feedback.php
             php -l api/event.php
             php -l api/admin.php
+            php -l api/diagnostics.php
             php -l scripts/migrate-analytics-v2.php
           fi
 
