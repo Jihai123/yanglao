@@ -86,6 +86,7 @@ jobs:
             php -l api/admin.php
             php -l api/diagnostics.php
             php -l scripts/migrate-analytics-v2.php
+            php -l scripts/migrate-analytics-diagnostics.php
           fi
 
   browser-smoke:
