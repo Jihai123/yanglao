@@ -77,7 +77,6 @@ def test_v23_missing_current_base_highlights_and_focuses_field(browser):
 
     current = page.locator('[data-key="monthlyContributionBase"]')
     expect(current).to_have_attribute('aria-invalid', 'true')
-    expect(current.locator('xpath=..')).to_have_class(pytest.approx) if False else None
     assert 'v23-field-error' in (current.locator('xpath=..').get_attribute('class') or '')
     expect(page.locator('#stepError')).to_contain_text('请填写现在的养老保险月缴费基数')
     assert errors == []
