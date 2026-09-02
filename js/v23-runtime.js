@@ -5,6 +5,7 @@ const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
 const AFTER_STOP_MODE_KEY = 'yanglao-v23-after-stop-mode';
 const CONTRIBUTION_PLAN_KEY = 'yanglao-v23-contribution-plan';
 const FLEX_MODE_KEY = 'yanglao-v23-flex-mode';
+const FLEX_MODE_USER_KEY = 'yanglao-v23-flex-mode-user';
 const FLEX_CUSTOM_KEY = 'yanglao-v23-flex-custom-base';
 const PUBLIC_VERSION = 'v2.3';
 
@@ -220,12 +221,15 @@ function injectFutureBaseChoice() {
 
   const region = getRegionV4(regionSelect.value || 'other');
   const hasMinimum = Boolean(region.contribution?.current && Number(region.contribution?.min) > 0);
+  const customSaved = sessionGet(FLEX_CUSTOM_KEY) || String(savedPlan()?.flexMonthlyContributionBase || '');
+  const userMode = sessionGet(FLEX_MODE_USER_KEY);
   let mode = sessionGet(FLEX_MODE_KEY);
   if (mode !== 'minimum' && mode !== 'custom') mode = hasMinimum ? 'minimum' : 'custom';
-  if (mode === 'minimum' && !hasMinimum) mode = 'custom';
+  if (!hasMinimum) mode = 'custom';
+  else if (userMode !== 'custom' && !(Number(customSaved) > 0)) mode = 'minimum';
+  else if (userMode === 'custom') mode = 'custom';
   sessionSet(FLEX_MODE_KEY, mode);
 
-  const customSaved = sessionGet(FLEX_CUSTOM_KEY) || String(savedPlan()?.flexMonthlyContributionBase || '');
   if (mode === 'minimum') applyFutureBase(region.contribution.min);
   else applyFutureBase(customSaved);
 
@@ -245,6 +249,7 @@ function injectFutureBaseChoice() {
   wrapper.querySelectorAll('[data-v23-flex-mode]').forEach(button => button.addEventListener('click', () => {
     const nextMode = button.dataset.v23FlexMode;
     sessionSet(FLEX_MODE_KEY, nextMode);
+    sessionSet(FLEX_MODE_USER_KEY, nextMode);
     if (nextMode === 'minimum') applyFutureBase(region.contribution.min);
     else applyFutureBase(sessionGet(FLEX_CUSTOM_KEY));
     wrapper.remove();
@@ -254,6 +259,7 @@ function injectFutureBaseChoice() {
   wrapper.querySelector('[data-v23-flex-custom-input]')?.addEventListener('input', event => {
     const value = Number(event.target.value);
     sessionSet(FLEX_CUSTOM_KEY, Number.isFinite(value) && value > 0 ? value : '');
+    sessionSet(FLEX_MODE_USER_KEY, 'custom');
     applyFutureBase(value);
     clearFieldError(event.target);
   });
@@ -264,7 +270,13 @@ function surfaceCalcBaseRequirement() {
   if (!body || !body.querySelector('[data-amount-mode="estimate"].active')) return;
   const calcBase = body.querySelector('[data-key="currentCalcBase"]');
   const regionField = body.querySelector('#regionSelect')?.closest('.field');
-  if (!calcBase || !regionField || Number(calcBase.value) > 0 || regionField.querySelector('[data-v23-calc-warning]')) return;
+  if (!calcBase || !regionField) return;
+  const existing = regionField.querySelector('[data-v23-calc-warning]');
+  if (Number(calcBase.value) > 0) {
+    existing?.remove();
+    return;
+  }
+  if (existing) return;
   const warning = document.createElement('div');
   warning.className = 'v23-warning';
   warning.dataset.v23CalcWarning = '1';
@@ -300,7 +312,6 @@ function unlockResultButton() {
 }
 
 function emitLocalValidation(reasonCode) {
-  window.dispatchEvent(new CustomEvent('yanglao:track', { detail: { event: 'wizard_next', step: 'amount' } }));
   window.dispatchEvent(new CustomEvent('yanglao:track', { detail: { event: 'validation_error', step: 'amount', reason_code: reasonCode } }));
 }
 
@@ -322,6 +333,7 @@ function resetFlowRuntime() {
   sessionSet(AFTER_STOP_MODE_KEY, '');
   sessionSet(CONTRIBUTION_PLAN_KEY, '');
   sessionSet(FLEX_MODE_KEY, '');
+  sessionSet(FLEX_MODE_USER_KEY, '');
   sessionSet(FLEX_CUSTOM_KEY, '');
   unlockResultButton();
 }
@@ -337,6 +349,7 @@ document.addEventListener('click', event => {
       sessionSet(AFTER_STOP_MODE_KEY, 'flex');
       sessionSet(CONTRIBUTION_PLAN_KEY, 'to_minimum');
       sessionSet(FLEX_MODE_KEY, '');
+      sessionSet(FLEX_MODE_USER_KEY, '');
       sessionSet(FLEX_CUSTOM_KEY, '');
     }
   }
@@ -345,6 +358,7 @@ document.addEventListener('click', event => {
     sessionSet(AFTER_STOP_MODE_KEY, 'same');
     sessionSet(CONTRIBUTION_PLAN_KEY, 'continuous_to_claim');
     sessionSet(FLEX_MODE_KEY, '');
+    sessionSet(FLEX_MODE_USER_KEY, '');
     sessionSet(FLEX_CUSTOM_KEY, '');
   }
 
