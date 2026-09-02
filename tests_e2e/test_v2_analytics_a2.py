@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 
 BASE = "http://127.0.0.1:8765/index.html"
-APP_VERSION = "v2-prod-20260902-d1"
+APP_VERSION = "v2-prod-20260902-d2"
 
 
 def test_analytics_a2_emits_flow_and_step_events():
