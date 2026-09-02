@@ -48,18 +48,21 @@ test('usage event schema and migrations support diagnostics dimensions', async (
   assert.match(diagnosticsMigration, /diagnostics_column_exists/);
 });
 
-test('admin diagnostics endpoint exposes validation and client error aggregates', async () => {
-  const php = await read('api/diagnostics.php');
+test('admin diagnostics action exposes validation and client error aggregates', async () => {
+  const php = await read('api/admin.php');
   for (const key of ['reason_code', 'validation_error', 'client_error', 'next_attempts', 'validation_attempts', 'seven_days']) {
     assert.match(php, new RegExp(key));
   }
+  assert.match(php, /\$_GET\['action'\]/);
+  assert.match(php, /=== 'diagnostics'/);
 });
 
 test('admin dashboard exposes failure diagnostics without form data', async () => {
   const html = await read('admin/index.html');
   assert.match(html, /测算失败诊断/);
-  assert.match(html, /DIAGNOSTICS_API/);
+  assert.match(html, /DIAGNOSTICS_API='\/api\/admin\.php\?action=diagnostics'/);
   assert.match(html, /validation_attempts/);
+  assert.doesNotMatch(html, /diagnostics\.php/);
   assert.doesNotMatch(html, /currentAccount|monthlyContributionBase|paidYears/);
 });
 
