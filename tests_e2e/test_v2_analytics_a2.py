@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 
 BASE = "http://127.0.0.1:8765/index.html"
+APP_VERSION = "v2-prod-20260902-d1"
 
 
 def test_analytics_a2_emits_flow_and_step_events():
@@ -17,7 +18,7 @@ def test_analytics_a2_emits_flow_and_step_events():
         )
         page.goto(BASE)
         page.wait_for_function(
-            """() => (window.dataLayer || []).some(e => e.event === 'page_view' && e.app_version === 'v2-prod-20260831-a2')"""
+            f"""() => (window.dataLayer || []).some(e => e.event === 'page_view' && e.app_version === '{APP_VERSION}')"""
         )
 
         page.locator('[data-intent="normal"]').click()
@@ -41,7 +42,7 @@ def test_analytics_a2_emits_flow_and_step_events():
         assert steps[-1]["flow_id"] == flow_id
         assert starts[-1]["source"] == "direct"
         assert starts[-1]["device"] in {"desktop", "mobile", "tablet"}
-        assert starts[-1]["app_version"] == "v2-prod-20260831-a2"
+        assert starts[-1]["app_version"] == APP_VERSION
 
         visitor = page.evaluate("localStorage.getItem('yanglao-v5-visitor')")
         assert visitor
