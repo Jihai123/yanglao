@@ -7,17 +7,32 @@ const read = path => readFile(new URL(path, root), 'utf8');
 
 test('analytics records only diagnostic buckets and flow identifiers', async () => {
   const source = await read('js/analytics.js');
-  assert.match(source, /APP_VERSION = 'v2-prod-20260902-d1'/);
+  assert.match(source, /APP_VERSION = 'v2-prod-20260902-d2'/);
   for (const field of ['flow_id', 'source', 'device', 'step', 'reason_code', 'error_type', 'script_name', 'line_no', 'column_no']) {
     assert.match(source, new RegExp(`${field}:`));
   }
   for (const event of ['flow_start', 'step_view', 'validation_error', 'client_error']) {
     assert.match(source, new RegExp(`'${event}'`));
   }
+  assert.match(source, /#continuePlanBtn/);
+  assert.match(source, /currentFlowFeature\(\)/);
   assert.match(source, /validationReason/);
   assert.match(source, /safeScriptName/);
   assert.match(source, /return 'mobile'/);
   assert.doesNotMatch(source, /params\.message|params\.stack|event\.message|event\.reason/);
+});
+
+test('v2.3 runtime removes ambiguous future base choice and guards result re-entry', async () => {
+  const source = await read('js/v23-runtime.js');
+  assert.match(source, /PUBLIC_VERSION = 'v2\.3'/);
+  assert.match(source, /按当地最低标准/);
+  assert.match(source, /我自己填写未来缴费基数/);
+  assert.match(source, /forceLegacyFlexModeCustom/);
+  assert.match(source, /resultSubmitting/);
+  assert.match(source, /正在计算/);
+  assert.match(source, /v23-field-error/);
+  assert.match(source, /版本与更新记录/);
+  assert.doesNotMatch(source, /data-flex-base-mode="unknown"/);
 });
 
 test('event API accepts diagnostics and persists safe fields only', async () => {
@@ -66,8 +81,9 @@ test('admin dashboard exposes failure diagnostics without form data', async () =
   assert.doesNotMatch(html, /currentAccount|monthlyContributionBase|paidYears/);
 });
 
-test('homepage loads cache-busted diagnostics analytics and discloses anonymous diagnostics', async () => {
+test('homepage loads v2.3 runtime and cache-busted diagnostics analytics', async () => {
   const html = await read('index.html');
-  assert.match(html, /analytics\.js\?v=20260902-d1/);
+  assert.match(html, /v23-runtime\.js\?v=20260902-v23/);
+  assert.match(html, /analytics\.js\?v=20260902-d2/);
   assert.match(html, /访问来源类别、设备类别、所选功能、测算步骤和是否到达结果/);
 });
