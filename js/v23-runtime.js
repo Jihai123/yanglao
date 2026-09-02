@@ -41,11 +41,14 @@ function installStyles() {
     .v23-warning { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #fff4ef; color: #8c4738; line-height: 1.55; }
     .v23-warning button { margin-left: 6px; border: 0; background: transparent; color: #0f675b; font-weight: 700; cursor: pointer; }
     .v23-future-base { margin-top: 14px; }
-    .v23-release { margin-top: 22px; }
+    .v23-release { margin-top: 22px; padding: 22px; border: 1px solid var(--line, #dde5e1); border-radius: 18px; background: rgba(255,255,255,.68); }
     .v23-release-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .v23-release h2 { margin: 4px 0 0; }
+    .v23-release details { padding: 10px 0; border-top: 1px solid var(--line, #dde5e1); }
+    .v23-release details:first-of-type { margin-top: 12px; }
     .v23-version-badge { display:inline-flex; align-items:center; padding:4px 9px; border-radius:999px; background:#e5f2ee; color:#145f55; font-size:12px; font-weight:800; }
     .v23-release ul { margin:10px 0 0 18px; padding:0; line-height:1.8; }
-    #nextBtn[disabled] { opacity:.72; cursor:wait; }
+    #nextBtn[aria-busy="true"] { opacity:.72; cursor:wait; }
   `;
   document.head.appendChild(style);
 }
@@ -57,7 +60,7 @@ function injectReleaseNotes() {
   if (!anchor) return;
   const section = document.createElement('section');
   section.id = 'releaseNotes';
-  section.className = 'seo-guide v23-release';
+  section.className = 'v23-release';
   section.setAttribute('aria-labelledby', 'releaseNotesTitle');
   section.innerHTML = `
     <div class="v23-release-head">
@@ -73,11 +76,11 @@ function injectReleaseNotes() {
       <li>地区社保参数进入持续维护机制：已核验数值优先自动带入，未核验数据不猜测。</li>
     </ul></details>
     <details><summary>v2.2 · 2026-09-01</summary><ul>
-      <li>明确未来养老金、缴费基数和账户利率的静态估算口径。</li>
+      <li>明确未来养老金、缴费基数和个人账户记账利率的静态估算口径。</li>
       <li>优化历史缴费、未来缴费和方案比较的输入与结果表达。</li>
     </ul></details>
     <details><summary>v2.1 · 2026-08-28</summary><ul>
-      <li>支持渐进式延迟退休年龄、几年后不工作、离职/灵活就业和城乡居民养老等场景。</li>
+      <li>支持渐进式延迟退休年龄、几年后不工作、离职 / 灵活就业和城乡居民养老等场景。</li>
       <li>增加政策来源、数据核验状态和官方渠道交叉验证提示。</li>
     </ul></details>`;
   anchor.before(section);
@@ -278,18 +281,18 @@ function surfaceCalcBaseRequirement() {
 
 function lockResultButton(button) {
   resultSubmitting = true;
-  button.disabled = true;
   button.dataset.v23OriginalText = button.dataset.v23OriginalText || button.textContent;
   button.textContent = '正在计算…';
   button.setAttribute('aria-busy', 'true');
+  button.setAttribute('aria-disabled', 'true');
 }
 
 function unlockResultButton() {
   const button = document.getElementById('nextBtn');
   resultSubmitting = false;
   if (!button) return;
-  button.disabled = false;
   button.removeAttribute('aria-busy');
+  button.removeAttribute('aria-disabled');
   if (button.dataset.v23OriginalText) {
     button.textContent = button.dataset.v23OriginalText;
     delete button.dataset.v23OriginalText;
@@ -336,6 +339,13 @@ document.addEventListener('click', event => {
       sessionSet(FLEX_MODE_KEY, '');
       sessionSet(FLEX_CUSTOM_KEY, '');
     }
+  }
+
+  if (event.target.closest('#continuePlanBtn')) {
+    sessionSet(AFTER_STOP_MODE_KEY, 'same');
+    sessionSet(CONTRIBUTION_PLAN_KEY, 'continuous_to_claim');
+    sessionSet(FLEX_MODE_KEY, '');
+    sessionSet(FLEX_CUSTOM_KEY, '');
   }
 
   const afterStop = event.target.closest('[data-after-stop]');
