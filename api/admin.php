@@ -47,6 +47,112 @@ function add_conversion(array $row): array
     return $row;
 }
 
+function diagnostics_for_window(PDO $pdo, string $where): array
+{
+    $reasonSql = "
+        SELECT reason_code, COUNT(*) AS attempts, COUNT(DISTINCT flow_id) AS flows
+        FROM usage_event
+        WHERE {$where}
+          AND event_name = 'validation_error'
+          AND reason_code <> ''
+        GROUP BY reason_code
+        ORDER BY attempts DESC, reason_code ASC
+        LIMIT 20
+    ";
+    $reasons = array_map(static fn(array $row): array => [
+        'reason' => (string)$row['reason_code'],
+        'attempts' => (int)$row['attempts'],
+        'flows' => (int)$row['flows'],
+    ], $pdo->query($reasonSql)->fetchAll());
+
+    $stepSql = "
+        SELECT step, COUNT(*) AS attempts, COUNT(DISTINCT flow_id) AS flows
+        FROM usage_event
+        WHERE {$where}
+          AND event_name = 'validation_error'
+          AND step <> ''
+        GROUP BY step
+        ORDER BY attempts DESC, step ASC
+    ";
+    $steps = array_map(static fn(array $row): array => [
+        'step' => (string)$row['step'],
+        'attempts' => (int)$row['attempts'],
+        'flows' => (int)$row['flows'],
+    ], $pdo->query($stepSql)->fetchAll());
+
+    $featureSql = "
+        SELECT feature, COUNT(*) AS attempts, COUNT(DISTINCT flow_id) AS flows
+        FROM usage_event
+        WHERE {$where}
+          AND event_name = 'validation_error'
+          AND feature <> ''
+        GROUP BY feature
+        ORDER BY attempts DESC, feature ASC
+    ";
+    $features = array_map(static fn(array $row): array => [
+        'feature' => (string)$row['feature'],
+        'attempts' => (int)$row['attempts'],
+        'flows' => (int)$row['flows'],
+    ], $pdo->query($featureSql)->fetchAll());
+
+    $clientSql = "
+        SELECT error_type, script_name, line_no, column_no, step, feature,
+               COUNT(*) AS attempts, COUNT(DISTINCT flow_id) AS flows
+        FROM usage_event
+        WHERE {$where}
+          AND event_name = 'client_error'
+        GROUP BY error_type, script_name, line_no, column_no, step, feature
+        ORDER BY attempts DESC, error_type ASC, script_name ASC, line_no ASC
+        LIMIT 30
+    ";
+    $clientErrors = array_map(static fn(array $row): array => [
+        'error_type' => (string)$row['error_type'],
+        'script_name' => (string)$row['script_name'],
+        'line_no' => (int)$row['line_no'],
+        'column_no' => (int)$row['column_no'],
+        'step' => (string)$row['step'],
+        'feature' => (string)$row['feature'],
+        'attempts' => (int)$row['attempts'],
+        'flows' => (int)$row['flows'],
+    ], $pdo->query($clientSql)->fetchAll());
+
+    $amountSql = "
+        SELECT
+          SUM(event_name = 'wizard_next' AND step = 'amount') AS next_attempts,
+          COUNT(DISTINCT CASE WHEN event_name = 'wizard_next' AND step = 'amount' AND flow_id <> '' THEN flow_id END) AS next_flows,
+          SUM(event_name = 'validation_error' AND step = 'amount') AS validation_attempts,
+          COUNT(DISTINCT CASE WHEN event_name = 'validation_error' AND step = 'amount' AND flow_id <> '' THEN flow_id END) AS validation_flows
+        FROM usage_event
+        WHERE {$where}
+          AND event_name IN ('wizard_next', 'validation_error')
+    ";
+    $amount = $pdo->query($amountSql)->fetch() ?: [];
+
+    return [
+        'reasons' => $reasons,
+        'steps' => $steps,
+        'features' => $features,
+        'client_errors' => $clientErrors,
+        'amount' => [
+            'next_attempts' => (int)($amount['next_attempts'] ?? 0),
+            'next_flows' => (int)($amount['next_flows'] ?? 0),
+            'validation_attempts' => (int)($amount['validation_attempts'] ?? 0),
+            'validation_flows' => (int)($amount['validation_flows'] ?? 0),
+        ],
+    ];
+}
+
+function diagnostics_data(PDO $pdo): array
+{
+    $pdo->exec("SET time_zone = '+08:00'");
+    return [
+        'ok' => true,
+        'today' => diagnostics_for_window($pdo, 'created_at >= CURDATE()'),
+        'seven_days' => diagnostics_for_window($pdo, 'created_at >= CURDATE() - INTERVAL 6 DAY'),
+        'generated_at' => date('Y-m-d H:i:s'),
+    ];
+}
+
 function dashboard_data(PDO $pdo): array
 {
     $pdo->exec("SET time_zone = '+08:00'");
@@ -78,198 +184,120 @@ function dashboard_data(PDO $pdo): array
 
     $visitorTypeSql = "
         SELECT
-            SUM(first_seen >= CURDATE()) AS new_visitors,
+            SUM(first_seen = CURDATE()) AS new_visitors,
             SUM(first_seen < CURDATE()) AS returning_visitors
         FROM (
-            SELECT active.visitor_id, MIN(history.created_at) AS first_seen
-            FROM (
-                SELECT DISTINCT visitor_id
-                FROM usage_event
-                WHERE event_name = 'page_view'
-                  AND created_at >= CURDATE()
-                  AND visitor_id <> ''
-            ) active
-            JOIN usage_event history
-              ON history.visitor_id = active.visitor_id
-             AND history.event_name = 'page_view'
-            GROUP BY active.visitor_id
-        ) visitor_first_seen
+            SELECT visitor_id, DATE(MIN(created_at)) AS first_seen
+            FROM usage_event
+            WHERE visitor_id <> ''
+            GROUP BY visitor_id
+        ) v
+        WHERE EXISTS (
+            SELECT 1 FROM usage_event t
+            WHERE t.visitor_id = v.visitor_id AND t.created_at >= CURDATE()
+        )
     ";
     $visitorTypes = int_fields($pdo->query($visitorTypeSql)->fetch() ?: [], ['new_visitors', 'returning_visitors']);
     $today = array_merge($today, $visitorTypes);
 
-    $trendSql = "
+    $totalSql = "
         SELECT
-            DATE(created_at) AS day,
+            COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
+            SUM(event_name = 'page_view') AS page_views
+        FROM usage_event
+    ";
+    $total = int_fields($pdo->query($totalSql)->fetch() ?: [], ['visitors', 'page_views']);
+
+    $trendSql = "
+        SELECT DATE(created_at) AS day,
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
             COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS started_flows,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS result_flows,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' THEN visitor_id END) AS result_visitors,
-            SUM(event_name = 'page_view') AS page_views
+            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS result_flows
         FROM usage_event
         WHERE created_at >= CURDATE() - INTERVAL 6 DAY
         GROUP BY DATE(created_at)
         ORDER BY day ASC
     ";
-    $trendRows = $pdo->query($trendSql)->fetchAll();
-    $trendMap = [];
-    foreach ($trendRows as $row) {
-        $trendMap[(string)$row['day']] = [
-            'day' => (string)$row['day'],
-            'visitors' => (int)$row['visitors'],
-            'started_flows' => (int)$row['started_flows'],
-            'result_flows' => (int)$row['result_flows'],
-            'result_visitors' => (int)$row['result_visitors'],
-            'page_views' => (int)$row['page_views'],
-        ];
-    }
-    $trend = [];
-    for ($offset = 6; $offset >= 0; $offset -= 1) {
-        $day = date('Y-m-d', strtotime("-{$offset} day"));
-        $trend[] = $trendMap[$day] ?? [
-            'day' => $day,
-            'visitors' => 0,
-            'started_flows' => 0,
-            'result_flows' => 0,
-            'result_visitors' => 0,
-            'page_views' => 0,
-        ];
-    }
+    $trend = array_map(static fn(array $row): array => int_fields($row, ['visitors', 'started_flows', 'result_flows']), $pdo->query($trendSql)->fetchAll());
 
     $sourceSql = "
-        SELECT
-            CASE WHEN source = '' THEN 'unknown' ELSE source END AS source,
+        SELECT source,
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
             COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS starts,
             COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS results
         FROM usage_event
         WHERE created_at >= CURDATE() - INTERVAL 29 DAY
-        GROUP BY CASE WHEN source = '' THEN 'unknown' ELSE source END
+        GROUP BY source
         HAVING visitors > 0 OR starts > 0
-        ORDER BY visitors DESC, source ASC
+        ORDER BY visitors DESC, starts DESC
     ";
-    $sources = array_map(static function (array $row): array {
-        return add_conversion([
-            'source' => (string)$row['source'],
-            'visitors' => (int)$row['visitors'],
-            'starts' => (int)$row['starts'],
-            'results' => (int)$row['results'],
-        ]);
-    }, $pdo->query($sourceSql)->fetchAll());
+    $sources = array_map(static fn(array $row): array => add_conversion(int_fields($row, ['visitors', 'starts', 'results'])), $pdo->query($sourceSql)->fetchAll());
 
     $deviceSql = "
-        SELECT
-            CASE WHEN device = '' THEN 'unknown' ELSE device END AS device,
+        SELECT device,
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
             COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS starts,
             COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS results
         FROM usage_event
         WHERE created_at >= CURDATE() - INTERVAL 29 DAY
-        GROUP BY CASE WHEN device = '' THEN 'unknown' ELSE device END
+        GROUP BY device
         HAVING visitors > 0 OR starts > 0
-        ORDER BY visitors DESC, device ASC
+        ORDER BY visitors DESC, starts DESC
     ";
-    $devices = array_map(static function (array $row): array {
-        return add_conversion([
-            'device' => (string)$row['device'],
-            'visitors' => (int)$row['visitors'],
-            'starts' => (int)$row['starts'],
-            'results' => (int)$row['results'],
-        ]);
-    }, $pdo->query($deviceSql)->fetchAll());
-
-    $funnelSql = "
-        SELECT
-            flow_start_event.feature,
-            COUNT(DISTINCT flow_start_event.flow_id) AS starts,
-            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'identity' THEN flow_event.flow_id END) AS identity,
-            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'status' THEN flow_event.flow_id END) AS status_step,
-            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'plan' THEN flow_event.flow_id END) AS plan_step,
-            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'amount' THEN flow_event.flow_id END) AS amount_step,
-            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'local' THEN flow_event.flow_id END) AS local_step,
-            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'result_view' THEN flow_event.flow_id END) AS results,
-            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'client_error' THEN flow_event.flow_id END) AS error_flows
-        FROM usage_event flow_start_event
-        LEFT JOIN usage_event flow_event
-          ON flow_event.flow_id = flow_start_event.flow_id
-         AND flow_event.created_at >= CURDATE() - INTERVAL 29 DAY
-        WHERE flow_start_event.event_name = 'flow_start'
-          AND flow_start_event.flow_id <> ''
-          AND flow_start_event.created_at >= CURDATE() - INTERVAL 29 DAY
-        GROUP BY flow_start_event.feature
-        ORDER BY starts DESC, flow_start_event.feature ASC
-    ";
-    $funnels = array_map(static function (array $row): array {
-        $item = [
-            'feature' => (string)$row['feature'],
-            'starts' => (int)$row['starts'],
-            'identity' => (int)$row['identity'],
-            'status' => (int)$row['status_step'],
-            'plan' => (int)$row['plan_step'],
-            'amount' => (int)$row['amount_step'],
-            'local' => (int)$row['local_step'],
-            'results' => (int)$row['results'],
-            'error_flows' => (int)$row['error_flows'],
-        ];
-        return add_conversion($item);
-    }, $pdo->query($funnelSql)->fetchAll());
+    $devices = array_map(static fn(array $row): array => add_conversion(int_fields($row, ['visitors', 'starts', 'results'])), $pdo->query($deviceSql)->fetchAll());
 
     $stepSql = "
-        SELECT
-            step,
-            COUNT(DISTINCT CASE WHEN event_name = 'step_view' THEN flow_id END) AS viewed_flows,
-            COUNT(DISTINCT CASE WHEN event_name = 'wizard_next' THEN flow_id END) AS next_flows,
+        SELECT step,
+            COUNT(DISTINCT CASE WHEN event_name = 'step_view' AND flow_id <> '' THEN flow_id END) AS viewed_flows,
+            COUNT(DISTINCT CASE WHEN event_name = 'wizard_next' AND flow_id <> '' THEN flow_id END) AS next_flows,
             SUM(event_name = 'wizard_next') AS next_attempts
         FROM usage_event
         WHERE created_at >= CURDATE() - INTERVAL 29 DAY
-          AND flow_id <> ''
           AND step <> ''
-          AND event_name IN ('step_view', 'wizard_next')
         GROUP BY step
+        HAVING viewed_flows > 0 OR next_flows > 0
     ";
-    $stepFriction = array_map(static function (array $row): array {
-        return [
-            'step' => (string)$row['step'],
-            'viewed_flows' => (int)$row['viewed_flows'],
-            'next_flows' => (int)$row['next_flows'],
-            'next_attempts' => (int)$row['next_attempts'],
-        ];
-    }, $pdo->query($stepSql)->fetchAll());
+    $stepFriction = array_map(static fn(array $row): array => int_fields($row, ['viewed_flows', 'next_flows', 'next_attempts']), $pdo->query($stepSql)->fetchAll());
+
+    $funnelSql = "
+        SELECT feature,
+            COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS starts,
+            COUNT(DISTINCT CASE WHEN event_name = 'step_view' AND step = 'identity' AND flow_id <> '' THEN flow_id END) AS identity,
+            COUNT(DISTINCT CASE WHEN event_name = 'step_view' AND step = 'status' AND flow_id <> '' THEN flow_id END) AS status,
+            COUNT(DISTINCT CASE WHEN event_name = 'step_view' AND step = 'plan' AND flow_id <> '' THEN flow_id END) AS plan,
+            COUNT(DISTINCT CASE WHEN event_name = 'step_view' AND step = 'amount' AND flow_id <> '' THEN flow_id END) AS amount,
+            COUNT(DISTINCT CASE WHEN event_name = 'step_view' AND step = 'local' AND flow_id <> '' THEN flow_id END) AS local,
+            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS results,
+            COUNT(DISTINCT CASE WHEN event_name = 'client_error' AND flow_id <> '' THEN flow_id END) AS error_flows
+        FROM usage_event
+        WHERE created_at >= CURDATE() - INTERVAL 29 DAY
+          AND feature <> ''
+        GROUP BY feature
+        HAVING starts > 0
+        ORDER BY starts DESC
+    ";
+    $funnels = array_map(static fn(array $row): array => add_conversion(int_fields($row, [
+        'starts', 'identity', 'status', 'plan', 'amount', 'local', 'results', 'error_flows',
+    ])), $pdo->query($funnelSql)->fetchAll());
 
     $feedbackSql = "
-        SELECT id, content, created_at
+        SELECT content, created_at
         FROM feedback
-        WHERE status = 'visible'
         ORDER BY id DESC
         LIMIT 20
     ";
-    $feedback = array_map(static function (array $row): array {
-        return [
-            'id' => (int)$row['id'],
-            'content' => (string)$row['content'],
-            'created_at' => (string)$row['created_at'],
-        ];
-    }, $pdo->query($feedbackSql)->fetchAll());
-
-    $totalSql = "
-        SELECT
-            COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
-            SUM(event_name = 'page_view') AS page_views,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' THEN visitor_id END) AS result_visitors
-        FROM usage_event
-    ";
-    $total = int_fields($pdo->query($totalSql)->fetch() ?: [], ['visitors', 'page_views', 'result_visitors']);
+    $feedback = $pdo->query($feedbackSql)->fetchAll();
 
     return [
+        'analytics_version' => 'a2',
         'today' => $today,
+        'total' => $total,
         'trend' => $trend,
         'sources' => $sources,
         'devices' => $devices,
-        'funnels' => $funnels,
         'step_friction' => $stepFriction,
+        'funnels' => $funnels,
         'feedback' => $feedback,
-        'total' => $total,
-        'analytics_version' => 'a2',
         'generated_at' => date('Y-m-d H:i:s'),
     ];
 }
@@ -277,26 +305,24 @@ function dashboard_data(PDO $pdo): array
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
 if ($method === 'POST') {
-    $body = request_json();
-    $action = clean_string($body['action'] ?? 'login', 24);
+    $input = json_decode((string)file_get_contents('php://input'), true);
+    $action = (string)($input['action'] ?? '');
+
+    if ($action === 'login') {
+        $password = (string)($input['password'] ?? '');
+        if (!hash_equals($adminPassword, $password)) {
+            respond(['ok' => false, 'error' => 'unauthorized'], 401);
+        }
+        setcookie(ADMIN_COOKIE, admin_token($adminPassword), admin_cookie_options(time() + 86400 * 14));
+        respond(['ok' => true, 'dashboard' => dashboard_data($pdo)]);
+    }
 
     if ($action === 'logout') {
         setcookie(ADMIN_COOKIE, '', admin_cookie_options(time() - 3600));
         respond(['ok' => true]);
     }
 
-    $password = (string)($body['password'] ?? '');
-    if ($password === '' || !hash_equals($adminPassword, $password)) {
-        usleep(350000);
-        respond(['ok' => false, 'error' => 'unauthorized'], 401);
-    }
-
-    setcookie(ADMIN_COOKIE, admin_token($adminPassword), admin_cookie_options(time() + 60 * 60 * 24 * 14));
-    try {
-        respond(['ok' => true, 'dashboard' => dashboard_data($pdo)]);
-    } catch (Throwable $error) {
-        respond(['ok' => false, 'error' => 'dashboard_query_failed'], 500);
-    }
+    respond(['ok' => false, 'error' => 'invalid_action'], 400);
 }
 
 if ($method !== 'GET') {
@@ -307,8 +333,12 @@ if (!admin_authorized($adminPassword)) {
     respond(['ok' => false, 'error' => 'unauthorized'], 401);
 }
 
-try {
-    respond(['ok' => true, 'dashboard' => dashboard_data($pdo)]);
-} catch (Throwable $error) {
-    respond(['ok' => false, 'error' => 'dashboard_query_failed'], 500);
+if ((string)($_GET['action'] ?? '') === 'diagnostics') {
+    try {
+        respond(diagnostics_data($pdo));
+    } catch (Throwable $error) {
+        respond(['ok' => false, 'error' => 'diagnostics_query_failed'], 500);
+    }
 }
+
+respond(['ok' => true, 'dashboard' => dashboard_data($pdo)]);
