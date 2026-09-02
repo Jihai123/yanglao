@@ -85,7 +85,7 @@ export const REGION_DATA = {
       current: true,
       published: '2026-08-21',
       issuer: '北京市人力资源和社会保障局等',
-      url: 'https://rsj.beijing.gov.cn/xxgk/2024zcwj/202608/t20260821_4831461.html',
+      url: 'https://rsj.beijing.gov.cn/xxgk/tzgg/202608/t20260821_4831468_ext.html',
     },
   },
   shanghai: {
