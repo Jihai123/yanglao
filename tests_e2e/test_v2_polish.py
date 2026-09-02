@@ -44,7 +44,7 @@ def test_female_unsure_shows_two_possible_retirement_results(browser):
     page.close()
 
 
-def test_future_gap_plan_supports_flexible_employment_base(browser):
+def test_future_gap_plan_moves_flexible_base_choice_to_amount_step(browser):
     page, errors = fresh_page(browser)
     page.locator('[data-intent="flex"]').click()
     page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
@@ -52,10 +52,16 @@ def test_future_gap_plan_supports_flexible_employment_base(browser):
     page.locator('[data-contribution-plan="actual_months"]').click()
     expect(page.locator('[data-key="actualFutureYears"]')).to_be_visible()
     expect(page.locator('[data-after-stop="flex"]')).to_be_visible()
-    expect(page.locator('[data-flex-base-mode="unknown"]')).to_be_visible()
-    page.locator('[data-flex-base-mode="custom"]').click()
-    expect(page.locator('[data-key="flexMonthlyContributionBase"]')).to_be_visible()
-    assert page.locator('[data-key="flexMonthlyContributionBase"]').input_value() == ''
+    expect(page.locator('#stepBody')).to_contain_text('未来灵活就业缴费基数会在下一步结合地区标准选择')
+    expect(page.locator('[data-flex-base-mode="unknown"]')).to_have_count(0)
+
+    page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    page.locator('#regionSelect').select_option('beijing')
+    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_be_visible()
+    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_contain_text('7,270')
+    expect(page.locator('[data-v23-flex-mode="custom"]')).to_be_visible()
+    expect(page.locator('#stepBody')).not_to_contain_text('还没决定')
     assert errors == []
     page.close()
 
