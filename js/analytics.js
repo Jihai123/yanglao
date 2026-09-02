@@ -7,7 +7,7 @@ const FLOW_KEY = 'yanglao-v6-flow';
 const FLOW_FEATURE_KEY = 'yanglao-v6-flow-feature';
 const SOURCE_KEY = 'yanglao-v6-source';
 const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
-const APP_VERSION = 'v2-prod-20260902-d1';
+const APP_VERSION = 'v2-prod-20260902-d2';
 
 let volatileVisitor = '';
 let volatileSession = '';
@@ -133,7 +133,7 @@ function send(payload) {
 }
 
 export function track(event, params = {}) {
-  const feature = String(params.feature || params.intent || '').slice(0, 48);
+  const feature = String(params.feature || params.intent || currentFlowFeature() || '').slice(0, 48);
   const step = String(params.step || '').slice(0, 48);
   const payload = {
     event,
@@ -215,7 +215,7 @@ function validationReason(message) {
   if (text.includes('停止工作年龄不能晚于')) return 'stop_after_retirement';
   if (text.includes('缴费时间超过了到退休前')) return 'future_months_exceed_window';
   if (text.includes('现在的养老保险月缴费基数')) return 'missing_current_base';
-  if (text.includes('灵活就业缴费基数')) return 'missing_flex_base';
+  if (text.includes('灵活就业缴费基数') || text.includes('未来灵活就业月缴费基数')) return 'missing_flex_base';
   if (text.includes('开始、结束年月填完整') || text.includes('至少填写一段历史缴费')) return 'history_incomplete';
   if (text.includes('历史缴费结束年月不能早于')) return 'history_invalid_range';
   if (text.includes('历史缴费结束年月不能晚于')) return 'history_future_range';
@@ -289,6 +289,12 @@ document.addEventListener('click', event => {
     setTimeout(recordVisibleStep, 0);
   }
 
+  if (event.target.closest('#continuePlanBtn')) {
+    startFlow('normal');
+    track('intent_click', { feature: 'normal' });
+    setTimeout(recordVisibleStep, 0);
+  }
+
   if (event.target.closest('#nextBtn')) {
     const step = String(document.getElementById('stepBody')?.dataset.step || '');
     track('wizard_next', { feature: currentFlowFeature(), step });
@@ -306,9 +312,8 @@ document.addEventListener('click', event => {
   if (event.target.closest('#homeBtn, #homeResultBtn')) track('home_click', { feature: 'home' });
 }, { capture: true });
 
-window.addEventListener('yanglao:v4-result', event => {
-  const detail = event.detail || {};
-  track('result_view', { feature: detail.amountAvailable ? 'amount' : 'qualification', step: 'result' });
+window.addEventListener('yanglao:v4-result', () => {
+  track('result_view', { feature: currentFlowFeature(), step: 'result' });
 });
 
 window.addEventListener('yanglao:track', event => {
