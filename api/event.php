@@ -17,6 +17,11 @@ $source = clean_string($data['source'] ?? '', 32);
 $device = clean_string($data['device'] ?? '', 16);
 $page = clean_string($data['page'] ?? '', 255);
 $appVersion = clean_string($data['app_version'] ?? '', 32);
+$reasonCode = clean_string($data['reason_code'] ?? '', 48);
+$errorType = clean_string($data['error_type'] ?? '', 32);
+$scriptName = clean_string($data['script_name'] ?? '', 96);
+$lineNo = max(0, min(2147483647, (int)($data['line_no'] ?? 0)));
+$columnNo = max(0, min(2147483647, (int)($data['column_no'] ?? 0)));
 
 $allowed = [
     'page_view',
@@ -25,6 +30,7 @@ $allowed = [
     'step_view',
     'wizard_next',
     'result_view',
+    'validation_error',
     'client_error',
     'resident_start',
     'resume_plan',
@@ -42,10 +48,18 @@ if (!in_array($source, $allowedSources, true)) $source = 'other';
 $allowedDevices = ['desktop', 'mobile', 'tablet'];
 if (!in_array($device, $allowedDevices, true)) $device = '';
 
+if ($eventName !== 'validation_error') $reasonCode = '';
+if ($eventName !== 'client_error') {
+    $errorType = '';
+    $scriptName = '';
+    $lineNo = 0;
+    $columnNo = 0;
+}
+
 $stmt = $pdo->prepare(
     'INSERT INTO usage_event '
-    . '(visitor_id, session_id, flow_id, event_name, feature, step, source, device, page, app_version) '
-    . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    . '(visitor_id, session_id, flow_id, event_name, feature, step, source, device, page, app_version, reason_code, error_type, script_name, line_no, column_no) '
+    . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 $stmt->execute([
     $visitorId,
@@ -58,5 +72,10 @@ $stmt->execute([
     $device,
     $page,
     $appVersion,
+    $reasonCode,
+    $errorType,
+    $scriptName,
+    $lineNo,
+    $columnNo,
 ]);
 respond(['ok' => true], 201);
