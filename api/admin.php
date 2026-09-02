@@ -5,6 +5,7 @@ require __DIR__ . '/bootstrap.php';
 
 const ADMIN_COOKIE = 'yanglao_admin';
 const ADMIN_TOKEN_MESSAGE = 'yanglao-admin-v1';
+const DIAGNOSTICS_APP_VERSION = 'v2-prod-20260902-d2';
 
 $adminPassword = (string)($config['admin_password'] ?? '');
 if ($adminPassword === '') {
@@ -49,6 +50,8 @@ function add_conversion(array $row): array
 
 function diagnostics_for_window(PDO $pdo, string $where): array
 {
+    $where = "({$where}) AND app_version = " . $pdo->quote(DIAGNOSTICS_APP_VERSION);
+
     $reasonSql = "
         SELECT reason_code, COUNT(*) AS attempts, COUNT(DISTINCT flow_id) AS flows
         FROM usage_event
@@ -147,6 +150,7 @@ function diagnostics_data(PDO $pdo): array
     $pdo->exec("SET time_zone = '+08:00'");
     return [
         'ok' => true,
+        'app_version' => DIAGNOSTICS_APP_VERSION,
         'today' => diagnostics_for_window($pdo, 'created_at >= CURDATE()'),
         'seven_days' => diagnostics_for_window($pdo, 'created_at >= CURDATE() - INTERVAL 6 DAY'),
         'generated_at' => date('Y-m-d H:i:s'),
