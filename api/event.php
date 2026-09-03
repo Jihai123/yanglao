@@ -36,13 +36,20 @@ $allowed = [
     'resume_plan',
     'home_click',
     'feedback_submit',
+    'share_open',
+    'share_card_generate',
+    'share_card_save',
+    'share_copy_text',
+    'share_copy_link',
+    'share_system',
+    'outbound_tool_click',
 ];
 
 if (!in_array($eventName, $allowed, true)) {
     respond(['ok' => false, 'error' => 'invalid_event'], 422);
 }
 
-$allowedSources = ['direct', 'internal', 'baidu', 'google', 'bing', 'sogou', '360', 'zhihu', 'wechat', 'other'];
+$allowedSources = ['direct', 'internal', 'share', 'baidu', 'google', 'bing', 'sogou', '360', 'zhihu', 'wechat', 'other'];
 if (!in_array($source, $allowedSources, true)) $source = 'other';
 
 $allowedDevices = ['desktop', 'mobile', 'tablet'];
