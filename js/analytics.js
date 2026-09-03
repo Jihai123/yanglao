@@ -7,7 +7,7 @@ const FLOW_KEY = 'yanglao-v6-flow';
 const FLOW_FEATURE_KEY = 'yanglao-v6-flow-feature';
 const SOURCE_KEY = 'yanglao-v6-source';
 const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
-const APP_VERSION = 'v2-prod-20260902-d2';
+const APP_VERSION = 'v2-prod-20260903-d3';
 
 let volatileVisitor = '';
 let volatileSession = '';
@@ -51,6 +51,7 @@ function sessionId() {
 function normalizeSource(value) {
   const text = String(value || '').toLowerCase();
   if (!text) return '';
+  if (text === 'share') return 'share';
   if (text.includes('baidu')) return 'baidu';
   if (text.includes('google')) return 'google';
   if (text.includes('bing')) return 'bing';
@@ -63,6 +64,7 @@ function normalizeSource(value) {
 
 function detectSource() {
   const params = new URLSearchParams(location.search);
+  if (params.get('from') === 'share' || params.get('utm_source') === 'share') return 'share';
   const campaign = normalizeSource(params.get('utm_source'));
   if (campaign) return campaign;
 
