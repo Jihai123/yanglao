@@ -25,14 +25,15 @@ function injectReleaseV24() {
   if (!release || release.dataset.v24Ready) return;
   release.dataset.v24Ready = '1';
   const badge = release.querySelector('.v23-version-badge');
-  if (badge) badge.textContent = 'v2.4';
+  if (badge) badge.textContent = 'v2.4.1';
   const first = release.querySelector('details');
   const details = document.createElement('details');
   details.open = true;
-  details.innerHTML = `<summary>v2.4 · 2026-09-03</summary><ul>
+  details.innerHTML = `<summary>v2.4.1 · 2026-09-03</summary><ul>
     <li>新增退休结果分享：可生成适合朋友圈的结果卡片，展示预计养老金和退休时间，并明确标注“规划估算”。</li>
     <li>新增复制分享文案、复制链接和系统分享；分享访问、开始测算、到达结果都会匿名统计，不记录养老金金额。</li>
     <li>首页新增“退休之外，也可以顺手算算”，连接工作价值评估和宜居城市工具。</li>
+    <li>修复“宜居城市排行榜”入口地址错误导致跳转 404 的问题。</li>
   </ul>`;
   if (first) {
     first.open = false;
@@ -63,7 +64,7 @@ function injectRelatedTools() {
         <span class="v24-tool-copy"><span>工作性价比</span><strong>这 B 班值不值？</strong><em>算算这份工作的真实回报，看看还值不值得继续干。</em></span>
         <span class="v24-tool-arrow" aria-hidden="true">→</span>
       </a>
-      <a class="v24-tool-card" data-v24-tool="livable_city" href="https://zhibeimao.com/yiju/" target="_blank" rel="noopener">
+      <a class="v24-tool-card" data-v24-tool="livable_city" href="https://yiju.zhibeimao.com/" target="_blank" rel="noopener">
         <span class="v24-tool-icon" aria-hidden="true">🏡</span>
         <span class="v24-tool-copy"><span>以后住哪里</span><strong>宜居城市排行榜</strong><em>看看哪些城市房租低、节奏慢，更适合以后长期生活。</em></span>
         <span class="v24-tool-arrow" aria-hidden="true">→</span>
