@@ -8,6 +8,7 @@ on:
       - 'robots.txt'
       - 'sitemap.xml'
       - '*.txt'
+      - 'data/**'
       - 'scripts/**'
       - 'assets/**'
       - 'js/**'
@@ -26,6 +27,7 @@ on:
       - 'robots.txt'
       - 'sitemap.xml'
       - '*.txt'
+      - 'data/**'
       - 'scripts/**'
       - 'assets/**'
       - 'js/**'
@@ -53,6 +55,8 @@ jobs:
         run: npm run test:v2
       - name: Check regional parameter audit
         run: node scripts/audit-region-parameters.mjs
+      - name: Check nationwide region policy dictionary
+        run: node scripts/audit-region-policy-dictionary.mjs
       - name: Check IndexNow script syntax
         run: bash -n scripts/submit-indexnow.sh
       - name: Check browser modules syntax
@@ -81,6 +85,7 @@ jobs:
           node --check js/analytics.js
           node --check js/feedback.js
           node --check js/ux-v6.js
+          node --check scripts/audit-region-policy-dictionary.mjs
       - name: Check PHP API syntax when available
         run: |
           if command -v php >/dev/null 2>&1; then
