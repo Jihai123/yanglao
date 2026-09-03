@@ -12,7 +12,7 @@ import {
   getRuntimeRegion,
   resolveRuntimeRegion,
   runtimeSubregionOptions,
-} from './region-policy-runtime.generated.js?v=20260903-r1';
+} from './region-policy-runtime.js?v=20260903-r2';
 
 export { DATA_VERIFIED_AT, NATIONAL_POLICY_SOURCES, OFFICIAL_UPDATES, REGION_NAMES, REGION_POLICY_RUNTIME_VERSION };
 
