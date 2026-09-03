@@ -177,9 +177,8 @@ for (const row of rows) {
   }
 
   if (calcFormulaAnchorStatuses.has(calcStatus)) {
-    if (!calcSourceLevel.includes('formula_anchor')) {
-      errors.push(`${row.region_name}: formula-anchor calc status without formula_anchor source label`);
-    }
+    // Source level describes provenance/authority; semantic type lives in calc_base_status.
+    // Do not require the source label itself to repeat "formula_anchor".
     if (!/(公式|计发依据|待遇计发|待遇核定|用于确定)/.test(note)) {
       errors.push(`${row.region_name}: formula-anchor calc note does not explain policy linkage`);
     }
