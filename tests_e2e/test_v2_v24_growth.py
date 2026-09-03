@@ -42,9 +42,10 @@ def test_v24_homepage_has_related_tools_and_public_release(browser):
     expect(page.locator('#relatedTools')).to_be_visible()
     expect(page.locator('#relatedTools')).to_contain_text('退休之外，也可以顺手算算')
     expect(page.locator('[data-v24-tool="job_value"]')).to_have_attribute('href', 'https://jobtest.chatgpt5x.com/')
-    expect(page.locator('[data-v24-tool="livable_city"]')).to_have_attribute('href', 'https://zhibeimao.com/yiju/')
-    expect(page.locator('#releaseNotes')).to_contain_text('v2.4')
+    expect(page.locator('[data-v24-tool="livable_city"]')).to_have_attribute('href', 'https://yiju.zhibeimao.com/')
+    expect(page.locator('#releaseNotes')).to_contain_text('v2.4.1')
     expect(page.locator('#releaseNotes')).to_contain_text('退休结果分享')
+    expect(page.locator('#releaseNotes')).to_contain_text('入口地址错误')
     assert errors == []
     page.close()
 
