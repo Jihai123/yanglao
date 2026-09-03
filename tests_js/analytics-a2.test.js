@@ -40,7 +40,8 @@ test('v2.3 runtime removes ambiguous future base choice and guards result re-ent
 test('v2.4 growth layer adds related tools, share card and privacy-safe tracking', async () => {
   const source = await read('js/v24-growth.js');
   assert.match(source, /jobtest\.chatgpt5x\.com/);
-  assert.match(source, /zhibeimao\.com\/yiju/);
+  assert.match(source, /yiju\.zhibeimao\.com/);
+  assert.match(source, /v2\.4\.1/);
   assert.match(source, /朋友圈分享卡片/);
   assert.match(source, /规划估算/);
   for (const event of ['share_open', 'share_card_generate', 'share_copy_text', 'share_copy_link', 'share_system', 'outbound_tool_click']) {
@@ -99,7 +100,7 @@ test('admin dashboard exposes failure diagnostics without form data', async () =
 test('homepage loads v2.4 growth layer and cache-busted analytics', async () => {
   const html = await read('index.html');
   assert.match(html, /v23-runtime\.js\?v=20260902-v23/);
-  assert.match(html, /v24-growth\.js\?v=20260903-v24/);
+  assert.match(html, /v24-growth\.js\?v=20260903-v241/);
   assert.match(html, /growth-v24\.css\?v=20260903-v24/);
   assert.match(html, /analytics\.js\?v=20260903-d3/);
   assert.match(html, /分享\/相关工具点击/);
