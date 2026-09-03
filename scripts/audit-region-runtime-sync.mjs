@@ -44,6 +44,24 @@ function sameNumber(a, b) {
   return Math.abs(left - right) < 0.011;
 }
 
+function calcRepresentedBySubregions(runtime, row) {
+  if (!runtime?.needsSubregion) return false;
+  const expected = number(row.calc_base_value);
+  if (!(expected > 0)) return false;
+  const calcEntries = Object.values(runtime.subregions || {})
+    .map(item => item?.calcBase)
+    .filter(Boolean);
+  if (!calcEntries.length) return false;
+  // A province-level CSV value may intentionally be gated behind subregion
+  // selection (for example Guangdong, where Shenzhen is excluded). In that
+  // case it must not be reintroduced as a province-wide runtime default.
+  return calcEntries.some(calc =>
+    sameNumber(calc.value, expected) &&
+    Number(calc.year) === Number(row.calc_base_year) &&
+    Boolean(calc.runtimeEligible) === (row.calc_base_runtime_eligible === 'true')
+  );
+}
+
 const main = parseCsv(await readFile(new URL('../data/region-policy/employee-pension.v2.csv', import.meta.url), 'utf8'));
 const subregions = parseCsv(await readFile(new URL('../data/region-policy/subregions.v1.csv', import.meta.url), 'utf8'));
 const errors = [];
@@ -62,8 +80,9 @@ for (const row of main) {
 
   const directCalc = number(row.calc_base_value) > 0;
   if (directCalc) {
-    if (!runtime.calcBase) errors.push(`${row.region_name}: direct calc base missing from runtime`);
-    else {
+    if (!runtime.calcBase) {
+      if (!calcRepresentedBySubregions(runtime, row)) errors.push(`${row.region_name}: direct calc base missing from runtime`);
+    } else {
       if (!sameNumber(runtime.calcBase.value, row.calc_base_value)) errors.push(`${row.region_name}: calc-base value drift`);
       if (Number(runtime.calcBase.year) !== Number(row.calc_base_year)) errors.push(`${row.region_name}: calc-base year drift`);
       if (Boolean(runtime.calcBase.runtimeEligible) !== (row.calc_base_runtime_eligible === 'true')) errors.push(`${row.region_name}: calc-base eligibility drift`);
