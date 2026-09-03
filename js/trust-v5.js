@@ -1,10 +1,12 @@
 import {
   DATA_VERIFIED_AT,
   NATIONAL_POLICY_SOURCES,
-  getRegionV4,
-} from './sources-v4.js?v=20260830-v5';
+  getRegionV5,
+  resolveRegionV5,
+} from './sources-v5.js?v=20260903-r2';
 
 const PLAN_KEY = 'yanglao-v4-plan';
+const SUBREGION_PREFIX = 'yanglao-v25-subregion:';
 const REVIEW_INTERVAL_DAYS = 30;
 
 function daysSince(dateString) {
@@ -14,6 +16,10 @@ function daysSince(dateString) {
 
 function readPlan() {
   try { return JSON.parse(localStorage.getItem(PLAN_KEY) || 'null') || {}; } catch { return {}; }
+}
+
+function readSubregion(regionKey) {
+  try { return sessionStorage.getItem(`${SUBREGION_PREFIX}${regionKey}`) || ''; } catch { return ''; }
 }
 
 function sourceLink(item, label = '查看政策依据') {
@@ -34,13 +40,19 @@ function renderHomeTrust() {
 
 function resultTrustHtml() {
   const plan = readPlan();
-  const region = getRegionV4(plan.regionKey || 'other');
+  const regionKey = plan.regionKey || 'other';
+  const baseRegion = getRegionV5(regionKey);
+  const subregionKey = baseRegion?.needsSubregion ? readSubregion(regionKey) : '';
+  const region = resolveRegionV5(regionKey, subregionKey) || baseRegion;
   const crosscheck = NATIONAL_POLICY_SOURCES.find(item => item.type === 'crosscheck');
-  const calcBase = region.calcBase;
-  const baseText = calcBase
-    ? `${calcBase.year}年计发基准 ${Math.round(calcBase.value).toLocaleString('zh-CN')}元/月`
-    : '未收录可自动带入的计发基准';
-  return `<div class="result-trust" id="resultTrustCard"><div><strong>数据依据</strong><span>${region.name} · ${baseText}</span></div>${sourceLink(crosscheck, '去官方待遇测算交叉核对')}</div>`;
+  const calcBase = region?.calcBase;
+  const area = region?.subregionName ? ` · ${region.subregionName}` : '';
+  const baseText = calcBase?.runtimeEligible && Number(calcBase.value) > 0
+    ? `${calcBase.label} · 养老金计算参考值 ${Math.round(calcBase.value).toLocaleString('zh-CN')}元/月${area}`
+    : region?.subregionRequired
+      ? '需要先选择对应地区范围'
+      : '未收录可自动带入的养老金计算参考值';
+  return `<div class="result-trust" id="resultTrustCard"><div><strong>数据依据</strong><span>${region?.name || baseRegion?.name || '其他地区'} · ${baseText}</span></div>${sourceLink(crosscheck, '去官方待遇测算交叉核对')}</div>`;
 }
 
 function injectResultTrust() {
