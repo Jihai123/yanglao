@@ -78,6 +78,7 @@ jobs:
           node --check js/sources-v4.js
           node --check js/sources-v5.js
           node --check js/region-policy-runtime.generated.js
+          node --check js/region-policy-runtime.js
           node --check js/trust.js
           node --check js/trust-v3.js
           node --check js/trust-v4.js
