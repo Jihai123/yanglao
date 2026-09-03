@@ -7,13 +7,15 @@ const read = path => readFile(new URL(path, root), 'utf8');
 
 test('analytics records only diagnostic buckets and flow identifiers', async () => {
   const source = await read('js/analytics.js');
-  assert.match(source, /APP_VERSION = 'v2-prod-20260902-d2'/);
+  assert.match(source, /APP_VERSION = 'v2-prod-20260903-d3'/);
   for (const field of ['flow_id', 'source', 'device', 'step', 'reason_code', 'error_type', 'script_name', 'line_no', 'column_no']) {
     assert.match(source, new RegExp(`${field}:`));
   }
   for (const event of ['flow_start', 'step_view', 'validation_error', 'client_error']) {
     assert.match(source, new RegExp(`'${event}'`));
   }
+  assert.match(source, /params\.get\('from'\) === 'share'/);
+  assert.match(source, /return 'share'/);
   assert.match(source, /#continuePlanBtn/);
   assert.match(source, /currentFlowFeature\(\)/);
   assert.match(source, /validationReason/);
@@ -35,14 +37,27 @@ test('v2.3 runtime removes ambiguous future base choice and guards result re-ent
   assert.doesNotMatch(source, /data-flex-base-mode="unknown"/);
 });
 
-test('event API accepts diagnostics and persists safe fields only', async () => {
+test('v2.4 growth layer adds related tools, share card and privacy-safe tracking', async () => {
+  const source = await read('js/v24-growth.js');
+  assert.match(source, /jobtest\.chatgpt5x\.com/);
+  assert.match(source, /zhibeimao\.com\/yiju/);
+  assert.match(source, /朋友圈分享卡片/);
+  assert.match(source, /规划估算/);
+  for (const event of ['share_open', 'share_card_generate', 'share_copy_text', 'share_copy_link', 'share_system', 'outbound_tool_click']) {
+    assert.match(source, new RegExp(`'${event}'`));
+  }
+  assert.doesNotMatch(source, /currentAccount|monthlyContributionBase|paidYears|birth/);
+});
+
+test('event API accepts diagnostics and growth events while persisting safe fields only', async () => {
   const php = await read('api/event.php');
-  for (const event of ['flow_start', 'step_view', 'validation_error', 'client_error']) {
+  for (const event of ['flow_start', 'step_view', 'validation_error', 'client_error', 'share_open', 'share_card_generate', 'share_copy_text', 'share_copy_link', 'share_system', 'outbound_tool_click']) {
     assert.match(php, new RegExp(`'${event}'`));
   }
   for (const field of ['flow_id', 'step', 'source', 'device', 'reason_code', 'error_type', 'script_name', 'line_no', 'column_no']) {
     assert.match(php, new RegExp(field));
   }
+  assert.match(php, /'share'/);
   assert.doesNotMatch(php, /error_message|stack_trace/);
 });
 
@@ -81,9 +96,11 @@ test('admin dashboard exposes failure diagnostics without form data', async () =
   assert.doesNotMatch(html, /currentAccount|monthlyContributionBase|paidYears/);
 });
 
-test('homepage loads v2.3 runtime and cache-busted diagnostics analytics', async () => {
+test('homepage loads v2.4 growth layer and cache-busted analytics', async () => {
   const html = await read('index.html');
   assert.match(html, /v23-runtime\.js\?v=20260902-v23/);
-  assert.match(html, /analytics\.js\?v=20260902-d2/);
-  assert.match(html, /访问来源类别、设备类别、所选功能、测算步骤和是否到达结果/);
+  assert.match(html, /v24-growth\.js\?v=20260903-v24/);
+  assert.match(html, /growth-v24\.css\?v=20260903-v24/);
+  assert.match(html, /analytics\.js\?v=20260903-d3/);
+  assert.match(html, /分享\/相关工具点击/);
 });
