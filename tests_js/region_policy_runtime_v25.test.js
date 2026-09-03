@@ -53,7 +53,7 @@ test('subregional calc-base policies require explicit selection and never leak p
   assert.equal(resolveRegionV5('shandong', 'heze').calcBase, undefined);
 });
 
-test('Guangdong keeps Shenzhen separate while other subregions get the verified fallback', () => {
+test('Guangdong keeps contribution subregions separate and uses Shenzhen enterprise calc base', () => {
   assert.equal(subregionOptionsV5('guangdong').length, 3);
   const guangzhou = resolveRegionV5('guangdong', 'guangzhou_province_direct');
   assert.equal(guangzhou.contribution.min, 5510);
@@ -61,7 +61,18 @@ test('Guangdong keeps Shenzhen separate while other subregions get the verified 
 
   const shenzhen = resolveRegionV5('guangdong', 'shenzhen');
   assert.equal(shenzhen.contribution, undefined);
-  assert.equal(shenzhen.calcBase, undefined);
+  assert.equal(shenzhen.calcBase.value, 11293);
+  assert.match(shenzhen.calcBase.label, /2025年最近可核验官方值/);
+});
+
+test('Yunnan 2026 contribution range is current and runtime eligible', () => {
+  const yunnan = getRegionV5('yunnan');
+  assert.equal(yunnan.contribution.year, 2026);
+  assert.equal(yunnan.contribution.min, 4403);
+  assert.equal(yunnan.contribution.max, 22017);
+  assert.equal(yunnan.contribution.current, true);
+  assert.equal(yunnan.contribution.runtimeEligible, true);
+  assert.match(yunnan.contribution.label, /2026年当前官方标准/);
 });
 
 test('Jilin annual published calc bases are normalized to monthly planning values', () => {
