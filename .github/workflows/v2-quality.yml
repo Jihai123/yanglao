@@ -57,6 +57,8 @@ jobs:
         run: node scripts/audit-region-parameters.mjs
       - name: Check nationwide region policy dictionary
         run: node scripts/audit-region-policy-dictionary.mjs
+      - name: Check runtime registry stays synced with dictionary
+        run: node scripts/audit-region-runtime-sync.mjs
       - name: Check IndexNow script syntax
         run: bash -n scripts/submit-indexnow.sh
       - name: Check browser modules syntax
@@ -71,8 +73,11 @@ jobs:
           node --check js/hotfix-v5.js
           node --check js/v23-runtime.js
           node --check js/v24-growth.js
+          node --check js/v25-region-policy.js
           node --check js/sources.js
           node --check js/sources-v4.js
+          node --check js/sources-v5.js
+          node --check js/region-policy-runtime.generated.js
           node --check js/trust.js
           node --check js/trust-v3.js
           node --check js/trust-v4.js
@@ -86,6 +91,7 @@ jobs:
           node --check js/feedback.js
           node --check js/ux-v6.js
           node --check scripts/audit-region-policy-dictionary.mjs
+          node --check scripts/audit-region-runtime-sync.mjs
       - name: Check PHP API syntax when available
         run: |
           if command -v php >/dev/null 2>&1; then
