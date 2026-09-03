@@ -99,7 +99,16 @@ for (const row of rows) {
   const hasDirectRange = asNumber(row.contribution_min) > 0 && asNumber(row.contribution_max) > 0;
   const hasAnyRange = hasDirectRange || hasSubregionRange(row.region_key);
   const hasCalc = asNumber(row.calc_base_value) > 0 || hasSubregionCalcBase(row.region_key);
+  const declaresSubregional = String(row.research_status || '').includes('subregional') ||
+    String(row.contribution_source_level || '').includes('subregional') ||
+    String(row.calc_base_source_level || '').includes('subregional');
 
+  if (declaresSubregional && !subregions.some(item => item.region_key === row.region_key)) {
+    errors.push(`${row.region_name}: declares subregional policy but has no subregion rows`);
+  }
+  if (row.calc_base_status !== 'missing' && !asNumber(row.calc_base_value) && String(row.calc_base_source_level || '').includes('subregional') && !hasSubregionCalcBase(row.region_key)) {
+    errors.push(`${row.region_name}: subregional calc-base status without numeric subregional calc base`);
+  }
   if (fallbackEligible && row.contribution_status === 'missing' && row.calc_base_status === 'missing') {
     errors.push(`${row.region_name}: fallback_eligible but both parameter groups are missing`);
   }
@@ -134,11 +143,6 @@ for (const row of rows) {
     if (!row.reference_source_url) errors.push(`${row.region_name}: derived contribution status without reference source`);
     if (!row.formula_source_url) errors.push(`${row.region_name}: derived contribution status without formula source`);
   }
-}
-
-const subregionKeys = new Set(subregions.map(row => row.region_key));
-for (const key of ['liaoning', 'jilin', 'hubei', 'guangdong']) {
-  if (!subregionKeys.has(key)) errors.push(`${REGION_NAMES[key]}: expected subregional rows are missing`);
 }
 
 function hasDirectRange(row, statuses) {
