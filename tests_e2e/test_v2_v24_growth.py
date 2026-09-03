@@ -63,7 +63,6 @@ def test_v24_result_share_box_uses_result_amount_and_generates_card(browser):
     page.locator('[data-v24-card]').click()
     modal = page.locator('#shareCardModal')
     expect(modal).to_be_visible()
-    expect(modal.locator('img')).to_have_attribute('src', pytest.approx if False else None)
     page.wait_for_function("""() => document.querySelector('#shareCardModal img')?.src.startsWith('blob:')""")
 
     events = page.evaluate("window.dataLayer || []")
@@ -77,7 +76,10 @@ def test_v24_share_copy_actions_do_not_put_amount_in_analytics(browser):
     page, errors = fresh_page(browser)
     normal_result(page)
     page.evaluate("""
-      navigator.clipboard.writeText = async () => true;
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: async () => true }
+      });
     """)
     page.locator('[data-v24-copy-text]').click()
     page.wait_for_function("""() => (window.dataLayer || []).some(e => e.event === 'share_copy_text')""")
