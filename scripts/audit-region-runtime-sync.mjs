@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { REGION_POLICY_RUNTIME } from '../js/region-policy-runtime.generated.js';
+import { REGION_POLICY_RUNTIME } from '../js/region-policy-runtime.js';
 
 function parseCsv(text) {
   const rows = [];
