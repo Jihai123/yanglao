@@ -5,7 +5,7 @@ require __DIR__ . '/bootstrap.php';
 
 const ADMIN_COOKIE = 'yanglao_admin';
 const ADMIN_TOKEN_MESSAGE = 'yanglao-admin-v1';
-const DIAGNOSTICS_APP_VERSION = 'v2-prod-20260902-d2';
+const DIAGNOSTICS_APP_VERSION = 'v2-prod-20260903-d3';
 
 $adminPassword = (string)($config['admin_password'] ?? '');
 if ($adminPassword === '') {
@@ -346,6 +346,46 @@ function dashboard_data(PDO $pdo): array
         ];
     }, $pdo->query($stepSql)->fetchAll());
 
+    $growthSql = "
+        SELECT
+            SUM(event_name = 'share_open') AS share_open,
+            SUM(event_name = 'share_card_generate') AS share_card_generate,
+            SUM(event_name = 'share_card_save') AS share_card_save,
+            SUM(event_name = 'share_copy_text') AS share_copy_text,
+            SUM(event_name = 'share_copy_link') AS share_copy_link,
+            SUM(event_name = 'share_system') AS share_system,
+            COUNT(DISTINCT CASE WHEN event_name = 'page_view' AND source = 'share' AND visitor_id <> '' THEN visitor_id END) AS share_visitors,
+            COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND source = 'share' AND flow_id <> '' THEN flow_id END) AS share_starts,
+            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND source = 'share' AND flow_id <> '' THEN flow_id END) AS share_results,
+            SUM(event_name = 'outbound_tool_click') AS outbound_tool_clicks
+        FROM usage_event
+        WHERE created_at >= CURDATE() - INTERVAL 29 DAY
+    ";
+    $growth = int_fields($pdo->query($growthSql)->fetch() ?: [], [
+        'share_open', 'share_card_generate', 'share_card_save', 'share_copy_text', 'share_copy_link',
+        'share_system', 'share_visitors', 'share_starts', 'share_results', 'outbound_tool_clicks',
+    ]);
+    $growth['share_start_rate'] = $growth['share_visitors'] > 0
+        ? round(($growth['share_starts'] / $growth['share_visitors']) * 100, 1)
+        : 0.0;
+    $growth['share_result_rate'] = $growth['share_visitors'] > 0
+        ? round(($growth['share_results'] / $growth['share_visitors']) * 100, 1)
+        : 0.0;
+
+    $toolSql = "
+        SELECT feature, COUNT(*) AS clicks
+        FROM usage_event
+        WHERE created_at >= CURDATE() - INTERVAL 29 DAY
+          AND event_name = 'outbound_tool_click'
+          AND feature <> ''
+        GROUP BY feature
+        ORDER BY clicks DESC, feature ASC
+    ";
+    $growth['tools'] = array_map(static fn(array $row): array => [
+        'feature' => (string)$row['feature'],
+        'clicks' => (int)$row['clicks'],
+    ], $pdo->query($toolSql)->fetchAll());
+
     $feedbackSql = "
         SELECT id, content, created_at
         FROM feedback
@@ -377,9 +417,10 @@ function dashboard_data(PDO $pdo): array
         'devices' => $devices,
         'funnels' => $funnels,
         'step_friction' => $stepFriction,
+        'growth' => $growth,
         'feedback' => $feedback,
         'total' => $total,
-        'analytics_version' => 'a2',
+        'analytics_version' => 'a3',
         'generated_at' => date('Y-m-d H:i:s'),
     ];
 }
