@@ -12,3 +12,5 @@ hubei,湖北,contribution,tier3,荆州 / 鄂州 / 孝感 / 黄冈 / 咸宁 / 仙
 guangdong,广东,contribution,guangzhou_province_direct,广州 / 省直,2025,5510,27549,,yuan/month,https://guangdong.chinatax.gov.cn/gdsw/ssfggds/2025-10/27/content_ba2a20bf040648e089f9edf9f557fa2b.shtml,recent_fallback
 guangdong,广东,contribution,other_excluding_shenzhen,其他地区（不含深圳）,2025,4775,27549,,yuan/month,https://guangdong.chinatax.gov.cn/gdsw/ssfggds/2025-10/27/content_ba2a20bf040648e089f9edf9f557fa2b.shtml,recent_fallback
 guangdong,广东,contribution,shenzhen,深圳,2025,,,,yuan/month,,missing
+shandong,山东,calcBase,province_except_heze,全省（不含菏泽）,2025,,,7831,yuan/month,http://hrss.shandong.gov.cn/articles/ch00378/202510/1e743c80-1abf-47a8-b62a-db2518c0820b.shtml,recent_fallback
+shandong,山东,calcBase,heze,菏泽,2025,,,,yuan/month,,missing
