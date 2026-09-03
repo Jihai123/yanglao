@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 
 BASE = "http://127.0.0.1:8765/index.html"
-APP_VERSION = "v2-prod-20260902-d2"
+APP_VERSION = "v2-prod-20260903-d3"
 
 
 def test_analytics_a2_emits_flow_and_step_events():
@@ -47,4 +47,21 @@ def test_analytics_a2_emits_flow_and_step_events():
         visitor = page.evaluate("localStorage.getItem('yanglao-v5-visitor')")
         assert visitor
         assert starts[-1]["visitor_id"] == visitor
+        browser.close()
+
+
+def test_share_entry_is_attributed_without_personal_data():
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.goto(f"{BASE}?from=share&channel=card")
+        page.wait_for_function(
+            f"""() => (window.dataLayer || []).some(e => e.event === 'page_view' && e.app_version === '{APP_VERSION}')"""
+        )
+        event = page.evaluate(
+            f"""() => (window.dataLayer || []).find(e => e.event === 'page_view' && e.app_version === '{APP_VERSION}')"""
+        )
+        assert event["source"] == "share"
+        assert "amount" not in event
+        assert "birth" not in event
         browser.close()
