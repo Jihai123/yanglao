@@ -60,6 +60,10 @@ const expectedKeys = Object.keys(REGION_NAMES);
 const actualKeys = rows.map(row => row.region_key);
 const uniqueKeys = new Set(actualKeys);
 
+const publishedStatuses = new Set(['current', 'recent_fallback']);
+const derivedStatuses = new Set(['current_derived', 'recent_fallback_derived']);
+const planningStatuses = new Set([...publishedStatuses, ...derivedStatuses]);
+
 const errors = [];
 if (rows.length !== expectedKeys.length) errors.push(`expected ${expectedKeys.length} province-level rows, got ${rows.length}`);
 if (uniqueKeys.size !== rows.length) errors.push('duplicate region_key found in employee-pension.v1.csv');
@@ -73,17 +77,29 @@ for (const key of uniqueKeys) {
 for (const row of rows) {
   const runtimeEligible = row.runtime_eligible === 'true';
   const fallbackEligible = row.fallback_eligible === 'true';
-  if (runtimeEligible && !row.contribution_source_url && !row.calc_base_source_url) {
+  const derived = derivedStatuses.has(row.contribution_status);
+  const hasRange = asNumber(row.contribution_min) > 0 && asNumber(row.contribution_max) > 0;
+
+  if (runtimeEligible && !row.contribution_source_url && !row.calc_base_source_url && !row.reference_source_url) {
     errors.push(`${row.region_name}: runtime_eligible without any source URL`);
   }
   if (fallbackEligible && row.contribution_status === 'missing' && row.calc_base_status === 'missing') {
     errors.push(`${row.region_name}: fallback_eligible but both parameter groups are missing`);
   }
-  if (row.contribution_status === 'current' && !row.contribution_year) {
+  if ((row.contribution_status === 'current' || row.contribution_status === 'current_derived') && !row.contribution_year) {
     errors.push(`${row.region_name}: current contribution missing year`);
   }
   if (row.calc_base_value && !row.calc_base_year) {
     errors.push(`${row.region_name}: calc-base value missing year`);
+  }
+  if (derived) {
+    if (!hasRange) errors.push(`${row.region_name}: derived contribution status without numeric range`);
+    if (!row.reference_monthly) errors.push(`${row.region_name}: derived contribution status without reference_monthly`);
+    if (!row.reference_source_url) errors.push(`${row.region_name}: derived contribution status without reference source`);
+    if (!row.formula_source_url) errors.push(`${row.region_name}: derived contribution status without formula source`);
+    if (runtimeEligible && !String(row.source_level || '').includes('official')) {
+      errors.push(`${row.region_name}: derived runtime value must retain an official source level`);
+    }
   }
 }
 
@@ -92,18 +108,20 @@ for (const key of ['liaoning', 'jilin', 'hubei', 'guangdong']) {
   if (!subregionKeys.has(key)) errors.push(`${REGION_NAMES[key]}: expected subregional rows are missing`);
 }
 
-const currentContribution = rows.filter(row =>
-  row.contribution_status === 'current' && asNumber(row.contribution_min) > 0 && asNumber(row.contribution_max) > 0
-);
-const fallbackContribution = rows.filter(row =>
-  row.contribution_status === 'recent_fallback' && asNumber(row.contribution_min) > 0 && asNumber(row.contribution_max) > 0
-);
-const currentOrFallbackContribution = rows.filter(row => {
-  if (!['current', 'recent_fallback'].includes(row.contribution_status)) return false;
-  const direct = asNumber(row.contribution_min) > 0 && asNumber(row.contribution_max) > 0;
-  const sub = subregions.some(item => item.region_key === row.region_key && item.parameter_type === 'contribution' && asNumber(item.min) > 0 && asNumber(item.max) > 0);
-  return direct || sub;
-});
+function hasDirectRange(row, statuses) {
+  return statuses.has(row.contribution_status) && asNumber(row.contribution_min) > 0 && asNumber(row.contribution_max) > 0;
+}
+
+function hasSubregionRange(row) {
+  return subregions.some(item => item.region_key === row.region_key && item.parameter_type === 'contribution' && asNumber(item.min) > 0 && asNumber(item.max) > 0);
+}
+
+const currentPublishedContribution = rows.filter(row => hasDirectRange(row, new Set(['current'])));
+const currentDerivedContribution = rows.filter(row => hasDirectRange(row, new Set(['current_derived'])));
+const fallbackPublishedContribution = rows.filter(row => hasDirectRange(row, new Set(['recent_fallback'])));
+const fallbackDerivedContribution = rows.filter(row => hasDirectRange(row, new Set(['recent_fallback_derived'])));
+const planningContributionCovered = rows.filter(row => hasDirectRange(row, planningStatuses) || hasSubregionRange(row));
+const publishedContributionCovered = rows.filter(row => hasDirectRange(row, publishedStatuses) || hasSubregionRange(row));
 const calcBaseCovered = rows.filter(row =>
   asNumber(row.calc_base_value) > 0 || subregions.some(item => item.region_key === row.region_key && item.parameter_type === 'calcBase' && asNumber(item.value) > 0)
 );
@@ -113,15 +131,19 @@ const needsReview = rows.filter(row => row.runtime_eligible !== 'true');
 const report = {
   generated_at: new Date().toISOString(),
   total_regions: rows.length,
-  current_contribution_with_numeric_range: currentContribution.length,
-  recent_fallback_contribution_with_numeric_range: fallbackContribution.length,
-  current_or_recent_fallback_contribution_covered: currentOrFallbackContribution.length,
+  current_published_contribution_with_numeric_range: currentPublishedContribution.length,
+  current_formula_derived_contribution_with_numeric_range: currentDerivedContribution.length,
+  recent_fallback_published_contribution_with_numeric_range: fallbackPublishedContribution.length,
+  recent_fallback_formula_derived_contribution_with_numeric_range: fallbackDerivedContribution.length,
+  published_contribution_covered_including_subregions: publishedContributionCovered.length,
+  planning_contribution_covered_including_formula_derived_and_subregions: planningContributionCovered.length,
   calc_base_covered: calcBaseCovered.length,
   runtime_eligible_region_rows: runtimeEligible.length,
   needs_review: needsReview.map(row => ({
     key: row.region_key,
     name: row.region_name,
     research_status: row.research_status,
+    contribution_status: row.contribution_status,
     note: row.note,
   })),
   errors,
@@ -135,8 +157,12 @@ await writeFile(
 );
 
 console.log(`region policy dictionary: ${rows.length}/${expectedKeys.length} province-level rows`);
-console.log(`current contribution numeric coverage: ${currentContribution.length}/${rows.length}`);
-console.log(`current + recent fallback contribution coverage: ${currentOrFallbackContribution.length}/${rows.length}`);
+console.log(`current published contribution ranges: ${currentPublishedContribution.length}/${rows.length}`);
+console.log(`current formula-derived contribution ranges: ${currentDerivedContribution.length}/${rows.length}`);
+console.log(`recent fallback published ranges: ${fallbackPublishedContribution.length}/${rows.length}`);
+console.log(`recent fallback formula-derived ranges: ${fallbackDerivedContribution.length}/${rows.length}`);
+console.log(`published contribution coverage incl. subregions: ${publishedContributionCovered.length}/${rows.length}`);
+console.log(`planning contribution coverage incl. derived/subregions: ${planningContributionCovered.length}/${rows.length}`);
 console.log(`calc-base coverage (including subregions): ${calcBaseCovered.length}/${rows.length}`);
 console.log(`runtime-eligible region rows: ${runtimeEligible.length}/${rows.length}`);
 for (const row of needsReview) console.log(`needs review: ${row.region_name} — ${row.research_status}`);
