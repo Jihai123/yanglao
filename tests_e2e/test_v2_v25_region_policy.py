@@ -104,7 +104,7 @@ def test_v25_shandong_never_leaks_non_heze_calc_base_into_heze(browser):
     page.close()
 
 
-def test_v25_guangdong_keeps_shenzhen_manual_but_autofills_other_regions(browser):
+def test_v25_guangdong_uses_verified_shenzhen_calc_base_but_keeps_contribution_manual(browser):
     page, errors = fresh_page(browser)
     flex_to_amount(page)
     page.locator('#regionSelect').select_option('guangdong')
@@ -114,7 +114,24 @@ def test_v25_guangdong_keeps_shenzhen_manual_but_autofills_other_regions(browser
     expect(page.locator('[data-v25-flex-mode="minimum"]')).to_contain_text('4,775')
 
     page.locator('#subregionSelect').select_option('shenzhen')
-    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('')
+    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('11293')
+    expect(page.locator('#stepBody')).to_contain_text('养老金计算参考值 ¥11,293/月')
     expect(page.locator('[data-v25-flex-mode="minimum"]')).to_have_count(0)
+    expect(page.locator('[data-v25-flex-mode="custom"]')).to_be_visible()
+    assert errors == []
+    page.close()
+
+
+def test_v25_yunnan_uses_current_2026_minimum_and_calc_fallback(browser):
+    page, errors = fresh_page(browser)
+    flex_to_amount(page)
+    page.locator('#regionSelect').select_option('yunnan')
+
+    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('8265')
+    minimum = page.locator('[data-v25-flex-mode="minimum"]')
+    expect(minimum).to_be_visible()
+    expect(minimum).to_contain_text('按当地当前最低标准')
+    expect(minimum).to_contain_text('4,403')
+    expect(minimum).to_contain_text('2026年当前官方标准')
     assert errors == []
     page.close()
