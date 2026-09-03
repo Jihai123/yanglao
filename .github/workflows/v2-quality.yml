@@ -66,6 +66,7 @@ jobs:
           node --check js/employee-v4.js
           node --check js/hotfix-v5.js
           node --check js/v23-runtime.js
+          node --check js/v24-growth.js
           node --check js/sources.js
           node --check js/sources-v4.js
           node --check js/trust.js
