@@ -31,7 +31,7 @@ def flex_to_amount(page):
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
 
 
-def test_v25_recent_fallback_minimum_is_offered_with_year_not_disguised_as_current(browser):
+def test_v25_recent_fallback_minimum_and_public_calc_reference_are_labeled_separately(browser):
     page, errors = fresh_page(browser)
     flex_to_amount(page)
     page.locator('#regionSelect').select_option('sichuan')
@@ -41,8 +41,27 @@ def test_v25_recent_fallback_minimum_is_offered_with_year_not_disguised_as_curre
     expect(minimum).to_contain_text('按最近官方最低标准')
     expect(minimum).to_contain_text('4,588')
     expect(minimum).to_contain_text('2025年最近官方标准')
-    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('')
-    expect(page.locator('#stepBody')).to_contain_text('暂未收录可自动带入的可靠养老金计算参考值')
+    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('8462')
+    expect(page.locator('[data-key="currentCalcBaseYear"]')).to_have_value('2025')
+    expect(page.locator('#stepBody')).to_contain_text('公开资料参考值')
+    expect(page.locator('#stepBody')).to_contain_text('官方原文暂未找到')
+    expect(page.locator('#stepBody')).to_contain_text('可自行修改')
+    assert errors == []
+    page.close()
+
+
+def test_v25_shanxi_public_reference_is_auto_filled_without_claiming_official_verification(browser):
+    page, errors = fresh_page(browser)
+    flex_to_amount(page)
+    page.locator('#regionSelect').select_option('shanxi')
+
+    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('7253')
+    expect(page.locator('[data-key="currentCalcBaseYear"]')).to_have_value('2025')
+    region_field = page.locator('#regionSelect').locator('xpath=..')
+    expect(region_field).to_contain_text('养老金计算参考值')
+    expect(region_field).to_contain_text('7,253')
+    expect(region_field).to_contain_text('公开资料参考值')
+    expect(region_field).to_contain_text('官方原文暂未找到')
     assert errors == []
     page.close()
 
