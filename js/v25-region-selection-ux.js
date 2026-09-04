@@ -1,6 +1,7 @@
 const AMOUNT_STEP_SELECTOR = '#stepBody[data-step="amount"]';
 const REGION_PLACEHOLDER_VALUE = '';
 const REGION_OTHER_VALUE = 'other';
+const EXPLICIT_UNKNOWN_KEY = 'yanglao-v25-region-explicit-unknown';
 let queued = false;
 
 function amountBody() {
@@ -13,6 +14,17 @@ function estimateActive(body = amountBody()) {
 
 function regionSelect(body = amountBody()) {
   return body?.querySelector('#regionSelect') || null;
+}
+
+function explicitUnknown() {
+  try { return sessionStorage.getItem(EXPLICIT_UNKNOWN_KEY) === '1'; } catch { return false; }
+}
+
+function setExplicitUnknown(value) {
+  try {
+    if (value) sessionStorage.setItem(EXPLICIT_UNKNOWN_KEY, '1');
+    else sessionStorage.removeItem(EXPLICIT_UNKNOWN_KEY);
+  } catch {}
 }
 
 function ensurePlaceholder(select) {
@@ -34,7 +46,9 @@ function ensurePlaceholder(select) {
 
   if (!select.dataset.v25RegionChoiceInitialized) {
     select.dataset.v25RegionChoiceInitialized = '1';
-    if (select.value === REGION_OTHER_VALUE) select.value = REGION_PLACEHOLDER_VALUE;
+    if (select.value === REGION_OTHER_VALUE && !explicitUnknown()) {
+      select.value = REGION_PLACEHOLDER_VALUE;
+    }
   }
 }
 
@@ -134,11 +148,14 @@ function queueApply() {
 
 document.addEventListener('change', event => {
   if (!event.target.matches('#regionSelect')) return;
+  setExplicitUnknown(event.target.value === REGION_OTHER_VALUE);
   clearRegionError();
   queueApply();
 }, true);
 
 document.addEventListener('click', event => {
+  if (event.target.closest('[data-intent], #restartBtn')) setExplicitUnknown(false);
+
   const next = event.target.closest('#nextBtn');
   const body = amountBody();
   if (!next || !body || !estimateActive(body)) return;
