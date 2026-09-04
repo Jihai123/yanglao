@@ -4,7 +4,7 @@ import {
   getRegionV5,
   resolveRegionV5,
   subregionOptionsV5,
-} from './sources-v5.js?v=20260903-r1';
+} from './sources-v5.js?v=20260904-r3';
 
 const SUBREGION_PREFIX = 'yanglao-v25-subregion:';
 const FLEX_MODE_KEY = 'yanglao-v25-flex-mode';
