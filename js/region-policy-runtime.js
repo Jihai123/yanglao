@@ -1,18 +1,71 @@
 import {
   REGION_POLICY_RUNTIME as BASE_RUNTIME,
   REGION_POLICY_RUNTIME_VERSION as BASE_VERSION,
-  calcBasePolicyLabel,
+  calcBasePolicyLabel as baseCalcBasePolicyLabel,
   contributionPolicyLabel,
 } from './region-policy-runtime.generated.js?v=20260903-r1';
 
-// Effective runtime registry. The generated snapshot remains the bulk baseline;
-// this facade applies same-day evidence upgrades that have already been written
-// to the canonical CSV files. CI compares this effective registry back to the
-// dictionary so a candidate value cannot silently become a production default.
-export const REGION_POLICY_RUNTIME_VERSION = `${BASE_VERSION}-r2`;
+// Effective runtime registry. The generated snapshot remains the official-data
+// baseline. This facade applies reviewed evidence upgrades plus a deliberately
+// separate public-reference tier for regions whose official calc-base page is
+// still unavailable. CI verifies both layers so a research candidate cannot
+// silently become a production default.
+export const REGION_POLICY_RUNTIME_VERSION = `${BASE_VERSION}-r3`;
+
+function publicReference(year, value, sourceLevel, url) {
+  return {
+    year,
+    value,
+    status: 'public_reference',
+    runtimeEligible: true,
+    userEditable: true,
+    sourceLevel,
+    url,
+  };
+}
 
 export const REGION_POLICY_RUNTIME = {
   ...BASE_RUNTIME,
+  shanxi: {
+    ...BASE_RUNTIME.shanxi,
+    researchStatus: 'public_reference_enabled',
+    calcBase: publicReference(
+      2025,
+      7253,
+      'secondary_policy_reprint',
+      'https://zc.51shebao.com/detail/839909',
+    ),
+  },
+  chongqing: {
+    ...BASE_RUNTIME.chongqing,
+    researchStatus: 'public_reference_enabled',
+    calcBase: publicReference(
+      2025,
+      8240,
+      'corroborated_public_reports',
+      'https://www.sohu.com/a/956602818_122343943',
+    ),
+  },
+  sichuan: {
+    ...BASE_RUNTIME.sichuan,
+    researchStatus: 'public_reference_enabled',
+    calcBase: publicReference(
+      2025,
+      8462,
+      'unverified_public_reference',
+      'https://m.sohu.com/a/962044797_122341601/',
+    ),
+  },
+  shaanxi: {
+    ...BASE_RUNTIME.shaanxi,
+    researchStatus: 'public_reference_enabled',
+    calcBase: publicReference(
+      2025,
+      7881,
+      'public_filing_quote',
+      'https://www.9fzt.com/detail/sz_000516_9_6821d7ee2f10de41b0023d3d28ff82d9.html',
+    ),
+  },
   yunnan: {
     ...BASE_RUNTIME.yunnan,
     researchStatus: 'current_verified_joint_notice',
@@ -46,7 +99,14 @@ export const REGION_POLICY_RUNTIME = {
   },
 };
 
-export { calcBasePolicyLabel, contributionPolicyLabel };
+export function calcBasePolicyLabel(calcBase) {
+  if (calcBase?.status === 'public_reference') {
+    return `${calcBase.year}年公开资料参考值 · 官方原文暂未找到，可自行修改`;
+  }
+  return baseCalcBasePolicyLabel(calcBase);
+}
+
+export { contributionPolicyLabel };
 
 export function getRuntimeRegion(key) {
   return REGION_POLICY_RUNTIME[key] || null;
