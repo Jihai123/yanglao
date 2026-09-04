@@ -1,0 +1,260 @@
+.v6-month-editor {
+  min-width: 0;
+}
+
+.v6-month-source-host {
+  position: relative;
+}
+
+.v6-month-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.v6-month-text {
+  min-width: 0;
+  width: 100%;
+}
+
+.v6-month-choose {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #cfd9d4;
+  border-radius: 10px;
+  background: #f7faf8;
+  color: #1f6756;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.v6-month-choose:hover,
+.v6-month-choose:focus-visible {
+  border-color: #1f6756;
+  outline: none;
+}
+
+.v6-month-panel {
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid #d8e0dc;
+  border-radius: 12px;
+  background: #fbfdfc;
+}
+
+.v6-month-panel[hidden] {
+  display: none;
+}
+
+.v6-month-panel-head {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.v6-month-panel-head label {
+  flex: 1;
+  display: grid;
+  gap: 6px;
+  color: #4f625b;
+  font-size: 13px;
+}
+
+.v6-picker-year {
+  width: 100%;
+}
+
+.v6-month-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #d8e0dc;
+  border-radius: 10px;
+  background: white;
+  color: #53635d;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.v6-month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.v6-month-grid button {
+  min-height: 42px;
+  border: 1px solid #d8e0dc;
+  border-radius: 9px;
+  background: white;
+  color: #213c33;
+  font: inherit;
+  cursor: pointer;
+}
+
+.v6-month-grid button:hover,
+.v6-month-grid button:focus-visible {
+  border-color: #1f6756;
+  background: #edf6f2;
+  outline: none;
+}
+
+.v6-month-help {
+  margin-top: 7px;
+}
+
+/* Keep the original month input only as the bound data source for the legacy
+   calculator. It remains technically present for compatibility, but users see
+   only the friendly editor above. */
+.v6-native-month {
+  position: absolute !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.v6-input-error {
+  border-color: #b94234 !important;
+  box-shadow: 0 0 0 2px rgba(185, 66, 52, .09);
+}
+
+.v6-category-help {
+  margin-top: 10px;
+}
+
+.v6-category-help-body {
+  padding-top: 8px;
+  color: #53635d;
+  line-height: 1.65;
+}
+
+.v6-category-help-body p {
+  margin: 0 0 8px;
+}
+
+.v6-category-help-body ol {
+  margin: 7px 0 9px;
+  padding-left: 20px;
+}
+
+/* Female-category uncertainty result: present the two legal-retirement
+   possibilities as distinct result cards instead of unstyled inline text. */
+.dual-age-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.age-result-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label age"
+    "label date";
+  gap: 3px 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid #d7e3de;
+  border-radius: 15px;
+  background: #fffdf9;
+  box-shadow: 0 8px 22px rgba(54, 72, 63, .045);
+}
+
+.age-result-card > span {
+  grid-area: label;
+  color: #455a51;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.age-result-card > strong {
+  grid-area: age;
+  color: #173f38;
+  font-size: 21px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.age-result-card > em {
+  grid-area: date;
+  color: #66756f;
+  font-size: 13px;
+  font-style: normal;
+  text-align: right;
+}
+
+.v6-mission {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #d7e3de;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f4faf7 0%, #fbf8f1 100%);
+}
+
+.v6-mission .v6-mission-kicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #1f6756;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.v6-mission h2 {
+  margin: 0 0 8px;
+}
+
+.v6-mission p {
+  margin: 0;
+  color: #53635d;
+  line-height: 1.7;
+}
+
+.v6-mission p + p {
+  margin-top: 7px;
+}
+
+.v6-mission a {
+  display: inline-block;
+  margin-top: 12px;
+  color: #1f6756;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 520px) {
+  .v6-month-row {
+    grid-template-columns: 1fr;
+  }
+
+  .v6-month-choose {
+    width: 100%;
+  }
+
+  .v6-month-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .age-result-card {
+    padding: 14px 15px;
+    gap: 3px 10px;
+  }
+
+  .age-result-card > strong {
+    font-size: 19px;
+  }
+}

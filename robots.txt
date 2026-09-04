@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /v2-preview/
+
+Sitemap: https://yanglao.zhibeimao.com/sitemap.xml

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>养老金计算器2026｜退休年龄查询｜退休规划助手</title>
+  <meta name="description" content="退休规划助手：查询2026职工法定退休年龄和退休年月，估算职工养老金、灵活就业养老与城乡居民养老金，并比较不同缴费年限方案。" />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://yanglao.zhibeimao.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="zh_CN" />
+  <meta property="og:title" content="养老金计算器2026｜退休年龄查询｜退休规划助手" />
+  <meta property="og:description" content="查询退休年龄和退休年月，按缴费记录与未来计划估算养老金，并比较不同缴费方案。" />
+  <meta property="og:url" content="https://yanglao.zhibeimao.com/" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260830-v6c" />
+  <link rel="stylesheet" href="./assets/trust.css?v=20260830-v6c" />
+  <link rel="stylesheet" href="./assets/launch.css?v=20260830-v6c" />
+  <link rel="stylesheet" href="./assets/product-v4.css?v=20260830-v6c" />
+  <link rel="stylesheet" href="./assets/product-v5.css?v=20260830-v6c" />
+  <link rel="stylesheet" href="./assets/ux-v6.css?v=20260901-v6e" />
+  <link rel="stylesheet" href="./assets/growth-v24.css?v=20260903-v24" />
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"FAQPage",
+    "mainEntity":[
+      {"@type":"Question","name":"2026年职工多少岁退休？","acceptedAnswer":{"@type":"Answer","text":"2025年起实施渐进式延迟法定退休年龄。具体退休年月取决于出生年月和原法定退休年龄类别。"}},
+      {"@type":"Question","name":"职工养老保险最低要交多少年？","acceptedAnswer":{"@type":"Answer","text":"2025年至2029年最低缴费年限仍为15年；2030年起每年增加6个月，到2039年达到20年。"}},
+      {"@type":"Question","name":"提前不工作等于提前退休吗？","acceptedAnswer":{"@type":"Answer","text":"不等于。停止工作、继续缴养老保险和办理退休可以是不同时间。"}},
+      {"@type":"Question","name":"职工养老金怎么计算？","acceptedAnswer":{"@type":"Answer","text":"企业职工基本养老金通常由基础养老金、个人账户养老金以及符合条件时的过渡性养老金等组成。"}},
+      {"@type":"Question","name":"城乡居民养老金怎么领？","acceptedAnswer":{"@type":"Answer","text":"城乡居民基本养老保险使用独立规则，不能直接套用职工渐进式退休和职工最低缴费年限提高规则。"}}
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">退休规划助手</div>
+        <div class="topbar-actions">
+          <button class="small-link" id="homeBtn" type="button">首页</button>
+          <button class="small-link quiet-link" id="restartBtn" type="button">清空重算</button>
+        </div>
+      </header>
+
+      <main>
+        <section id="homeView">
+          <div class="hero">
+            <span class="eyebrow">退休年龄 · 缴费年限 · 养老金</span>
+            <h1>什么时候退休，能领多少？</h1>
+            <p class="muted">按你的出生时间、缴费记录和未来计划，一步一步算清楚。</p>
+          </div>
+
+          <div id="resumeBox" class="resume hidden">
+            <strong>上次填写的信息还在</strong>
+            <p class="muted" id="resumeText" style="margin-top:4px"></p>
+            <button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续上次测算 →</button>
+          </div>
+
+          <section class="home-block" aria-labelledby="mainTaskTitle">
+            <div class="home-block-head"><span class="label" id="mainTaskTitle">先选你最想知道的</span></div>
+            <div class="intent-grid two-up">
+              <button class="intent primary-intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">查法定退休年月</span></span><span class="intent-arrow">›</span></button>
+              <button class="intent primary-intent" data-intent="normal" type="button"><span><strong>退休后每月大概能领多少？</strong><span class="sub">按你的缴费情况估算</span></span><span class="intent-arrow">›</span></button>
+            </div>
+          </section>
+
+          <section class="home-block" aria-labelledby="planTaskTitle">
+            <div class="home-block-head"><span class="label" id="planTaskTitle">如果你不准备一直工作到退休</span></div>
+            <div class="intent-grid two-up">
+              <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">看看停工后社保怎么接着缴</span></span><span class="intent-arrow">›</span></button>
+              <button class="intent" data-intent="flex" type="button"><span><strong>我已经离职 / 灵活就业</strong><span class="sub">按未来实际缴费计划算</span></span><span class="intent-arrow">›</span></button>
+            </div>
+          </section>
+
+          <div class="resident-row">
+            <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">按居民养老规则单独计算</span></span><span class="intent-arrow">›</span></button>
+          </div>
+
+          <div class="trust-slot" id="trustSlot"></div>
+
+          <section class="v6-mission" aria-labelledby="missionTitle">
+            <span class="v6-mission-kicker">我们想把这件事长期做好</span>
+            <h2 id="missionTitle">一站式，把退休这件事算清楚</h2>
+            <p>退休年龄、最低缴费年限、养老金金额、离职后的缴费方案，尽量在这里一次算清。</p>
+            <p><strong>目标是把它持续做成全网尽可能完善、真正好用的一站式退休规划工具。</strong>哪里不准、难用、看不懂，请直接吐槽。每一条意见我们都会认真看，并持续优化。</p>
+            <a href="#feedbackWall">直接吐槽 →</a>
+          </section>
+
+          <section class="seo-guide" aria-labelledby="policyTitle">
+            <h2 id="policyTitle">几个常见问题</h2>
+            <div class="seo-faq">
+              <details><summary>退休年龄为什么不是统一一个数字？</summary><p>渐进式延迟退休已经实施，具体退休年月要结合出生年月和人员类别计算。</p></details>
+              <details><summary>最低缴费年限什么时候到20年？</summary><p>2025年至2029年仍为15年；2030年起逐年增加6个月，到2039年达到20年。</p></details>
+              <details><summary>停止工作后还能继续缴吗？</summary><p>可以根据实际情况转为灵活就业继续参保，也可以有断缴期。</p></details>
+              <details><summary>养老金金额为什么是估算？</summary><p>未来金额会受到缴费年限、缴费基数、个人账户、待遇领取地参数和未来工资水平等影响。</p></details>
+              <details><summary>城乡居民养老也按职工退休规则吗？</summary><p>不是。城乡居民基本养老保险按独立制度执行。</p></details>
+            </div>
+          </section>
+
+          <section class="feedback-wall" id="feedbackWall" aria-labelledby="feedbackTitle">
+            <div class="feedback-head"><div><h2 id="feedbackTitle">吐槽区</h2><p>哪里难用、哪里算得不对，直接说。</p></div></div>
+            <div class="feedback-compose">
+              <textarea id="feedbackInput" maxlength="1200" placeholder="例如：这个选项看不懂，或者这个结果明显不对……"></textarea>
+              <button id="feedbackSubmit" type="button">提交吐槽</button>
+            </div>
+            <div class="feedback-login-note">匿名提交。页面会展示反馈内容和时间；简单使用统计只记录访问来源类别、设备类别、所选功能、测算步骤、是否到达结果，以及分享/相关工具点击，不记录你填写的养老金数据或分享卡片里的金额。</div>
+            <div class="feedback-list" id="feedbackList"><div class="feedback-empty">正在加载大家的反馈…</div></div>
+          </section>
+        </section>
+
+        <section id="wizardView" class="hidden">
+          <div class="card">
+            <div class="wizard-head">
+              <div class="progress"><span id="progressBar"></span></div>
+              <div class="step-kicker" id="stepKicker">第 1 步</div>
+              <h2 id="stepTitle"></h2>
+              <p class="muted" id="stepDesc"></p>
+            </div>
+            <div id="stepBody" class="form-stack"></div>
+          </div>
+        </section>
+        <section id="resultView" class="hidden"></section>
+        <section id="residentView" class="hidden"></section>
+      </main>
+    </div>
+  </div>
+
+  <div class="sticky-actions hidden" id="stickyActions"><div class="sticky-inner"><button class="btn secondary" id="backBtn" type="button">上一步</button><button class="btn primary" id="nextBtn" type="button">下一步</button></div></div>
+
+  <script type="module" src="./js/hotfix-v5.js?v=20260830-v6c"></script>
+  <script type="module" src="./js/analytics.js?v=20260903-d3"></script>
+  <script type="module" src="./js/v23-runtime.js?v=20260902-v23"></script>
+  <script type="module" src="./js/v24-growth.js?v=20260903-v241"></script>
+  <script type="module" src="./js/employee-v4.js?v=20260830-v6c"></script>
+  <script type="module" src="./js/v25-region-policy.js?v=20260904-r4"></script>
+  <script type="module" src="./js/trust-v5.js?v=20260904-r4"></script>
+  <script type="module" src="./js/resident-ui.js?v=20260830-v6c"></script>
+  <script type="module" src="./js/feedback.js?v=20260830-v6c"></script>
+  <script type="module" src="./js/ux-v6.js?v=20260901-v6e"></script>
+</body>
+</html>

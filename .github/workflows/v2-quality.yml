@@ -1,0 +1,125 @@
+name: V2 Quality
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - '*.txt'
+      - 'data/**'
+      - 'scripts/**'
+      - 'assets/**'
+      - 'js/**'
+      - 'api/**'
+      - 'admin/**'
+      - 'tests_js/**'
+      - 'tests_e2e/**'
+      - 'package.json'
+      - 'requirements-test.txt'
+      - '.github/workflows/v2-quality.yml'
+  push:
+    branches:
+      - 'refactor/v2-retirement-planner'
+    paths:
+      - 'index.html'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - '*.txt'
+      - 'data/**'
+      - 'scripts/**'
+      - 'assets/**'
+      - 'js/**'
+      - 'api/**'
+      - 'admin/**'
+      - 'tests_js/**'
+      - 'tests_e2e/**'
+      - 'package.json'
+      - 'requirements-test.txt'
+      - '.github/workflows/v2-quality.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run V2 tests
+        run: npm run test:v2
+      - name: Check regional parameter audit
+        run: node scripts/audit-region-parameters.mjs
+      - name: Check nationwide region policy dictionary
+        run: node scripts/audit-region-policy-dictionary.mjs
+      - name: Check runtime registry stays synced with dictionary
+        run: node scripts/audit-region-runtime-sync.mjs
+      - name: Check IndexNow script syntax
+        run: bash -n scripts/submit-indexnow.sh
+      - name: Check browser modules syntax
+        run: |
+          node --check js/policy.js
+          node --check js/projection.js
+          node --check js/projection-v3.js
+          node --check js/projection-v4.js
+          node --check js/app.js
+          node --check js/employee-v3.js
+          node --check js/employee-v4.js
+          node --check js/hotfix-v5.js
+          node --check js/v23-runtime.js
+          node --check js/v24-growth.js
+          node --check js/v25-region-policy.js
+          node --check js/sources.js
+          node --check js/sources-v4.js
+          node --check js/sources-v5.js
+          node --check js/region-policy-runtime.generated.js
+          node --check js/region-policy-runtime.js
+          node --check js/trust.js
+          node --check js/trust-v3.js
+          node --check js/trust-v4.js
+          node --check js/trust-v5.js
+          node --check js/resident.js
+          node --check js/resident-ui.js
+          node --check js/guidance.js
+          node --check js/launch.js
+          node --check js/launch-polish.js
+          node --check js/analytics.js
+          node --check js/feedback.js
+          node --check js/ux-v6.js
+          node --check scripts/audit-region-policy-dictionary.mjs
+          node --check scripts/audit-region-runtime-sync.mjs
+      - name: Check PHP API syntax when available
+        run: |
+          if command -v php >/dev/null 2>&1; then
+            php -l api/bootstrap.php
+            php -l api/feedback.php
+            php -l api/event.php
+            php -l api/admin.php
+            php -l scripts/migrate-analytics-v2.php
+            php -l scripts/migrate-analytics-diagnostics.php
+          fi
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+          # GitHub ubuntu-24.04 runner already carries the shared libraries Chromium needs.
+          # Avoid --with-deps here: it re-downloads optional font packages and can consume the whole job timeout on a slow apt mirror.
+          python -m playwright install chromium
+      - name: Run V2 browser smoke
+        run: |
+          python -m http.server 8765 --bind 127.0.0.1 >/tmp/yanglao-http.log 2>&1 &
+          python -m pytest tests_e2e/test_v2_*.py -q

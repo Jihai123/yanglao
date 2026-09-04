@@ -1,0 +1,19 @@
+region_key,region_name,parameter_type,subregion_key,subregion_name,year,min,max,value,unit,source_url,status
+liaoning,辽宁,calcBase,province_except_shenyang_dalian,全省（不含沈阳、大连）,2025,,,7346,yuan/month,https://rst.ln.gov.cn/rst/zxzx/gsgg/2025092012232024861/index.shtml,recent_fallback
+liaoning,辽宁,calcBase,shenyang,沈阳,2025,,,8390,yuan/month,https://rst.ln.gov.cn/rst/zxzx/gsgg/2025092012232024861/index.shtml,recent_fallback
+liaoning,辽宁,calcBase,dalian,大连,2025,,,8956,yuan/month,https://rst.ln.gov.cn/rst/zxzx/gsgg/2025092012232024861/index.shtml,recent_fallback
+jilin,吉林,contribution,agricultural_reclamation,农垦,2025,1334.1,6670.3,,yuan/month,https://xxgk.jl.gov.cn/zcbm/fgw_97992/xxgkmlqy/202509/t20250922_9324837.html,recent_fallback
+jilin,吉林,calcBase,province_except_changchun_reclamation,全省（不含长春、农垦）,2025,,,87865,yuan/year,https://xxgk.jl.gov.cn/zcbm/fgw_97992/xxgkmlqy/202509/t20250922_9324837.html,recent_fallback
+jilin,吉林,calcBase,changchun,长春,2025,,,95739,yuan/year,https://xxgk.jl.gov.cn/zcbm/fgw_97992/xxgkmlqy/202509/t20250922_9324837.html,recent_fallback
+jilin,吉林,calcBase,agricultural_reclamation,农垦,2025,,,26681,yuan/year,https://xxgk.jl.gov.cn/zcbm/fgw_97992/xxgkmlqy/202509/t20250922_9324837.html,recent_fallback
+hubei,湖北,contribution,tier1,武汉市 / 省直,2025,4498,22488,,yuan/month,https://rst.hubei.gov.cn/zfxxgk/zc/qtzdgkwj/202509/t20250919_5775307.shtml,recent_fallback
+hubei,湖北,contribution,tier2,黄石 / 十堰 / 襄阳 / 宜昌 / 荆门 / 随州 / 恩施,2025,4299,21678,,yuan/month,https://rst.hubei.gov.cn/zfxxgk/zc/qtzdgkwj/202509/t20250919_5775307.shtml,recent_fallback
+hubei,湖北,contribution,tier3,荆州 / 鄂州 / 孝感 / 黄冈 / 咸宁 / 仙桃 / 天门 / 潜江 / 神农架,2025,4254,21462,,yuan/month,https://rst.hubei.gov.cn/zfxxgk/zc/qtzdgkwj/202509/t20250919_5775307.shtml,recent_fallback
+guangdong,广东,contribution,guangzhou_province_direct,广州 / 省直,2025,5510,27549,,yuan/month,https://guangdong.chinatax.gov.cn/gdsw/ssfggds/2025-10/27/content_ba2a20bf040648e089f9edf9f557fa2b.shtml,recent_fallback
+guangdong,广东,contribution,other_excluding_shenzhen,其他地区（不含深圳）,2025,4775,27549,,yuan/month,https://guangdong.chinatax.gov.cn/gdsw/ssfggds/2025-10/27/content_ba2a20bf040648e089f9edf9f557fa2b.shtml,recent_fallback
+guangdong,广东,contribution,shenzhen,深圳,2025,,,,yuan/month,,missing
+guangdong,广东,calcBase,guangzhou_province_direct,广州 / 省直,2025,,,9493,yuan/month,https://guangdong.chinatax.gov.cn/gdsw/ssfggds/2025-10/27/content_ba2a20bf040648e089f9edf9f557fa2b.shtml,recent_fallback
+guangdong,广东,calcBase,other_excluding_shenzhen,其他地区（不含深圳）,2025,,,9493,yuan/month,https://guangdong.chinatax.gov.cn/gdsw/ssfggds/2025-10/27/content_ba2a20bf040648e089f9edf9f557fa2b.shtml,recent_fallback
+guangdong,广东,calcBase,shenzhen,深圳企业职工,2025,,,11293,yuan/month,https://hrss.sz.gov.cn/zmhd/cjwt/cjwt/shbz/content/post_12493488.html,recent_fallback
+shandong,山东,calcBase,province_except_heze,全省（不含菏泽）,2025,,,7831,yuan/month,http://hrss.shandong.gov.cn/articles/ch00378/202510/1e743c80-1abf-47a8-b62a-db2518c0820b.shtml,recent_fallback
+shandong,山东,calcBase,heze,菏泽,2025,,,,yuan/month,,missing

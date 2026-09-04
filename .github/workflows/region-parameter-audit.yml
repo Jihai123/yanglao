@@ -1,0 +1,27 @@
+name: Region Parameter Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 2 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit verified regional pension parameters
+        run: node scripts/audit-region-parameters.mjs
+      - name: Publish audit summary
+        run: |
+          cat test-artifacts/reports/region-parameter-health.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: region-parameter-health
+          path: test-artifacts/reports/region-parameter-health.json
