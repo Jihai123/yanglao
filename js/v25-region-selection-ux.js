@@ -56,9 +56,16 @@ function fieldFor(select) {
   return select?.closest('.field') || null;
 }
 
+function setRegionDependentVisibility(body, hidden) {
+  const futureBase = body?.querySelector('[data-v23-future-base]');
+  if (futureBase) futureBase.hidden = hidden;
+}
+
 function ensureNeutralHint(select) {
   const field = fieldFor(select);
-  if (!field) return;
+  const body = amountBody();
+  if (!field || !body) return;
+
   const label = field.querySelector('label');
   if (label && label.textContent !== '预计在哪个省份办理退休？') {
     label.textContent = '预计在哪个省份办理退休？';
@@ -72,6 +79,8 @@ function ensureNeutralHint(select) {
   const inline = field.querySelector('.region-inline');
   const warning = field.querySelector('[data-v23-calc-warning]');
   const unselected = !select.value || select.value === REGION_OTHER_VALUE;
+  setRegionDependentVisibility(body, unselected);
+
   if (!unselected) {
     if (inline) inline.hidden = false;
     if (warning) warning.hidden = false;
@@ -79,8 +88,8 @@ function ensureNeutralHint(select) {
     return;
   }
 
-  // Do not rewrite/remove nodes owned by the V2.3/V2.5 observers here.
-  // Attribute-only hiding avoids creating a childList feedback loop with them.
+  // V2.3/V2.5 own these nodes. Hide them instead of rewriting/removing them,
+  // so their childList observers cannot get into a feedback loop with this layer.
   if (inline) inline.hidden = true;
   if (warning) warning.hidden = true;
 
@@ -161,6 +170,10 @@ document.addEventListener('click', event => {
   if (!next || !body || !estimateActive(body)) return;
   const select = regionSelect(body);
   if (!select || (select.value && select.value !== REGION_OTHER_VALUE)) return;
+
+  // This module is loaded before V2.3 runtime so region selection is the
+  // first amount-step prerequisite checked. Otherwise V2.3 can stop the same
+  // click on a dependent flex-base field and surface the wrong error first.
   event.preventDefault();
   event.stopImmediatePropagation();
   unlockNextButton();
