@@ -40,7 +40,7 @@ def test_amount_step_starts_neutral_and_requires_explicit_region_choice(browser)
     expect(select.locator('option[data-v25-region-placeholder]')).to_have_text('请选择省份')
     expect(page.locator('#stepBody')).to_contain_text('预计在哪个省份办理退休？')
     expect(page.locator('#stepBody')).to_contain_text('请选择预计办理退休的省份，系统会自动匹配已收录的可靠地区参数。')
-    expect(page.locator('[data-v23-calc-warning]')).to_have_count(0)
+    expect(page.locator('[data-v23-calc-warning]')).to_be_hidden()
     expect(page.locator('#stepError')).to_have_count(0)
 
     page.locator('#nextBtn').click()
@@ -60,8 +60,9 @@ def test_explicit_unknown_region_stays_neutral_instead_of_showing_missing_data_e
 
     select = page.locator('#regionSelect')
     select.select_option('other')
+    expect(page.locator('#regionSelect')).to_have_value('other')
     expect(page.locator('#stepBody')).to_contain_text('暂时不确定办理退休地区时，建议先切换“只看资格”')
-    expect(page.locator('[data-v23-calc-warning]')).to_have_count(0)
+    expect(page.locator('[data-v23-calc-warning]')).to_be_hidden()
 
     page.locator('#nextBtn').click()
     expect(page.locator('#stepError')).to_contain_text('暂时不确定可切换“只看资格”')
