@@ -88,7 +88,8 @@ def test_plan_moves_future_base_choice_to_amount_and_offers_verified_minimum(bro
 def test_amount_step_uses_benefit_location_wording(browser):
     page, errors = new_page(browser)
     goto_amount(page, 'normal')
-    expect(page.locator('#stepBody')).to_contain_text('养老金待遇领取地（预计）')
+    expect(page.locator('#stepBody')).to_contain_text('预计在哪个省份办理退休？')
+    expect(page.locator('#stepBody')).to_contain_text('不是退休后居住地')
     expect(page.locator('#stepBody')).not_to_contain_text('参保 / 退休地区')
     assert errors == []
     page.close()

@@ -1,0 +1,183 @@
+const AMOUNT_STEP_SELECTOR = '#stepBody[data-step="amount"]';
+const REGION_PLACEHOLDER_VALUE = '';
+const REGION_OTHER_VALUE = 'other';
+const EXPLICIT_UNKNOWN_KEY = 'yanglao-v25-region-explicit-unknown';
+let queued = false;
+
+function amountBody() {
+  return document.querySelector(AMOUNT_STEP_SELECTOR);
+}
+
+function estimateActive(body = amountBody()) {
+  return Boolean(body?.querySelector('[data-amount-mode="estimate"].active'));
+}
+
+function regionSelect(body = amountBody()) {
+  return body?.querySelector('#regionSelect') || null;
+}
+
+function explicitUnknown() {
+  try { return sessionStorage.getItem(EXPLICIT_UNKNOWN_KEY) === '1'; } catch { return false; }
+}
+
+function setExplicitUnknown(value) {
+  try {
+    if (value) sessionStorage.setItem(EXPLICIT_UNKNOWN_KEY, '1');
+    else sessionStorage.removeItem(EXPLICIT_UNKNOWN_KEY);
+  } catch {}
+}
+
+function ensurePlaceholder(select) {
+  if (!select) return;
+  let placeholder = select.querySelector('option[data-v25-region-placeholder]');
+  if (!placeholder) {
+    placeholder = document.createElement('option');
+    placeholder.value = REGION_PLACEHOLDER_VALUE;
+    placeholder.textContent = '请选择省份';
+    placeholder.disabled = true;
+    placeholder.dataset.v25RegionPlaceholder = '1';
+    select.prepend(placeholder);
+  }
+
+  const other = select.querySelector(`option[value="${REGION_OTHER_VALUE}"]`);
+  if (other && other.textContent !== '暂时不确定（建议先只看资格）') {
+    other.textContent = '暂时不确定（建议先只看资格）';
+  }
+
+  if (!select.dataset.v25RegionChoiceInitialized) {
+    select.dataset.v25RegionChoiceInitialized = '1';
+    if (select.value === REGION_OTHER_VALUE && !explicitUnknown()) {
+      select.value = REGION_PLACEHOLDER_VALUE;
+    }
+  }
+}
+
+function fieldFor(select) {
+  return select?.closest('.field') || null;
+}
+
+function setRegionDependentVisibility(body, hidden) {
+  const futureBase = body?.querySelector('[data-v23-future-base]');
+  if (futureBase) futureBase.hidden = hidden;
+}
+
+function ensureNeutralHint(select) {
+  const field = fieldFor(select);
+  const body = amountBody();
+  if (!field || !body) return;
+
+  const label = field.querySelector('label');
+  if (label && label.textContent !== '预计在哪个省份办理退休？') {
+    label.textContent = '预计在哪个省份办理退休？';
+  }
+
+  const help = field.querySelector('.help');
+  if (help && help.textContent !== '这里指预计办理退休待遇的省份，不是退休后居住地。跨省缴过社保、暂时拿不准时，可以先只看资格。') {
+    help.textContent = '这里指预计办理退休待遇的省份，不是退休后居住地。跨省缴过社保、暂时拿不准时，可以先只看资格。';
+  }
+
+  const inline = field.querySelector('.region-inline');
+  const warning = field.querySelector('[data-v23-calc-warning]');
+  const unselected = !select.value || select.value === REGION_OTHER_VALUE;
+  setRegionDependentVisibility(body, unselected);
+
+  if (!unselected) {
+    if (inline) inline.hidden = false;
+    if (warning) warning.hidden = false;
+    field.querySelector('[data-v25-region-choice-hint]')?.remove();
+    return;
+  }
+
+  // V2.3/V2.5 own these nodes. Hide them instead of rewriting/removing them,
+  // so their childList observers cannot get into a feedback loop with this layer.
+  if (inline) inline.hidden = true;
+  if (warning) warning.hidden = true;
+
+  let hint = field.querySelector('[data-v25-region-choice-hint]');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.className = 'help';
+    hint.dataset.v25RegionChoiceHint = '1';
+    field.appendChild(hint);
+  }
+  const nextText = select.value === REGION_OTHER_VALUE
+    ? '暂时不确定办理退休地区时，建议先切换“只看资格”；确定地区后再回来估算金额。'
+    : '请选择预计办理退休的省份，系统会自动匹配已收录的可靠地区参数。暂时不确定时，可以切换“只看资格”。';
+  if (hint.textContent !== nextText) hint.textContent = nextText;
+}
+
+function clearRegionError() {
+  const error = document.getElementById('stepError');
+  if (error?.dataset.v25RegionChoiceError === '1') error.remove();
+  fieldFor(regionSelect())?.classList.remove('v23-field-error');
+}
+
+function unlockNextButton() {
+  const button = document.getElementById('nextBtn');
+  if (!button) return;
+  button.removeAttribute('aria-busy');
+  button.removeAttribute('aria-disabled');
+  if (button.dataset.v23OriginalText) {
+    button.textContent = button.dataset.v23OriginalText;
+    delete button.dataset.v23OriginalText;
+  }
+}
+
+function showRegionRequired(select) {
+  clearRegionError();
+  const field = fieldFor(select);
+  field?.classList.add('v23-field-error');
+  const error = document.createElement('div');
+  error.id = 'stepError';
+  error.className = 'status danger';
+  error.dataset.v25RegionChoiceError = '1';
+  error.textContent = '要估算养老金金额，请先选择预计办理退休的省份；暂时不确定可切换“只看资格”。';
+  amountBody()?.appendChild(error);
+  select?.focus({ preventScroll: true });
+  select?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function applyRegionChoiceUx() {
+  const body = amountBody();
+  if (!body || !estimateActive(body)) return;
+  const select = regionSelect(body);
+  if (!select) return;
+  ensurePlaceholder(select);
+  ensureNeutralHint(select);
+}
+
+function queueApply() {
+  if (queued) return;
+  queued = true;
+  queueMicrotask(() => {
+    queued = false;
+    applyRegionChoiceUx();
+  });
+}
+
+document.addEventListener('change', event => {
+  if (!event.target.matches('#regionSelect')) return;
+  setExplicitUnknown(event.target.value === REGION_OTHER_VALUE);
+  clearRegionError();
+  queueApply();
+}, true);
+
+// Capture at window level so this prerequisite runs before older document-level
+// amount validators, regardless of module registration order.
+window.addEventListener('click', event => {
+  if (event.target.closest('[data-intent], #restartBtn')) setExplicitUnknown(false);
+
+  const next = event.target.closest('#nextBtn');
+  const body = amountBody();
+  if (!next || !body || !estimateActive(body)) return;
+  const select = regionSelect(body);
+  if (!select || (select.value && select.value !== REGION_OTHER_VALUE)) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  unlockNextButton();
+  showRegionRequired(select);
+}, true);
+
+new MutationObserver(queueApply).observe(document.body, { childList: true, subtree: true });
+queueApply();
