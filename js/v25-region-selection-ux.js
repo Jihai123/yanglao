@@ -55,21 +55,20 @@ function ensureNeutralHint(select) {
     help.textContent = '这里指预计办理退休待遇的省份，不是退休后居住地。跨省缴过社保、暂时拿不准时，可以先只看资格。';
   }
 
+  const inline = field.querySelector('.region-inline');
+  const warning = field.querySelector('[data-v23-calc-warning]');
   const unselected = !select.value || select.value === REGION_OTHER_VALUE;
   if (!unselected) {
+    if (inline) inline.hidden = false;
+    if (warning) warning.hidden = false;
     field.querySelector('[data-v25-region-choice-hint]')?.remove();
     return;
   }
 
-  field.querySelector('[data-v23-calc-warning]')?.remove();
-  const inline = field.querySelector('.region-inline');
-  if (inline) {
-    inline.classList.add('muted-inline');
-    const text = select.value === REGION_OTHER_VALUE
-      ? '暂时不确定办理退休地区时，建议先切换“只看资格”；确定地区后再回来估算金额。'
-      : '请选择预计办理退休的省份，系统会自动匹配已收录的可靠地区参数。';
-    if (inline.textContent !== text) inline.textContent = text;
-  }
+  // Do not rewrite/remove nodes owned by the V2.3/V2.5 observers here.
+  // Attribute-only hiding avoids creating a childList feedback loop with them.
+  if (inline) inline.hidden = true;
+  if (warning) warning.hidden = true;
 
   let hint = field.querySelector('[data-v25-region-choice-hint]');
   if (!hint) {
@@ -79,8 +78,8 @@ function ensureNeutralHint(select) {
     field.appendChild(hint);
   }
   const nextText = select.value === REGION_OTHER_VALUE
-    ? '暂时不确定也没关系：可先切换“只看资格”，不影响退休年龄和最低缴费年限判断。'
-    : '先选省份后再估算金额；暂时不确定时，可以切换“只看资格”。';
+    ? '暂时不确定办理退休地区时，建议先切换“只看资格”；确定地区后再回来估算金额。'
+    : '请选择预计办理退休的省份，系统会自动匹配已收录的可靠地区参数。暂时不确定时，可以切换“只看资格”。';
   if (hint.textContent !== nextText) hint.textContent = nextText;
 }
 
