@@ -49,8 +49,10 @@ test('approved public references auto-fill but remain explicitly non-official an
     assert.equal(region.calcBase.status, 'public_reference', key);
     assert.equal(region.calcBase.runtimeEligible, true, key);
     assert.equal(region.calcBase.userEditable, true, key);
+    assert.equal(/^official/i.test(region.calcBase.sourceLevel), false, key);
     assert.match(region.calcBase.label, /公开资料参考值/, key);
-    assert.match(region.calcBase.label, /官方原文暂未找到/, key);
+    assert.match(region.calcBase.label, /暂未找到可直接引用的省级人社官方原文/, key);
+    assert.match(region.calcBase.label, /仅用于退休规划估算/, key);
     assert.match(region.calcBase.label, /自行修改/, key);
   }
 });

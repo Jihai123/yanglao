@@ -1,5 +1,5 @@
 region_key,region_name,year,value,status,source_level,source_url,user_editable,enabled,note
-shanxi,山西,2025,7253,public_reference,secondary_policy_reprint,https://zc.51shebao.com/detail/839909,true,true,公开资料参考值；晋人社厅发〔2025〕36号及7253元/月被完整转载但官方公开原文暂未找到。仅用于规划估算，如掌握当地更准确数据可自行修改。
-chongqing,重庆,2025,8240,public_reference,corroborated_public_reports,https://www.sohu.com/a/956602818_122343943,true,true,公开资料参考值；8240元/月在多处公开资料和退休核定案例中一致，但重庆人社养老金参数官方正文暂未找到。仅用于规划估算，如掌握当地更准确数据可自行修改。
-sichuan,四川,2025,8462,public_reference,unverified_public_reference,https://m.sohu.com/a/962044797_122341601/,true,true,公开资料参考值；8462元/月在公开测算和案例中出现，但四川人社或政府正式计发基数正文暂未找到。仅用于规划估算，如掌握当地更准确数据可自行修改。
-shaanxi,陕西,2025,7881,public_reference,public_filing_quote,https://www.9fzt.com/detail/sz_000516_9_6821d7ee2f10de41b0023d3d28ff82d9.html,true,true,公开资料参考值；上市公司公开材料明确引述陕西省人社数据为7881元/月，但陕西人社或政府官方原文直链暂未找到。仅用于规划估算，如掌握当地更准确数据可自行修改。
+shanxi,山西,2025,7253,public_reference,secondary_policy_reprint,https://zc.51shebao.com/detail/839909,true,true,公开资料参考值 · 暂未找到可直接引用的省级人社官方原文。仅用于退休规划估算，如掌握当地最新官方数据，可自行修改。证据线索：晋人社厅发〔2025〕36号及7253元/月已被公开资料完整转载。
+chongqing,重庆,2025,8240,public_reference,corroborated_public_reports,https://www.sohu.com/a/956602818_122343943,true,true,公开资料参考值 · 暂未找到可直接引用的省级人社官方原文。仅用于退休规划估算，如掌握当地最新官方数据，可自行修改。证据线索：8240元/月在多处公开资料和退休核定案例中一致。
+sichuan,四川,2025,8462,public_reference,unverified_public_reference,https://m.sohu.com/a/962044797_122341601/,true,true,公开资料参考值 · 暂未找到可直接引用的省级人社官方原文。仅用于退休规划估算，如掌握当地最新官方数据，可自行修改。证据线索：8462元/月在公开测算和案例中出现。
+shaanxi,陕西,2025,7881,public_reference,public_filing_quote,https://www.9fzt.com/detail/sz_000516_9_6821d7ee2f10de41b0023d3d28ff82d9.html,true,true,公开资料参考值 · 暂未找到可直接引用的省级人社官方原文。仅用于退休规划估算，如掌握当地最新官方数据，可自行修改。证据线索：上市公司公开材料明确引述陕西省人社数据为7881元/月。

@@ -3,7 +3,7 @@ import {
   NATIONAL_POLICY_SOURCES,
   getRegionV5,
   resolveRegionV5,
-} from './sources-v5.js?v=20260904-r3';
+} from './sources-v5.js?v=20260904-r4';
 
 const PLAN_KEY = 'yanglao-v4-plan';
 const SUBREGION_PREFIX = 'yanglao-v25-subregion:';

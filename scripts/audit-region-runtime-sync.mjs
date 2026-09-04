@@ -123,14 +123,18 @@ for (const row of subregions) {
 for (const row of enabledPublicReferences) {
   const base = mainByRegion.get(row.region_key);
   const runtime = REGION_POLICY_RUNTIME[row.region_key]?.calcBase;
+  const note = row.note || '';
   if (!base) errors.push(`${row.region_name}: public reference has no province dictionary row`);
   if (base?.calc_base_runtime_eligible === 'true') errors.push(`${row.region_name}: public reference must not override an official runtime calc base`);
   if (row.status !== 'public_reference') errors.push(`${row.region_name}: public reference has invalid status ${row.status}`);
   if (row.user_editable !== 'true') errors.push(`${row.region_name}: public reference must remain user-editable`);
   if (!(number(row.value) > 0) || !(number(row.year) > 0)) errors.push(`${row.region_name}: public reference missing year/value`);
   if (!row.source_level || !row.source_url) errors.push(`${row.region_name}: public reference missing provenance`);
-  if (!/官方原文.*未找到/.test(row.note || '')) errors.push(`${row.region_name}: public reference note must disclose missing official original`);
-  if (!/自行修改/.test(row.note || '')) errors.push(`${row.region_name}: public reference note must disclose manual override`);
+  if (/^official/i.test(row.source_level || '')) errors.push(`${row.region_name}: public reference source level must not be official`);
+  if (!/公开资料参考值/.test(note)) errors.push(`${row.region_name}: public reference note must identify the public-reference tier`);
+  if (!/暂未找到可直接引用的省级人社官方原文/.test(note)) errors.push(`${row.region_name}: public reference note must disclose missing official original`);
+  if (!/仅用于退休规划估算/.test(note)) errors.push(`${row.region_name}: public reference note must disclose estimation-only use`);
+  if (!/自行修改/.test(note)) errors.push(`${row.region_name}: public reference note must disclose manual override`);
   if (!runtime) {
     errors.push(`${row.region_name}: public reference missing from runtime`);
     continue;
@@ -138,13 +142,34 @@ for (const row of enabledPublicReferences) {
   if (runtime.status !== 'public_reference') errors.push(`${row.region_name}: runtime public reference status drift`);
   if (!runtime.runtimeEligible) errors.push(`${row.region_name}: runtime public reference is not enabled`);
   if (!runtime.userEditable) errors.push(`${row.region_name}: runtime public reference is not editable`);
+  if (/^official/i.test(runtime.sourceLevel || '')) errors.push(`${row.region_name}: runtime public reference must not claim an official source level`);
+  if (!/暂未找到可直接引用的省级人社官方原文/.test(runtime.note || '')) errors.push(`${row.region_name}: runtime public reference must disclose missing official original`);
   if (!sameNumber(runtime.value, row.value)) errors.push(`${row.region_name}: public reference value drift`);
   if (Number(runtime.year) !== Number(row.year)) errors.push(`${row.region_name}: public reference year drift`);
   if (runtime.sourceLevel !== row.source_level) errors.push(`${row.region_name}: public reference source level drift`);
   if (runtime.url !== row.source_url) errors.push(`${row.region_name}: public reference source URL drift`);
 }
 
+const effectiveCalcCoverage = main.filter(row => {
+  const runtime = REGION_POLICY_RUNTIME[row.region_key];
+  if (runtime?.calcBase?.runtimeEligible && number(runtime.calcBase.value) > 0) return true;
+  return Object.values(runtime?.subregions || {}).some(item => item?.calcBase?.runtimeEligible && number(item.calcBase.value) > 0);
+}).length;
+const effectiveFullyEligible = main.filter(row => {
+  const runtime = REGION_POLICY_RUNTIME[row.region_key];
+  const directContribution = runtime?.contribution?.runtimeEligible && number(runtime.contribution.min) > 0 && number(runtime.contribution.max) > 0;
+  const directCalc = runtime?.calcBase?.runtimeEligible && number(runtime.calcBase.value) > 0;
+  if (directContribution && directCalc) return true;
+  return Object.values(runtime?.subregions || {}).some(item => {
+    const contribution = Object.prototype.hasOwnProperty.call(item, 'contribution') ? item.contribution : runtime?.contribution;
+    const calcBase = Object.prototype.hasOwnProperty.call(item, 'calcBase') ? item.calcBase : runtime?.calcBase;
+    return contribution?.runtimeEligible && number(contribution.min) > 0 && number(contribution.max) > 0 && calcBase?.runtimeEligible && number(calcBase.value) > 0;
+  });
+}).length;
+
 console.log(`region runtime sync audit: ${main.length} province rows, ${subregions.length} subregion rows, ${enabledPublicReferences.length} public-reference overrides`);
+console.log(`effective calc-base runtime coverage incl. public references/subregions: ${effectiveCalcCoverage}/${main.length}`);
+console.log(`effective fully runtime-eligible incl. public references/subregions: ${effectiveFullyEligible}/${main.length}`);
 if (errors.length) {
   for (const error of errors) console.error(`runtime sync error: ${error}`);
   process.exitCode = 1;

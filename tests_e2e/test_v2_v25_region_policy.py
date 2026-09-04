@@ -31,6 +31,22 @@ def flex_to_amount(page):
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
 
 
+def normal_to_amount(page):
+    page.locator('[data-intent="normal"]').click()
+    page.locator('#nextBtn').click()
+    page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    page.locator('#nextBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+
+
+def assert_public_reference_copy(page):
+    expect(page.locator('#stepBody')).to_contain_text('公开资料参考值')
+    expect(page.locator('#stepBody')).to_contain_text('暂未找到可直接引用的省级人社官方原文')
+    expect(page.locator('#stepBody')).to_contain_text('仅用于退休规划估算')
+    expect(page.locator('#stepBody')).to_contain_text('可自行修改')
+
+
 def test_v25_recent_fallback_minimum_and_public_calc_reference_are_labeled_separately(browser):
     page, errors = fresh_page(browser)
     flex_to_amount(page)
@@ -43,25 +59,54 @@ def test_v25_recent_fallback_minimum_and_public_calc_reference_are_labeled_separ
     expect(minimum).to_contain_text('2025年最近官方标准')
     expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('8462')
     expect(page.locator('[data-key="currentCalcBaseYear"]')).to_have_value('2025')
-    expect(page.locator('#stepBody')).to_contain_text('公开资料参考值')
-    expect(page.locator('#stepBody')).to_contain_text('官方原文暂未找到')
-    expect(page.locator('#stepBody')).to_contain_text('可自行修改')
+    assert_public_reference_copy(page)
     assert errors == []
     page.close()
 
 
-def test_v25_shanxi_public_reference_is_auto_filled_without_claiming_official_verification(browser):
+def test_v25_all_public_references_switch_cleanly_and_never_claim_official_verification(browser):
+    page, errors = fresh_page(browser)
+    flex_to_amount(page)
+
+    for region_key, value in [('shanxi', '7253'), ('chongqing', '8240'), ('sichuan', '8462'), ('shaanxi', '7881')]:
+        page.locator('#regionSelect').select_option(region_key)
+        expect(page.locator('[data-key="currentCalcBase"]')).to_have_value(value)
+        expect(page.locator('[data-key="currentCalcBaseYear"]')).to_have_value('2025')
+        assert_public_reference_copy(page)
+
+    assert errors == []
+    page.close()
+
+
+def test_v25_switching_to_manual_regions_clears_previous_calc_reference(browser):
+    page, errors = fresh_page(browser)
+    flex_to_amount(page)
+    page.locator('#regionSelect').select_option('sichuan')
+    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('8462')
+
+    for region_key in ['henan', 'hainan', 'hubei']:
+        page.locator('#regionSelect').select_option(region_key)
+        expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('')
+        expect(page.locator('[data-key="currentCalcBaseYear"]')).to_have_value('')
+
+    page.locator('#regionSelect').select_option('shanxi')
+    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('7253')
+    assert errors == []
+    page.close()
+
+
+def test_v25_manual_calc_override_survives_unrelated_dom_mutations(browser):
     page, errors = fresh_page(browser)
     flex_to_amount(page)
     page.locator('#regionSelect').select_option('shanxi')
+    calc = page.locator('[data-key="currentCalcBase"]')
+    calc.fill('8000')
+    calc.dispatch_event('change')
+    expect(page.locator('#stepBody')).to_contain_text('已手动修改')
 
-    expect(page.locator('[data-key="currentCalcBase"]')).to_have_value('7253')
-    expect(page.locator('[data-key="currentCalcBaseYear"]')).to_have_value('2025')
-    region_field = page.locator('#regionSelect').locator('xpath=..')
-    expect(region_field).to_contain_text('养老金计算参考值')
-    expect(region_field).to_contain_text('7,253')
-    expect(region_field).to_contain_text('公开资料参考值')
-    expect(region_field).to_contain_text('官方原文暂未找到')
+    page.locator('#stepBody').evaluate("body => { const marker = document.createElement('span'); body.appendChild(marker); marker.remove(); }")
+    expect(calc).to_have_value('8000')
+    expect(page.locator('#stepBody')).to_contain_text('已手动修改')
     assert errors == []
     page.close()
 
@@ -152,5 +197,25 @@ def test_v25_yunnan_uses_current_2026_minimum_and_calc_fallback(browser):
     expect(minimum).to_contain_text('按当地当前最低标准')
     expect(minimum).to_contain_text('4,403')
     expect(minimum).to_contain_text('2026年当前官方标准')
+    assert errors == []
+    page.close()
+
+
+def test_v25_result_data_basis_matches_public_reference_used_for_calculation(browser):
+    page, errors = fresh_page(browser)
+    normal_to_amount(page)
+    page.locator('#regionSelect').select_option('shanxi')
+    base = page.locator('[data-key="monthlyContributionBase"]')
+    base.fill('8000')
+    base.dispatch_event('change')
+    page.locator('#nextBtn').click()
+
+    expect(page.locator('#resultView')).to_be_visible()
+    trust = page.locator('#resultTrustCard')
+    expect(trust).to_contain_text('山西')
+    expect(trust).to_contain_text('养老金计算参考值 7,253元/月')
+    expect(trust).to_contain_text('公开资料参考值')
+    expect(trust).to_contain_text('暂未找到可直接引用的省级人社官方原文')
+    expect(trust).to_contain_text('仅用于退休规划估算')
     assert errors == []
     page.close()

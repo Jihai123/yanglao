@@ -4,7 +4,7 @@ import {
   getRegionV5,
   resolveRegionV5,
   subregionOptionsV5,
-} from './sources-v5.js?v=20260904-r3';
+} from './sources-v5.js?v=20260904-r4';
 
 const SUBREGION_PREFIX = 'yanglao-v25-subregion:';
 const FLEX_MODE_KEY = 'yanglao-v25-flex-mode';
@@ -65,6 +65,19 @@ function setNumericInternalState(key, value) {
   applyingPolicy = false;
 }
 
+function setHtmlIfChanged(element, html) {
+  if (element && element.innerHTML !== html) element.innerHTML = html;
+}
+
+function setTextIfChanged(element, text) {
+  if (element && element.textContent !== text) element.textContent = text;
+}
+
+function invalidateFutureBase() {
+  const wrapper = document.querySelector('#stepBody[data-step="amount"] [data-v23-future-base]');
+  if (wrapper) delete wrapper.dataset.v25Managed;
+}
+
 function resolvedPolicy() {
   const regionKey = selectedRegionKey();
   const region = getRegionV5(regionKey);
@@ -77,11 +90,16 @@ function ensureSubregionField() {
   const regionSelect = body?.querySelector('#regionSelect');
   const regionField = regionSelect?.closest('.field');
   if (!body || !regionSelect || !regionField) return;
-  body.querySelector('[data-v25-subregion-field]')?.remove();
 
   const regionKey = regionSelect.value || 'other';
   const region = getRegionV5(regionKey);
-  if (!region?.needsSubregion) return;
+  const existing = body.querySelector('[data-v25-subregion-field]');
+  if (!region?.needsSubregion) {
+    existing?.remove();
+    return;
+  }
+  if (existing?.dataset.v25RegionKey === regionKey) return;
+  existing?.remove();
 
   const options = subregionOptionsV5(regionKey);
   const saved = sessionGet(`${SUBREGION_PREFIX}${regionKey}`);
@@ -89,6 +107,7 @@ function ensureSubregionField() {
   const field = document.createElement('div');
   field.className = 'field';
   field.dataset.v25SubregionField = '1';
+  field.dataset.v25RegionKey = regionKey;
   field.innerHTML = `
     <label>再选一下地区范围</label>
     <select id="subregionSelect">
@@ -100,6 +119,7 @@ function ensureSubregionField() {
   field.querySelector('#subregionSelect')?.addEventListener('change', event => {
     sessionSet(`${SUBREGION_PREFIX}${regionKey}`, event.target.value || '');
     manualCalcOverride = false;
+    invalidateFutureBase();
     applyAmountPolicy();
   });
 }
@@ -119,19 +139,19 @@ function updateRegionSummary(policy) {
     const input = body.querySelector('[data-key="currentCalcBase"]');
     const year = body.querySelector('[data-key="currentCalcBaseYear"]')?.value;
     inline.classList.remove('muted-inline');
-    inline.innerHTML = `<strong>养老金计算参考值 ${money(input?.value)}/月</strong><span>${year ? `${year}年 · ` : ''}已手动修改</span>`;
+    setHtmlIfChanged(inline, `<strong>养老金计算参考值 ${money(input?.value)}/月</strong><span>${year ? `${year}年 · ` : ''}已手动修改</span>`);
     return;
   }
 
   if (policy?.calcBase?.runtimeEligible && Number(policy.calcBase.value) > 0) {
     inline.classList.remove('muted-inline');
     const area = policy.subregionName ? ` · ${policy.subregionName}` : '';
-    inline.innerHTML = `<strong>养老金计算参考值 ${money(policy.calcBase.value)}/月</strong><span>${calcBaseSourceLabelV5(policy.calcBase)}${area}</span>`;
+    setHtmlIfChanged(inline, `<strong>养老金计算参考值 ${money(policy.calcBase.value)}/月</strong><span>${calcBaseSourceLabelV5(policy.calcBase)}${area}</span>`);
   } else {
     inline.classList.add('muted-inline');
-    inline.textContent = policy?.subregionRequired
+    setTextIfChanged(inline, policy?.subregionRequired
       ? '请先选择地区细分，再自动匹配养老金计算参考值。'
-      : '暂未收录可自动带入的可靠养老金计算参考值，可在“高级参数”中手动填写。';
+      : '暂未收录可自动带入的可靠养老金计算参考值，可在“高级参数”中手动填写。');
   }
 }
 
@@ -176,7 +196,7 @@ function repurposeFutureBase(policy) {
 
   wrapper.querySelectorAll('[data-v25-flex-mode]').forEach(button => button.addEventListener('click', () => {
     sessionSet(FLEX_MODE_KEY, button.dataset.v25FlexMode || 'custom');
-    wrapper.dataset.v25Managed = '0';
+    delete wrapper.dataset.v25Managed;
     wrapper.innerHTML = '';
     repurposeFutureBase(resolvedPolicy());
   }));
@@ -194,11 +214,7 @@ function applyAmountPolicy() {
   const policy = resolvedPolicy();
   applyCalcBase(policy);
   updateRegionSummary(policy);
-  const wrapper = body.querySelector('[data-v23-future-base]');
-  if (wrapper) {
-    delete wrapper.dataset.v25Managed;
-    repurposeFutureBase(policy);
-  }
+  repurposeFutureBase(policy);
 }
 
 function unlockNextButton() {
@@ -239,6 +255,7 @@ document.addEventListener('change', event => {
   if (event.target.matches('#regionSelect')) {
     manualCalcOverride = false;
     sessionSet(FLEX_MODE_KEY, '');
+    invalidateFutureBase();
     queueApply();
     return;
   }

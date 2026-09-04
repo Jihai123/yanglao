@@ -10,7 +10,9 @@ import {
 // separate public-reference tier for regions whose official calc-base page is
 // still unavailable. CI verifies both layers so a research candidate cannot
 // silently become a production default.
-export const REGION_POLICY_RUNTIME_VERSION = `${BASE_VERSION}-r3`;
+export const REGION_POLICY_RUNTIME_VERSION = `${BASE_VERSION}-r4`;
+
+const PUBLIC_REFERENCE_NOTE = '公开资料参考值 · 暂未找到可直接引用的省级人社官方原文。仅用于退休规划估算，如掌握当地最新官方数据，可自行修改。';
 
 function publicReference(year, value, sourceLevel, url) {
   return {
@@ -21,6 +23,7 @@ function publicReference(year, value, sourceLevel, url) {
     userEditable: true,
     sourceLevel,
     url,
+    note: PUBLIC_REFERENCE_NOTE,
   };
 }
 
@@ -101,7 +104,7 @@ export const REGION_POLICY_RUNTIME = {
 
 export function calcBasePolicyLabel(calcBase) {
   if (calcBase?.status === 'public_reference') {
-    return `${calcBase.year}年公开资料参考值 · 官方原文暂未找到，可自行修改`;
+    return `${calcBase.year}年 · ${calcBase.note || PUBLIC_REFERENCE_NOTE}`;
   }
   return baseCalcBasePolicyLabel(calcBase);
 }
