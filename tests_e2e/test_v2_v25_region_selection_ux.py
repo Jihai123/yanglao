@@ -54,7 +54,7 @@ def test_amount_step_starts_neutral_and_requires_explicit_region_choice(browser)
     page.close()
 
 
-def test_explicit_unknown_region_stays_neutral_instead_of_showing_missing-data_error(browser):
+def test_explicit_unknown_region_stays_neutral_instead_of_showing_missing_data_error(browser):
     page, errors = fresh_page(browser)
     flex_to_amount(page)
 
