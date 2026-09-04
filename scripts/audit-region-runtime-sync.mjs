@@ -64,6 +64,10 @@ function calcRepresentedBySubregions(runtime, row) {
 
 const main = parseCsv(await readFile(new URL('../data/region-policy/employee-pension.v2.csv', import.meta.url), 'utf8'));
 const subregions = parseCsv(await readFile(new URL('../data/region-policy/subregions.v1.csv', import.meta.url), 'utf8'));
+const publicReferences = parseCsv(await readFile(new URL('../data/region-policy/public-reference-overrides.v1.csv', import.meta.url), 'utf8'));
+const enabledPublicReferences = publicReferences.filter(row => row.enabled === 'true');
+const publicReferenceByRegion = new Map(enabledPublicReferences.map(row => [row.region_key, row]));
+const mainByRegion = new Map(main.map(row => [row.region_key, row]));
 const errors = [];
 
 for (const row of main) {
@@ -87,7 +91,7 @@ for (const row of main) {
       if (Number(runtime.calcBase.year) !== Number(row.calc_base_year)) errors.push(`${row.region_name}: calc-base year drift`);
       if (Boolean(runtime.calcBase.runtimeEligible) !== (row.calc_base_runtime_eligible === 'true')) errors.push(`${row.region_name}: calc-base eligibility drift`);
     }
-  } else if (row.calc_base_runtime_eligible !== 'true' && runtime.calcBase) {
+  } else if (row.calc_base_runtime_eligible !== 'true' && runtime.calcBase && !publicReferenceByRegion.has(row.region_key)) {
     errors.push(`${row.region_name}: manual-only calc candidate leaked into runtime`);
   }
 }
@@ -116,7 +120,31 @@ for (const row of subregions) {
   }
 }
 
-console.log(`region runtime sync audit: ${main.length} province rows, ${subregions.length} subregion rows`);
+for (const row of enabledPublicReferences) {
+  const base = mainByRegion.get(row.region_key);
+  const runtime = REGION_POLICY_RUNTIME[row.region_key]?.calcBase;
+  if (!base) errors.push(`${row.region_name}: public reference has no province dictionary row`);
+  if (base?.calc_base_runtime_eligible === 'true') errors.push(`${row.region_name}: public reference must not override an official runtime calc base`);
+  if (row.status !== 'public_reference') errors.push(`${row.region_name}: public reference has invalid status ${row.status}`);
+  if (row.user_editable !== 'true') errors.push(`${row.region_name}: public reference must remain user-editable`);
+  if (!(number(row.value) > 0) || !(number(row.year) > 0)) errors.push(`${row.region_name}: public reference missing year/value`);
+  if (!row.source_level || !row.source_url) errors.push(`${row.region_name}: public reference missing provenance`);
+  if (!/官方原文.*未找到/.test(row.note || '')) errors.push(`${row.region_name}: public reference note must disclose missing official original`);
+  if (!/自行修改/.test(row.note || '')) errors.push(`${row.region_name}: public reference note must disclose manual override`);
+  if (!runtime) {
+    errors.push(`${row.region_name}: public reference missing from runtime`);
+    continue;
+  }
+  if (runtime.status !== 'public_reference') errors.push(`${row.region_name}: runtime public reference status drift`);
+  if (!runtime.runtimeEligible) errors.push(`${row.region_name}: runtime public reference is not enabled`);
+  if (!runtime.userEditable) errors.push(`${row.region_name}: runtime public reference is not editable`);
+  if (!sameNumber(runtime.value, row.value)) errors.push(`${row.region_name}: public reference value drift`);
+  if (Number(runtime.year) !== Number(row.year)) errors.push(`${row.region_name}: public reference year drift`);
+  if (runtime.sourceLevel !== row.source_level) errors.push(`${row.region_name}: public reference source level drift`);
+  if (runtime.url !== row.source_url) errors.push(`${row.region_name}: public reference source URL drift`);
+}
+
+console.log(`region runtime sync audit: ${main.length} province rows, ${subregions.length} subregion rows, ${enabledPublicReferences.length} public-reference overrides`);
 if (errors.length) {
   for (const error of errors) console.error(`runtime sync error: ${error}`);
   process.exitCode = 1;
