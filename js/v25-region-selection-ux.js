@@ -162,7 +162,9 @@ document.addEventListener('change', event => {
   queueApply();
 }, true);
 
-document.addEventListener('click', event => {
+// Capture at window level so this prerequisite runs before older document-level
+// amount validators, regardless of module registration order.
+window.addEventListener('click', event => {
   if (event.target.closest('[data-intent], #restartBtn')) setExplicitUnknown(false);
 
   const next = event.target.closest('#nextBtn');
@@ -171,9 +173,6 @@ document.addEventListener('click', event => {
   const select = regionSelect(body);
   if (!select || (select.value && select.value !== REGION_OTHER_VALUE)) return;
 
-  // This module is loaded before V2.3 runtime so region selection is the
-  // first amount-step prerequisite checked. Otherwise V2.3 can stop the same
-  // click on a dependent flex-base field and surface the wrong error first.
   event.preventDefault();
   event.stopImmediatePropagation();
   unlockNextButton();
