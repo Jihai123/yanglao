@@ -36,8 +36,27 @@ test('provisional and formula-based calc bases keep semantic labels', () => {
   assert.match(shanghai.calcBase.label, /官方公式参考值/);
 });
 
-test('manual-only calc-base regions do not expose candidate values as automatic defaults', () => {
-  for (const key of ['shanxi', 'henan', 'hubei', 'hainan', 'chongqing', 'sichuan', 'shaanxi']) {
+test('approved public references auto-fill but remain explicitly non-official and editable', () => {
+  const expected = {
+    shanxi: 7253,
+    chongqing: 8240,
+    sichuan: 8462,
+    shaanxi: 7881,
+  };
+  for (const [key, value] of Object.entries(expected)) {
+    const region = getRegionV5(key);
+    assert.equal(region.calcBase.value, value, key);
+    assert.equal(region.calcBase.status, 'public_reference', key);
+    assert.equal(region.calcBase.runtimeEligible, true, key);
+    assert.equal(region.calcBase.userEditable, true, key);
+    assert.match(region.calcBase.label, /公开资料参考值/, key);
+    assert.match(region.calcBase.label, /官方原文暂未找到/, key);
+    assert.match(region.calcBase.label, /自行修改/, key);
+  }
+});
+
+test('regions without a stable reference still stay manual-only', () => {
+  for (const key of ['henan', 'hubei', 'hainan']) {
     const region = getRegionV5(key);
     assert.equal(region.calcBase, undefined, key);
   }
