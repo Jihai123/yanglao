@@ -99,7 +99,9 @@ def test_v25_manual_calc_override_survives_unrelated_dom_mutations(browser):
     page, errors = fresh_page(browser)
     flex_to_amount(page)
     page.locator('#regionSelect').select_option('shanxi')
+    page.locator('details summary').filter(has_text='高级参数').click()
     calc = page.locator('[data-key="currentCalcBase"]')
+    expect(calc).to_be_visible()
     calc.fill('8000')
     calc.dispatch_event('change')
     expect(page.locator('#stepBody')).to_contain_text('已手动修改')
@@ -147,7 +149,8 @@ def test_v25_subregion_guard_blocks_result_until_required_area_is_selected(brows
     page.locator('#nextBtn').click()
 
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
-    expect(page.locator('#stepError')).to_contain_text('请先选择对应地区范围')
+    expect(page.locator('#subregionSelect')).to_be_visible()
+    expect(page.locator('#stepBody')).to_contain_text('请先选择地区细分')
     expect(page.locator('#nextBtn')).not_to_have_attribute('aria-busy', 'true')
     assert errors == []
     page.close()

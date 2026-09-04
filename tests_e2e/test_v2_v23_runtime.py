@@ -48,23 +48,26 @@ def test_v23_verified_beijing_minimum_is_offered_and_unknown_is_removed(browser)
     normal_to_amount(page)
     page.locator('#regionSelect').select_option('beijing')
 
-    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_be_visible()
-    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_contain_text('7,270')
-    expect(page.locator('[data-v23-flex-mode="custom"]')).to_be_visible()
+    expect(page.locator('[data-v25-flex-mode="minimum"]')).to_be_visible()
+    expect(page.locator('[data-v25-flex-mode="minimum"]')).to_contain_text('7,270')
+    expect(page.locator('[data-v25-flex-mode="custom"]')).to_be_visible()
     expect(page.locator('#stepBody')).not_to_contain_text('还没决定')
     assert errors == []
     page.close()
 
 
-def test_v23_unverified_shaanxi_minimum_falls_back_to_custom_without_guessing(browser):
+def test_v23_shaanxi_recent_official_minimum_is_offered_with_explicit_year(browser):
     page, errors = fresh_page(browser)
     normal_to_amount(page)
     page.locator('#regionSelect').select_option('shaanxi')
 
-    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_have_count(0)
-    expect(page.locator('[data-v23-flex-mode="custom"]')).to_be_visible()
-    expect(page.locator('[data-v23-flex-custom-input]')).to_be_visible()
-    expect(page.locator('#stepBody')).to_contain_text('暂未核验')
+    minimum = page.locator('[data-v25-flex-mode="minimum"]')
+    expect(minimum).to_be_visible()
+    expect(minimum).to_contain_text('按最近官方最低标准')
+    expect(minimum).to_contain_text('4,650')
+    expect(minimum).to_contain_text('2025年最近官方标准')
+    expect(page.locator('[data-v25-flex-mode="custom"]')).to_be_visible()
+    expect(page.locator('#stepBody')).to_contain_text('当前年度新值尚未核验')
     assert errors == []
     page.close()
 

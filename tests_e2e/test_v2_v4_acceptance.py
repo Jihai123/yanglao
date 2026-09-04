@@ -77,9 +77,9 @@ def test_plan_moves_future_base_choice_to_amount_and_offers_verified_minimum(bro
     page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
     page.locator('#regionSelect').select_option('beijing')
-    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_be_visible()
-    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_contain_text('7,270')
-    expect(page.locator('[data-v23-flex-mode="custom"]')).to_be_visible()
+    expect(page.locator('[data-v25-flex-mode="minimum"]')).to_be_visible()
+    expect(page.locator('[data-v25-flex-mode="minimum"]')).to_contain_text('7,270')
+    expect(page.locator('[data-v25-flex-mode="custom"]')).to_be_visible()
     expect(page.locator('#stepBody')).not_to_contain_text('还没决定')
     assert errors == []
     page.close()
@@ -120,6 +120,7 @@ def test_valid_shaanxi_plan_shows_breakdown_and_multi_year_comparison(browser):
     page.locator('#nextBtn').click()  # plan -> amount
 
     page.locator('#regionSelect').select_option('shaanxi')
+    page.locator('[data-v25-flex-mode="custom"]').click()
     future = page.locator('[data-v23-flex-custom-input]')
     expect(future).to_be_visible()
     future.fill('4000')

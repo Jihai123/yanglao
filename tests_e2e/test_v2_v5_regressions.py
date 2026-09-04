@@ -68,6 +68,7 @@ def test_history_months_survive_back_and_forward(browser):
     page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
     page.locator('#regionSelect').select_option('shaanxi')
+    page.locator('[data-v25-flex-mode="custom"]').click()
     future = page.locator('[data-v23-flex-custom-input]')
     expect(future).to_be_visible()
     future.fill('4000')
@@ -172,6 +173,7 @@ def test_normal_amount_flow_respects_total_20_year_plan_and_future_base(browser)
     page.locator('#nextBtn').click()  # plan -> amount
 
     page.locator('#regionSelect').select_option('shaanxi')
+    page.locator('[data-v25-flex-mode="custom"]').click()
     future = page.locator('[data-v23-flex-custom-input]')
     expect(future).to_be_visible()
     future.fill('2000')

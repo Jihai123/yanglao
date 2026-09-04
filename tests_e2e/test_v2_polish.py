@@ -58,9 +58,9 @@ def test_future_gap_plan_moves_flexible_base_choice_to_amount_step(browser):
     page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
     page.locator('#regionSelect').select_option('beijing')
-    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_be_visible()
-    expect(page.locator('[data-v23-flex-mode="minimum"]')).to_contain_text('7,270')
-    expect(page.locator('[data-v23-flex-mode="custom"]')).to_be_visible()
+    expect(page.locator('[data-v25-flex-mode="minimum"]')).to_be_visible()
+    expect(page.locator('[data-v25-flex-mode="minimum"]')).to_contain_text('7,270')
+    expect(page.locator('[data-v25-flex-mode="custom"]')).to_be_visible()
     expect(page.locator('#stepBody')).not_to_contain_text('还没决定')
     assert errors == []
     page.close()
