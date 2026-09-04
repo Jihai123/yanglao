@@ -1,3 +1,4 @@
+import './release-v25.js?v=20260904-r1';
 import {
   DATA_VERIFIED_AT,
   NATIONAL_POLICY_SOURCES,
