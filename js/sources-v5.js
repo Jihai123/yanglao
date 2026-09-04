@@ -12,11 +12,11 @@ import {
   getRuntimeRegion,
   resolveRuntimeRegion,
   runtimeSubregionOptions,
-} from './region-policy-runtime.js?v=20260903-r2';
+} from './region-policy-runtime.js?v=20260904-r3';
 
 export { DATA_VERIFIED_AT, NATIONAL_POLICY_SOURCES, OFFICIAL_UPDATES, REGION_NAMES, REGION_POLICY_RUNTIME_VERSION };
 
-export const REGION_POLICY_VERIFIED_AT = '2026-09-03';
+export const REGION_POLICY_VERIFIED_AT = '2026-09-04';
 
 function normalizeContribution(contribution) {
   if (!contribution) return undefined;
