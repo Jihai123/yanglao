@@ -1,13 +1,22 @@
 import pytest
-from playwright.sync_api import expect
+from playwright.sync_api import expect, sync_playwright
+
+
+@pytest.fixture(scope='module')
+def acceptance_browser():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        yield browser
+        browser.close()
 
 
 @pytest.fixture(params=[(1366, 900), (390, 844)])
-def live_page(page, request):
+def live_page(acceptance_browser, request):
     width, height = request.param
-    page.set_viewport_size({"width": width, "height": height})
+    page = acceptance_browser.new_page(viewport={"width": width, "height": height})
     page.goto("http://127.0.0.1:8765/index.html")
-    return page
+    yield page
+    page.close()
 
 
 def advance(page):
