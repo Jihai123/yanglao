@@ -41,6 +41,10 @@ function renderHomeTrust() {
 
 function resultTrustHtml() {
   const plan = readPlan();
+  if (plan.intent === 'age' || plan.amountMode === 'skip') {
+    const rules = NATIONAL_POLICY_SOURCES.find(item => item.id === 'gradual-retirement');
+    return `<div class="result-trust" id="resultTrustCard"><div><strong>数据依据</strong><span>职工法定退休年龄与渐进式延迟退休规则</span></div>${sourceLink(rules, '查看退休政策依据')}</div>`;
+  }
   const regionKey = plan.regionKey || 'other';
   const baseRegion = getRegionV5(regionKey);
   const subregionKey = baseRegion?.needsSubregion ? readSubregion(regionKey) : '';
