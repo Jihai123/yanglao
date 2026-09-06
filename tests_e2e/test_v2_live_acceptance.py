@@ -23,6 +23,13 @@ def advance(page):
     page.locator('#nextBtn').click()
 
 
+def test_hotfix_release_notes_are_visible(live_page):
+    notes = live_page.locator('#releaseNotes')
+    expect(notes).to_contain_text('v2.5.1 · 2026-09-06')
+    expect(notes).to_contain_text('继续上次测算')
+    expect(notes).to_contain_text('v2.5 · 2026-09-04')
+
+
 def test_numeric_input_reaches_state_before_change(live_page):
     p = live_page
     p.locator('[data-intent="normal"]').click()
