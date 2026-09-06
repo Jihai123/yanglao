@@ -332,6 +332,9 @@ function calculationInput(category = mapCategory()) {
 
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
+  document.getElementById('resumeBox')?.classList.remove('hidden');
+  const text = document.getElementById('resumeText');
+  if (text) text.textContent = '可以从上次填写的步骤继续。';
 }
 
 function loadSaved() {
@@ -424,7 +427,7 @@ function renderStatus() {
     <div class="field"><label>累计缴费（大约）</label><div class="number-pair"><div><input data-key="paidYears" type="number" min="0" step="1" value="${state.paidYears}"><span>年</span></div><div><input data-key="paidMonthsExtra" type="number" min="0" max="11" step="1" value="${state.paidMonthsExtra}"><span>个月</span></div></div></div>
     <div class="field"><label>个人账户余额</label><div class="segment"><button type="button" data-account="known" class="${state.knowsAccount ? 'active' : ''}">我知道</button><button type="button" data-account="unknown" class="${!state.knowsAccount ? 'active' : ''}">不知道</button></div>${accountGuideHtml()}</div>
     ${state.knowsAccount ? `<div class="field"><label>个人账户余额（元）</label><input data-key="currentAccount" type="number" min="0" step="1" value="${state.currentAccount}"></div>` : ''}
-    <details class="disclosure"><summary>我有视同缴费年限</summary><div class="detail-stack"><div class="segment"><button type="button" data-deemed="no" class="${!state.hasDeemed ? 'active' : ''}">没有 / 不适用</button><button type="button" data-deemed="yes" class="${state.hasDeemed ? 'active' : ''}">有</button></div>${state.hasDeemed ? `<div class="field"><label>视同缴费年限</label><div class="number-pair"><div><input data-key="deemedYears" type="number" min="0" step="1" value="${state.deemedYears}"><span>年</span></div><div><input data-key="deemedMonthsExtra" type="number" min="0" max="11" step="1" value="${state.deemedMonthsExtra}"><span>个月</span></div></div></div>` : ''}</div></details>`;
+    <details class="disclosure" ${state.hasDeemed ? 'open' : ''}><summary>我有视同缴费年限</summary><div class="detail-stack"><div class="segment"><button type="button" data-deemed="no" class="${!state.hasDeemed ? 'active' : ''}">没有 / 不适用</button><button type="button" data-deemed="yes" class="${state.hasDeemed ? 'active' : ''}">有</button></div>${state.hasDeemed ? `<div class="field"><label>视同缴费年限</label><div class="number-pair"><div><input data-key="deemedYears" type="number" min="0" step="1" value="${state.deemedYears}"><span>年</span></div><div><input data-key="deemedMonthsExtra" type="number" min="0" max="11" step="1" value="${state.deemedMonthsExtra}"><span>个月</span></div></div></div>` : ''}</div></details>`;
   stepBody.querySelectorAll('[data-account]').forEach(btn => btn.addEventListener('click', () => { state.knowsAccount = btn.dataset.account === 'known'; renderStep(); }));
   stepBody.querySelectorAll('[data-deemed]').forEach(btn => btn.addEventListener('click', () => { state.hasDeemed = btn.dataset.deemed === 'yes'; renderStep(); }));
 }
@@ -564,9 +567,19 @@ function renderAmount() {
 }
 
 function bindBasicFields() {
-  stepBody.querySelectorAll('[data-key]').forEach(el => el.addEventListener('change', () => {
+  stepBody.querySelectorAll('[data-key]').forEach(el => {
+    const sync = (event) => {
     const key = el.dataset.key;
-    if (key === 'birth') { state.birth = el.value; return; }
+    if (key === 'birth') {
+      const changed = state.birth !== el.value;
+      state.birth = el.value;
+      if (changed && /^\d{4}-\d{2}$/.test(el.value)) {
+        // The initial intent defaults were based on the previous birth month.
+        if (state.intent === 'flex') state.stopWorkAge = Math.ceil(currentAgeMonths() / 12);
+        else if (state.intent === 'early') state.stopWorkAge = Math.max(state.stopWorkAge, Math.ceil(currentAgeMonths() / 12));
+      }
+      return;
+    }
     if (key === 'currentCalcBase') {
       state.currentCalcBase = Number(el.value || 0);
       state.calcBaseMode = 'manual';
@@ -580,8 +593,12 @@ function bindBasicFields() {
     }
     const numericKeys = new Set(['paidYears','paidMonthsExtra','currentAccount','deemedYears','deemedMonthsExtra','transitionAmount','stopWorkAge','actualFutureYears','actualFutureMonthsExtra','flexMonthlyContributionBase','monthlyContributionBase','avgIndex','currentCalcBaseYear']);
     state[key] = numericKeys.has(key) ? Number(el.value) : el.value;
-    if (stepBody.dataset.step === 'plan') renderStep();
-  }));
+    if (event.type === 'change' && stepBody.dataset.step === 'plan') renderStep();
+    };
+    // Keep state current during editing without replacing the focused input.
+    el.addEventListener('input', sync);
+    el.addEventListener('change', sync);
+  });
 }
 
 function showStepError(message) {
@@ -806,9 +823,9 @@ if (saved) {
   document.getElementById('resumeBox')?.classList.remove('hidden');
   const resumeText = document.getElementById('resumeText');
   if (resumeText) resumeText.textContent = '上次填写的信息还在，可以继续。';
-  document.getElementById('resumeBtn')?.addEventListener('click', () => {
-    state.step = Math.max(0, activeSteps().length - 2);
-    show('wizard');
-    renderStep();
-  });
 }
+document.getElementById('resumeBtn')?.addEventListener('click', () => {
+  state.step = Math.max(0, Math.min(Number(state.step) || 0, activeSteps().length - 1));
+  show('wizard');
+  renderStep();
+});

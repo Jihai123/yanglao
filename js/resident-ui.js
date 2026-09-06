@@ -112,12 +112,16 @@ function renderLocal() {
 }
 
 function bindFields() {
-  residentView.querySelectorAll('[data-rkey]').forEach(el => el.addEventListener('change', () => {
+  residentView.querySelectorAll('[data-rkey]').forEach(el => {
+    const sync = () => {
     const key = el.dataset.rkey;
     if (key === 'birth') state.birth = el.value;
     else if (key === 'accountInterestPct') state.accountInterest = Number(el.value) / 100;
     else state[key] = el.value === '' ? '' : Number(el.value);
-  }));
+    };
+    el.addEventListener('input', sync);
+    el.addEventListener('change', sync);
+  });
 }
 
 function validate() {
