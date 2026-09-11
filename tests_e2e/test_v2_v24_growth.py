@@ -22,11 +22,9 @@ def fresh_page(browser):
     return page, errors
 
 
-def normal_result(page):
-    page.locator('[data-intent="normal"]').click()
+def quick_result(page):
+    page.locator('#pensionQuickEntry').click()
     page.locator('#nextBtn').click()
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
     page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
     page.locator('#regionSelect').select_option('beijing')
@@ -50,9 +48,9 @@ def test_v24_homepage_has_related_tools_and_public_release(browser):
     page.close()
 
 
-def test_v24_result_share_box_uses_result_amount_and_generates_card(browser):
+def test_v24_result_share_box_uses_quick_result_amount_and_generates_card(browser):
     page, errors = fresh_page(browser)
-    normal_result(page)
+    quick_result(page)
 
     share = page.locator('[data-v24-share-box]')
     expect(share).to_be_visible()
@@ -75,7 +73,7 @@ def test_v24_result_share_box_uses_result_amount_and_generates_card(browser):
 
 def test_v24_share_copy_actions_do_not_put_amount_in_analytics(browser):
     page, errors = fresh_page(browser)
-    normal_result(page)
+    quick_result(page)
     page.evaluate("""
       Object.defineProperty(navigator, 'clipboard', {
         configurable: true,
