@@ -22,8 +22,8 @@ def fresh_page(browser, width=390, height=844):
     return page, errors
 
 
-def normal_to_amount(page):
-    page.locator('[data-intent="normal"]').click()
+def planning_to_amount(page):
+    page.locator('[data-intent="flex"]').click()
     page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
     page.locator('[data-contribution-plan="stop_with_work"]').click()
@@ -68,7 +68,7 @@ def test_future_gap_plan_moves_flexible_base_choice_to_amount_step(browser):
 
 def test_unknown_history_still_emits_estimate_when_region_anchor_is_available(browser):
     page, errors = fresh_page(browser)
-    normal_to_amount(page)
+    planning_to_amount(page)
     page.locator('#regionSelect').select_option('shaanxi')
     base = page.locator('[data-key="monthlyContributionBase"]')
     base.fill('8000'); base.dispatch_event('change')
@@ -84,7 +84,7 @@ def test_unknown_history_still_emits_estimate_when_region_anchor_is_available(br
 
 def test_segmented_history_editor_adds_month_rows(browser):
     page, errors = fresh_page(browser)
-    normal_to_amount(page)
+    planning_to_amount(page)
     page.locator('[data-history-mode="segments"]').click()
     expect(page.locator('.history-row')).to_have_count(1)
     expect(page.locator('[data-history-field="startMonth"]')).to_have_count(1)
