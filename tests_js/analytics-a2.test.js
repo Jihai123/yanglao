@@ -7,7 +7,7 @@ const read = path => readFile(new URL(path, root), 'utf8');
 
 test('analytics records only diagnostic buckets and flow identifiers', async () => {
   const source = await read('js/analytics.js');
-  assert.match(source, /APP_VERSION = 'v2-prod-20260903-d3'/);
+  assert.match(source, /APP_VERSION = 'v2-prod-20260911-v26'/);
   for (const field of ['flow_id', 'source', 'device', 'step', 'reason_code', 'error_type', 'script_name', 'line_no', 'column_no']) {
     assert.match(source, new RegExp(`${field}:`));
   }
@@ -18,6 +18,7 @@ test('analytics records only diagnostic buckets and flow identifiers', async () 
   assert.match(source, /return 'share'/);
   assert.match(source, /#continuePlanBtn/);
   assert.match(source, /currentFlowFeature\(\)/);
+  assert.match(source, /intent\.dataset\.analyticsFeature/);
   assert.match(source, /validationReason/);
   assert.match(source, /safeScriptName/);
   assert.match(source, /return 'mobile'/);
@@ -97,11 +98,13 @@ test('admin dashboard exposes failure diagnostics without form data', async () =
   assert.doesNotMatch(html, /currentAccount|monthlyContributionBase|paidYears/);
 });
 
-test('homepage loads v2.4 growth layer and cache-busted analytics', async () => {
+test('homepage loads growth, analytics and quick pension funnel with cache busting', async () => {
   const html = await read('index.html');
   assert.match(html, /v23-runtime\.js\?v=20260902-v23/);
   assert.match(html, /v24-growth\.js\?v=20260903-v241/);
   assert.match(html, /growth-v24\.css\?v=20260903-v24/);
-  assert.match(html, /analytics\.js\?v=20260903-d3/);
+  assert.match(html, /analytics\.js\?v=20260911-v26/);
+  assert.match(html, /v26-pension-funnel\.js\?v=20260911-v2/);
+  assert.match(html, /data-analytics-feature="normal_quick"/);
   assert.match(html, /分享\/相关工具点击/);
 });

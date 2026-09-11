@@ -32,7 +32,7 @@ def test_hotfix_release_notes_are_visible(live_page):
 
 def test_numeric_input_reaches_state_before_change(live_page):
     p = live_page
-    p.locator('[data-intent="normal"]').click()
+    p.locator('[data-intent="flex"]').click()
     advance(p)
     # Reading a draft must not depend on blur/change firing first (e.g. autofill).
     p.locator('[data-key="paidYears"]').fill('20')
@@ -55,7 +55,7 @@ def test_flex_birth_change_updates_default_start_age(live_page):
 
 def test_resume_available_without_reload_and_keeps_step(live_page):
     p = live_page
-    p.locator('[data-intent="normal"]').click()
+    p.locator('#pensionQuickEntry').click()
     advance(p)
     p.locator('[data-key="paidYears"]').fill('21')
     p.locator('#homeBtn').click()
@@ -88,15 +88,15 @@ def test_resident_numeric_input_survives_account_toggle(live_page):
 
 def test_deemed_choice_keeps_details_open(live_page):
     p = live_page
-    p.locator('[data-intent="normal"]').click()
+    p.locator('#pensionQuickEntry').click()
     advance(p)
     p.get_by_text('我有视同缴费年限', exact=True).click()
     p.locator('[data-deemed="yes"]').click()
     expect(p.locator('[data-key="deemedYears"]')).to_be_visible()
 
 
-@pytest.mark.parametrize('intent', ['normal', 'early', 'flex'])
-def test_employee_amount_path(live_page, intent):
+@pytest.mark.parametrize('intent', ['early', 'flex'])
+def test_employee_planning_amount_path(live_page, intent):
     p = live_page
     errors = []
     p.on('pageerror', lambda error: errors.append(str(error)))
@@ -110,6 +110,25 @@ def test_employee_amount_path(live_page, intent):
     advance(p)
     expect(p.locator('#resultView')).to_be_visible()
     expect(p.locator('#resultView')).to_contain_text('20年')
+    assert errors == []
+    assert p.evaluate('document.documentElement.scrollWidth <= innerWidth')
+
+
+def test_quick_pension_amount_path(live_page):
+    p = live_page
+    errors = []
+    p.on('pageerror', lambda error: errors.append(str(error)))
+    p.locator('#pensionQuickEntry').click()
+    advance(p)
+    p.locator('[data-key="paidYears"]').fill('20')
+    advance(p)
+    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    p.locator('#regionSelect').select_option('shaanxi')
+    p.locator('[data-key="monthlyContributionBase"]').fill('6000')
+    advance(p)
+    expect(p.locator('#resultView')).to_be_visible()
+    expect(p.locator('#resultView')).to_contain_text('20年')
+    expect(p.locator('[data-v26-result-upgrade]')).to_be_visible()
     assert errors == []
     assert p.evaluate('document.documentElement.scrollWidth <= innerWidth')
 
