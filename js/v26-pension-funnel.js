@@ -3,8 +3,6 @@ const QUICK_DEFAULTS_KEY = 'yanglao-v26-pension-defaults';
 const QUICK_BYPASS_KEY = 'yanglao-v26-pension-bypass';
 
 let queued = false;
-let lastBlockedReason = '';
-let resultTracked = false;
 
 function sessionGet(key) {
   try { return sessionStorage.getItem(key) || ''; } catch { return ''; }
@@ -21,24 +19,15 @@ function quickActive() {
   return sessionGet(QUICK_MODE_KEY) === '1';
 }
 
-function track(event, step = '') {
-  window.dispatchEvent(new CustomEvent('yanglao:track', {
-    detail: { event, feature: 'normal_quick', step },
-  }));
-}
-
 function startQuickMode(button) {
   sessionSet(QUICK_MODE_KEY, '1');
   sessionSet(QUICK_DEFAULTS_KEY, '');
-  resultTracked = false;
-  lastBlockedReason = '';
   document.body.classList.add('v26-pension-quick');
 
   // hotfix-v5 intentionally rewrites the normal entry to flex during capture.
   // V26 restores the original normal intent for the quick path so the existing
   // three-step calculator is reused. The assumption is made explicit in the UI.
   button.dataset.intent = 'normal';
-  track('quick_pension_start', 'home');
 }
 
 function clearQuickMode() {
@@ -84,7 +73,7 @@ function addQuickNote(body, key, title, text) {
   body.prepend(note);
 }
 
-function enhanceIdentity(body) {
+function enhanceIdentity() {
   const title = document.getElementById('stepTitle');
   const desc = document.getElementById('stepDesc');
   if (title) title.textContent = '先确认你的基本信息';
@@ -176,10 +165,6 @@ function enhanceError(body) {
   if (!error || error.dataset.v26Enhanced === '1') return;
   error.dataset.v26Enhanced = '1';
   const reason = blockedReason(error.textContent || '');
-  if (reason !== lastBlockedReason) {
-    lastBlockedReason = reason;
-    track('quick_pension_blocked', body.dataset.step || '');
-  }
 
   const helper = document.createElement('div');
   helper.className = 'v26-error-help';
@@ -198,7 +183,6 @@ function enhanceError(body) {
 function startDetailedPlan() {
   sessionSet(QUICK_BYPASS_KEY, '1');
   clearQuickMode();
-  track('quick_pension_upgrade', 'result');
   const entry = document.getElementById('pensionQuickEntry');
   if (!entry) return;
   entry.dataset.analyticsFeature = 'normal';
@@ -210,13 +194,6 @@ function enhanceResult() {
   if (!quickActive()) return;
   const result = document.getElementById('resultView');
   if (!result || result.classList.contains('hidden')) return;
-
-  if (!resultTracked) {
-    resultTracked = true;
-    const amountAvailable = Boolean(result.querySelector('.amount-decision.amount-good'));
-    track(amountAvailable ? 'quick_pension_result' : 'quick_pension_partial_result', 'result');
-  }
-
   if (result.querySelector('[data-v26-result-upgrade]')) return;
   const actions = result.querySelector('.result-actions');
   if (!actions) return;
@@ -238,7 +215,7 @@ function enhanceVisibleStep() {
   const body = document.querySelector('#stepBody');
   if (!body) return;
   const step = body.dataset.step || '';
-  if (step === 'identity') enhanceIdentity(body);
+  if (step === 'identity') enhanceIdentity();
   if (step === 'status') enhanceStatus(body);
   if (step === 'amount') enhanceAmount(body);
   enhanceError(body);
