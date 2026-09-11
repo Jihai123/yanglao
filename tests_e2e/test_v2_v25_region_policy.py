@@ -31,11 +31,9 @@ def flex_to_amount(page):
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
 
 
-def normal_to_amount(page):
-    page.locator('[data-intent="normal"]').click()
+def quick_to_amount(page):
+    page.locator('#pensionQuickEntry').click()
     page.locator('#nextBtn').click()
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
     page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
 
@@ -204,9 +202,9 @@ def test_v25_yunnan_uses_current_2026_minimum_and_calc_fallback(browser):
     page.close()
 
 
-def test_v25_result_data_basis_matches_public_reference_used_for_calculation(browser):
+def test_v25_quick_result_data_basis_matches_public_reference_used_for_calculation(browser):
     page, errors = fresh_page(browser)
-    normal_to_amount(page)
+    quick_to_amount(page)
     page.locator('#regionSelect').select_option('shanxi')
     base = page.locator('[data-key="monthlyContributionBase"]')
     base.fill('8000')
