@@ -7,7 +7,7 @@ const FLOW_KEY = 'yanglao-v6-flow';
 const FLOW_FEATURE_KEY = 'yanglao-v6-flow-feature';
 const SOURCE_KEY = 'yanglao-v6-source';
 const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
-const APP_VERSION = 'v2-prod-20260903-d3';
+const APP_VERSION = 'v2-prod-20260911-v26';
 
 let volatileVisitor = '';
 let volatileSession = '';
@@ -273,7 +273,7 @@ if (residentView && window.MutationObserver) {
 document.addEventListener('click', event => {
   const intent = event.target.closest('[data-intent]');
   if (intent) {
-    const feature = userFacingIntent(intent.dataset.intent);
+    const feature = intent.dataset.analyticsFeature || userFacingIntent(intent.dataset.intent);
     startFlow(feature);
     track('intent_click', { feature });
     setTimeout(recordVisibleStep, 0);
