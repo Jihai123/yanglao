@@ -1,7 +1,7 @@
 const QUICK_MODE_KEY = 'yanglao-v26-pension-quick';
 const QUICK_DEFAULTS_KEY = 'yanglao-v26-pension-defaults';
 const QUICK_BYPASS_KEY = 'yanglao-v26-pension-bypass';
-const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
+const FLOW_FEATURE_KEY = 'yanglao-v6-flow-feature';
 
 let queued = false;
 let lastBlockedReason = '';
@@ -31,6 +31,9 @@ function track(event, step = '') {
 function startQuickMode(button) {
   sessionSet(QUICK_MODE_KEY, '1');
   sessionSet(QUICK_DEFAULTS_KEY, '');
+  // analytics.js starts the flow earlier in the capture chain. Update the feature
+  // immediately so all subsequent step/validation/result events remain comparable.
+  sessionSet(FLOW_FEATURE_KEY, 'normal_quick');
   resultTracked = false;
   lastBlockedReason = '';
   document.body.classList.add('v26-pension-quick');
