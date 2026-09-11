@@ -23,12 +23,17 @@ def new_page(browser, width=390, height=844):
 
 
 def goto_amount(page, intent="normal"):
+    if intent == "normal":
+        page.locator('#pensionQuickEntry').click()
+        page.locator('#nextBtn').click()  # identity -> status
+        page.locator('#nextBtn').click()  # status -> amount
+        expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+        return
+
     page.locator(f'[data-intent="{intent}"]').click()
     page.locator('#nextBtn').click()  # identity -> status
     page.locator('#nextBtn').click()  # status -> plan
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
-    if intent == "normal":
-        page.locator('[data-contribution-plan="stop_with_work"]').click()
     page.locator('#nextBtn').click()  # plan -> amount
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
 
@@ -38,6 +43,7 @@ def test_homepage_has_clear_single_line_value_proposition_and_hierarchy(browser)
     expect(page.locator('.hero h1')).to_have_text('什么时候退休，能领多少？')
     assert '<br' not in page.locator('.hero h1').inner_html().lower()
     expect(page.locator('.primary-intent')).to_have_count(2)
+    expect(page.locator('#pensionQuickEntry')).to_contain_text('退休后能领多少钱？')
     expect(page.locator('#feedbackWall')).to_be_visible()
     expect(page.locator('#releaseNotes')).to_be_visible()
     expect(page.locator('#releaseNotes')).to_contain_text('v2.3')
@@ -55,11 +61,12 @@ def test_home_button_returns_from_wizard_without_clearing(browser):
     page.close()
 
 
-def test_account_balance_has_lookup_help(browser):
+def test_account_balance_remains_optional_and_has_lookup_help(browser):
     page, errors = new_page(browser)
-    page.locator('[data-intent="normal"]').click()
+    page.locator('#pensionQuickEntry').click()
     page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_contain_text('个人账户余额在哪查？')
+    expect(page.locator('[data-v26-note="status"]')).to_contain_text('个人账户余额和视同缴费年限都是补充项')
     assert errors == []
     page.close()
 
@@ -85,7 +92,7 @@ def test_plan_moves_future_base_choice_to_amount_and_offers_verified_minimum(bro
     page.close()
 
 
-def test_amount_step_uses_benefit_location_wording(browser):
+def test_quick_amount_step_uses_benefit_location_wording(browser):
     page, errors = new_page(browser)
     goto_amount(page, 'normal')
     expect(page.locator('#stepBody')).to_contain_text('预计在哪个省份办理退休？')
@@ -95,9 +102,9 @@ def test_amount_step_uses_benefit_location_wording(browser):
     page.close()
 
 
-def test_history_segments_use_months_and_preserve_exact_user_value(browser):
+def test_detailed_history_segments_use_months_and_preserve_exact_user_value(browser):
     page, errors = new_page(browser)
-    goto_amount(page, 'normal')
+    goto_amount(page, 'flex')
     page.locator('[data-history-mode="segments"]').click()
     start = page.locator('[data-history-field="startMonth"]').first
     end = page.locator('[data-history-field="endMonth"]').first
