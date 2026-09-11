@@ -24,7 +24,7 @@ def fresh_page(browser):
 
 def test_default_future_projection_is_static_zero_growth(browser):
     page, errors = fresh_page(browser)
-    page.locator('[data-intent="normal"]').click()
+    page.locator('[data-intent="flex"]').click()
     page.locator('#nextBtn').click()  # identity -> status
     page.locator('#nextBtn').click()  # status -> future plan
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
