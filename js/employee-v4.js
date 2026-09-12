@@ -17,6 +17,7 @@ const NOW = { year: nowDate.getFullYear(), month: nowDate.getMonth() + 1 };
 
 const state = {
   intent: 'normal',
+  estimateMode: 'precise',
   step: 0,
   birth: '1983-01',
   sex: 'male',
@@ -85,6 +86,7 @@ function monthsText(months) {
 
 function activeSteps() {
   if (state.intent === 'age') return ['identity'];
+  if (state.intent === 'quick') return ['quick'];
   if (state.intent === 'normal') return ['identity', 'status', 'amount'];
   return ['identity', 'status', 'plan', 'amount'];
 }
@@ -330,8 +332,50 @@ function calculationInput(category = mapCategory()) {
   };
 }
 
-function save() {
+function quickCalculationInput() {
+  const category = state.sex === 'female' ? 'base55' : 'base60';
+  const retirementRule = calcStatutoryRetirement(state.birth, category);
+  const region = selectedRegion();
+  const quickBase = Number(region.calcBase?.value) > 0 ? Number(region.calcBase.value) : 8000;
+  const quickBaseYear = Number(region.calcBase?.year) > 0 ? Number(region.calcBase.year) : NOW.year;
+  const monthsToClaim = Math.max(0, retirementRule.statutoryAgeMonths - currentAgeMonths());
+  return {
+    ...state,
+    intent: 'quick',
+    estimateMode: 'quick',
+    category,
+    now: NOW,
+    paidMonths: paidMonths(),
+    deemedMonths: 0,
+    claimAgeMonths: retirementRule.statutoryAgeMonths,
+    amountMode: 'estimate',
+    accountKnown: false,
+    currentAccount: 0,
+    currentCalcBase: quickBase,
+    currentCalcBaseYear: quickBaseYear,
+    calcBaseSourceQuality: region.calcBase ? (region.calcBase.sourceLevel || 'direct') : 'assumption',
+    monthlyContributionBase: quickBase,
+    avgIndex: 1,
+    avgIndexConfidence: 'rough',
+    historyContributionSegments: [],
+    futureContributionSegments: monthsToClaim ? [{
+      months: monthsToClaim,
+      monthlyContributionBase: quickBase,
+      startOffsetMonths: 0,
+      contributionGrowth: state.contributionGrowth,
+      label: '按当地平均水平继续缴费',
+    }] : [],
+    socialWageGrowth: Number(state.socialWageGrowth || 0.03),
+    historicalReferenceGrowth: Number(state.historicalReferenceGrowth || 0.03),
+    contributionGrowth: Number(state.contributionGrowth || 0.03),
+    accountInterest: Number(state.accountInterest || 0.03),
+    inflation: Number(state.inflation || 0.02),
+  };
+}
+
+function save({ track = false } = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
+  if (track) trackConversion('pension_save', { step: 'result', flow_state: state.intent === 'quick' ? 'quick_result' : 'precise_result' });
   document.getElementById('resumeBox')?.classList.remove('hidden');
   const text = document.getElementById('resumeText');
   if (text) text.textContent = '可以从上次填写的步骤继续。';
@@ -362,6 +406,7 @@ function resetAll() {
 
 function initializeIntent(intent) {
   state.intent = intent;
+  state.estimateMode = intent === 'quick' ? 'quick' : 'precise';
   state.step = 0;
   state.retirementMode = 'statutory';
   state.retirementOffsetMonths = 12;
@@ -381,8 +426,15 @@ function initializeIntent(intent) {
 
 function start(intent) {
   initializeIntent(intent);
+  if (intent !== 'age') trackConversion('pension_start', { flow_state: 'started' });
   show('wizard');
   renderStep();
+}
+
+function trackConversion(event, params = {}) {
+  window.dispatchEvent(new CustomEvent('yanglao:track', {
+    detail: { event, feature: state.intent, ...params },
+  }));
 }
 
 function renderStep() {
@@ -395,10 +447,26 @@ function renderStep() {
   backBtn.style.visibility = state.step === 0 ? 'hidden' : 'visible';
   nextBtn.textContent = state.step === steps.length - 1 ? (state.intent === 'age' ? '查看退休时间' : '查看结果') : '下一步';
   if (key === 'identity') renderIdentity();
+  if (key === 'quick') renderQuick();
   if (key === 'status') renderStatus();
   if (key === 'plan') renderPlan();
   if (key === 'amount') renderAmount();
   bindBasicFields();
+}
+
+function renderQuick() {
+  stepTitle.textContent = '30秒快速测算';
+  stepDesc.textContent = '只填4项，先给你一个退休后每月养老金的大概答案。';
+  stepBody.innerHTML = `
+    <div class="quick-form-intro">不用填写缴费基数、个人账户余额等专业信息。系统会按你选择地区的公开参数或平均水平快速估算，结果可再升级为精准测算。</div>
+    <div class="field"><label>1. 出生年月</label><input class="mobile-safe-input" data-key="birth" type="month" value="${state.birth}"></div>
+    <div class="field"><label>2. 性别</label><div class="segment"><button type="button" data-quick-sex="male" class="${state.sex === 'male' ? 'active' : ''}">男</button><button type="button" data-quick-sex="female" class="${state.sex === 'female' ? 'active' : ''}">女</button></div></div>
+    <div class="field"><label>3. 当前参保地区</label><select data-key="regionKey">${regionOptionsV4().map(item => `<option value="${item.key}" ${item.key === state.regionKey ? 'selected' : ''}>${item.name}</option>`).join('')}</select></div>
+    <div class="field"><label>4. 已缴养老保险年限</label><input data-key="paidYears" type="number" min="0" step="0.5" value="${state.paidYears}"><div class="help">不知道精确月数时，填一个大概年数即可。</div></div>`;
+  stepBody.querySelectorAll('[data-quick-sex]').forEach(btn => btn.addEventListener('click', () => {
+    state.sex = btn.dataset.quickSex;
+    renderStep();
+  }));
 }
 
 function renderIdentity() {
@@ -644,6 +712,13 @@ function validateHistorySegments() {
 function validateCurrentStep() {
   const key = activeSteps()[state.step];
   try {
+    if (key === 'quick') {
+      parseMonth(state.birth);
+      if (currentAgeMonths() < 0) return '出生年月不能晚于当前月份。';
+      if (!['male', 'female'].includes(state.sex)) return '请选择性别。';
+      if (!(Number.isFinite(Number(state.paidYears)) && Number(state.paidYears) >= 0)) return '请填写已缴养老保险年限。';
+      return '';
+    }
     if (key === 'identity') {
       parseMonth(state.birth);
       if (currentAgeMonths() < 0) return '出生年月不能晚于当前月份。';
@@ -778,7 +853,72 @@ function timelineItem(title, sub) {
   return `<div class="tl-item"><div class="dot-wrap"><span class="dot"></span></div><div class="tl-content"><strong>${title}</strong><span>${sub}</span></div></div>`;
 }
 
+function renderQuickResult() {
+  const input = quickCalculationInput();
+  const result = projectPlanV4(input);
+  const region = selectedRegion();
+  const reportDate = result.claimDate;
+  const baseNote = region.calcBase
+    ? `已使用${region.name}${region.calcBase.year}年公开计发基准作为估算参考。`
+    : '当前地区暂未收录可自动带入的最新计发基准，已按系统默认平均参考值做快速估算。';
+  const genderNote = state.sex === 'female' ? '女性快速模式暂按原55岁口径估算，精准测算时可以调整退休前岗位类别。' : '';
+  const pensionText = result.amountAvailable ? `约 ${money(result.pensionCenter)} / 月` : '暂时无法估算';
+  resultView.innerHTML = `
+    <div class="result-hero clean-result quick-result-hero">
+      <div class="soft">我的退休报告 · 快速估算</div>
+      <div class="result-money">${pensionText}</div>
+      <div class="soft">预计 ${reportDate.year}年${reportDate.month}月开始领取</div>
+      <div class="result-grid">
+        <div class="result-cell"><div class="k">预计退休年龄</div><div class="v">${ageText(result.claimAgeMonths)}</div></div>
+        <div class="result-cell"><div class="k">参保地区</div><div class="v">${region.name}</div></div>
+        <div class="result-cell"><div class="k">已缴养老保险</div><div class="v">${monthsText(result.paidMonths)}</div></div>
+        <div class="result-cell"><div class="k">计算模式</div><div class="v">快速估算</div></div>
+      </div>
+    </div>
+    <div class="status warn section"><strong>先看趋势，不必先把资料填全。</strong><br>${baseNote}${genderNote ? `<br>${genderNote}` : ''}<br>实际待遇以退休时政策和经办机构核定为准。</div>
+    <div class="card section">
+      <div class="section-heading"><div><span class="section-kicker">影响因素</span><h2>什么最影响养老金？</h2></div></div>
+      <div class="quick-impact-list">
+        <div class="quick-impact-row"><span>继续缴费时间</span><strong class="quick-stars" aria-label="5星">★★★★★</strong></div>
+        <div class="quick-impact-row"><span>缴费水平</span><strong class="quick-stars" aria-label="4星">★★★★☆</strong></div>
+        <div class="quick-impact-row"><span>退休地区</span><strong class="quick-stars" aria-label="3星">★★★☆☆</strong></div>
+      </div>
+    </div>
+    <div class="quick-upgrade">
+      <strong>想让结果更贴近你的真实情况？</strong>
+      <p>补充当前缴费基数、个人账户余额和未来缴费计划，进入精准测算。</p>
+      <button class="btn primary" id="quickUpgradeBtn" type="button">提高准确度 &gt;</button>
+    </div>
+    <div class="result-actions quick-result-actions section">
+      <button class="btn secondary" id="quickSaveBtn" type="button">保存我的报告</button>
+      <button class="btn secondary" id="quickHomeBtn" type="button">返回首页</button>
+      <button class="btn primary btn-primary-wide" id="quickUpgradeBtnBottom" type="button">进入精准测算</button>
+    </div>`;
+  save();
+  trackConversion('pension_result_view', { step: 'result', flow_state: 'quick_result' });
+  document.getElementById('quickUpgradeBtn')?.addEventListener('click', upgradeQuickResult);
+  document.getElementById('quickUpgradeBtnBottom')?.addEventListener('click', upgradeQuickResult);
+  document.getElementById('quickSaveBtn')?.addEventListener('click', () => {
+    save({ track: true });
+    const button = document.getElementById('quickSaveBtn');
+    if (button) button.textContent = '已保存，可继续上次测算';
+  });
+  document.getElementById('quickHomeBtn')?.addEventListener('click', goHome);
+  show('result');
+}
+
+function upgradeQuickResult() {
+  trackConversion('pension_upgrade_click', { step: 'result', flow_state: 'quick_result' });
+  state.intent = 'normal';
+  state.estimateMode = 'precise';
+  state.step = 0;
+  state.contributionPlan = 'continuous_to_claim';
+  show('wizard');
+  renderStep();
+}
+
 function renderResult() {
+  if (state.intent === 'quick') return renderQuickResult();
   if (state.intent === 'age') return renderAgeResult();
   const category = mapCategory();
   const result = projectPlanV4(calculationInput(category));
@@ -800,6 +940,7 @@ function renderResult() {
   document.getElementById('homeResultBtn')?.addEventListener('click', goHome);
   document.getElementById('newPlanBtn')?.addEventListener('click', resetAll);
   show('result');
+  trackConversion('pension_result_view', { step: 'result', flow_state: 'precise_result' });
   window.dispatchEvent(new CustomEvent('yanglao:v4-result', { detail: { amountAvailable: result.amountAvailable, confidence: result.amountConfidence } }));
 }
 
@@ -808,6 +949,15 @@ backBtn?.addEventListener('click', () => { if (state.step > 0) { state.step -= 1
 nextBtn?.addEventListener('click', () => {
   const error = validateCurrentStep();
   if (error) { showStepError(error); return; }
+  const submittedStep = activeSteps()[state.step];
+  if (state.intent !== 'age') {
+    if (submittedStep === 'identity') trackConversion('pension_step1_submit', { step: submittedStep, flow_state: 'identity_complete' });
+    if (submittedStep === 'status' || submittedStep === 'plan') trackConversion('pension_step2_submit', { step: submittedStep, flow_state: 'details_complete' });
+    if (submittedStep === 'quick') {
+      trackConversion('pension_step1_submit', { step: 'quick', flow_state: 'quick_compact' });
+      trackConversion('pension_step2_submit', { step: 'quick', flow_state: 'quick_compact' });
+    }
+  }
   showStepError('');
   const steps = activeSteps();
   if (state.step < steps.length - 1) { state.step += 1; renderStep(); }

@@ -7,7 +7,7 @@ const read = path => readFile(new URL(path, root), 'utf8');
 
 test('analytics records only diagnostic buckets and flow identifiers', async () => {
   const source = await read('js/analytics.js');
-  assert.match(source, /APP_VERSION = 'v2-prod-20260903-d3'/);
+  assert.match(source, /APP_VERSION = 'v2-prod-20260912-conversion'/);
   for (const field of ['flow_id', 'source', 'device', 'step', 'reason_code', 'error_type', 'script_name', 'line_no', 'column_no']) {
     assert.match(source, new RegExp(`${field}:`));
   }
