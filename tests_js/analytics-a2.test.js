@@ -105,3 +105,13 @@ test('homepage loads v2.4 growth layer and cache-busted analytics', async () => 
   assert.match(html, /analytics\.js\?v=20260903-d3/);
   assert.match(html, /分享\/相关工具点击/);
 });
+
+test('release notes expose the current pension conversion release', async () => {
+  const source = await read('js/release-v25.js');
+  const trust = await read('js/trust-v5.js');
+  assert.match(source, /RELEASE_VERSION = 'v2\.6\.0'/);
+  assert.match(source, /RELEASE_DATE = '2026-09-12'/);
+  assert.match(source, /30秒快速测算/);
+  assert.match(source, /转化漏斗埋点/);
+  assert.match(trust, /release-v25\.js\?v=20260912-conversion/);
+});
