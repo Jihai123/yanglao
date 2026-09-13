@@ -1,5 +1,5 @@
-const RELEASE_VERSION = 'v2.5.1';
-const RELEASE_DATE = '2026-09-06';
+const RELEASE_VERSION = 'v2.6.0';
+const RELEASE_DATE = '2026-09-12';
 
 function injectReleaseV25() {
   const release = document.getElementById('releaseNotes');
@@ -14,6 +14,10 @@ function injectReleaseV25() {
   details.open = true;
   details.dataset.releaseVersion = RELEASE_VERSION;
   details.innerHTML = `<summary>${RELEASE_VERSION} · ${RELEASE_DATE}</summary><ul>
+    <li>新增“30秒快速测算”：只需出生年月、性别、参保地区和已缴养老保险年限，即可先看到养老金估算结果。</li>
+    <li>首页改为单一主 CTA，并将结果升级为“我的退休报告”，补充影响因素和提高准确度入口。</li>
+    <li>快速测算缺少缴费基数、个人账户余额等信息时不再阻断，改用明确标注的默认参考值继续估算。</li>
+    <li>新增养老金转化漏斗埋点，持续观察开始测算、提交步骤、查看结果和升级精准测算的完成情况。</li>
     <li>修复缴费年限、缴费基数和居民养老金额在切换选项或直接查看结果时可能仍使用旧值的问题。</li>
     <li>修复离职 / 灵活就业入口修改出生年月后，默认规划年龄没有同步更新的问题。</li>
     <li>“继续上次测算”现在会及时出现，并回到上次实际填写的步骤。</li>

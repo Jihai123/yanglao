@@ -7,7 +7,7 @@ const read = path => readFile(new URL(path, root), 'utf8');
 
 test('analytics records only diagnostic buckets and flow identifiers', async () => {
   const source = await read('js/analytics.js');
-  assert.match(source, /APP_VERSION = 'v2-prod-20260903-d3'/);
+  assert.match(source, /APP_VERSION = 'v2-prod-20260912-conversion'/);
   for (const field of ['flow_id', 'source', 'device', 'step', 'reason_code', 'error_type', 'script_name', 'line_no', 'column_no']) {
     assert.match(source, new RegExp(`${field}:`));
   }
@@ -104,4 +104,14 @@ test('homepage loads v2.4 growth layer and cache-busted analytics', async () => 
   assert.match(html, /growth-v24\.css\?v=20260903-v24/);
   assert.match(html, /analytics\.js\?v=20260903-d3/);
   assert.match(html, /分享\/相关工具点击/);
+});
+
+test('release notes expose the current pension conversion release', async () => {
+  const source = await read('js/release-v25.js');
+  const trust = await read('js/trust-v5.js');
+  assert.match(source, /RELEASE_VERSION = 'v2\.6\.0'/);
+  assert.match(source, /RELEASE_DATE = '2026-09-12'/);
+  assert.match(source, /30秒快速测算/);
+  assert.match(source, /转化漏斗埋点/);
+  assert.match(trust, /release-v25\.js\?v=20260912-conversion/);
 });

@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="./assets/product-v5.css?v=20260830-v6c" />
   <link rel="stylesheet" href="./assets/ux-v6.css?v=20260901-v6e" />
   <link rel="stylesheet" href="./assets/growth-v24.css?v=20260903-v24" />
+  <link rel="stylesheet" href="./assets/conversion-v2.css?v=20260912-v2" />
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -46,10 +47,10 @@
 
       <main>
         <section id="homeView">
-          <div class="hero">
-            <span class="eyebrow">退休年龄 · 缴费年限 · 养老金</span>
-            <h1>什么时候退休，能领多少？</h1>
-            <p class="muted">按你的出生时间、缴费记录和未来计划，一步一步算清楚。</p>
+          <div class="hero conversion-hero">
+            <span class="eyebrow">退休规划助手</span>
+            <h1>先知道答案，再慢慢算准</h1>
+            <p class="muted">不用先填一堆专业信息，30秒先看看退休后大概能领多少。</p>
           </div>
 
           <div id="resumeBox" class="resume hidden">
@@ -58,23 +59,29 @@
             <button class="small-link" id="resumeBtn" type="button" style="padding:8px 0 0">继续上次测算 →</button>
           </div>
 
-          <section class="home-block" aria-labelledby="mainTaskTitle">
-            <div class="home-block-head"><span class="label" id="mainTaskTitle">先选你最想知道的</span></div>
-            <div class="intent-grid two-up">
-              <button class="intent primary-intent" data-intent="age" type="button"><span><strong>我什么时候能退休？</strong><span class="sub">查法定退休年月</span></span><span class="intent-arrow">›</span></button>
-              <button class="intent primary-intent" data-intent="normal" type="button"><span><strong>退休后每月大概能领多少？</strong><span class="sub">按你的缴费情况估算</span></span><span class="intent-arrow">›</span></button>
+          <section class="home-block conversion-entries" aria-labelledby="mainTaskTitle">
+            <div class="home-block-head"><span class="label" id="mainTaskTitle">你最想先知道什么？</span></div>
+            <div class="conversion-entry-list">
+              <button class="conversion-entry conversion-entry-primary" data-intent="quick" type="button">
+                <span class="conversion-entry-icon">🔥</span>
+                <span><strong>我退休后能领多少钱？</strong><span class="sub">30秒快速测算，先给你一个答案</span></span>
+                <span class="intent-arrow">›</span>
+              </button>
+              <button class="conversion-entry" data-intent="age" type="button">
+                <span class="conversion-entry-icon">📅</span>
+                <span><strong>我什么时候退休？</strong><span class="sub">查询预计退休年月</span></span>
+                <span class="intent-arrow">›</span>
+              </button>
+              <button class="conversion-entry" data-intent="early" type="button">
+                <span class="conversion-entry-icon">📊</span>
+                <span><strong>我的退休规划</strong><span class="sub">停止工作、继续缴费和精准测算</span></span>
+                <span class="intent-arrow">›</span>
+              </button>
             </div>
+            <p class="conversion-entry-note">快速结果仅作规划参考，补充信息后可以提高准确度。</p>
           </section>
 
-          <section class="home-block" aria-labelledby="planTaskTitle">
-            <div class="home-block-head"><span class="label" id="planTaskTitle">如果你不准备一直工作到退休</span></div>
-            <div class="intent-grid two-up">
-              <button class="intent" data-intent="early" type="button"><span><strong>我想几年后不工作</strong><span class="sub">看看停工后社保怎么接着缴</span></span><span class="intent-arrow">›</span></button>
-              <button class="intent" data-intent="flex" type="button"><span><strong>我已经离职 / 灵活就业</strong><span class="sub">按未来实际缴费计划算</span></span><span class="intent-arrow">›</span></button>
-            </div>
-          </section>
-
-          <div class="resident-row">
+          <div class="conversion-secondary-entry">
             <button class="intent secondary-intent" id="residentEntry" type="button"><span><strong>我交的是城乡居民养老保险</strong><span class="sub">按居民养老规则单独计算</span></span><span class="intent-arrow">›</span></button>
           </div>
 
