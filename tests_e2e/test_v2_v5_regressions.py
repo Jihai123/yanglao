@@ -147,7 +147,7 @@ def test_approximate_paid_years_accept_detailed_same_year_history(browser):
     page.close()
 
 
-def test_planning_amount_flow_respects_total_20_year_plan_and_future_base(browser):
+def test_planning_to_minimum_counts_pre_stop_contributions_before_flex(browser):
     page, errors = fresh_page(browser)
     page.locator('[data-intent="early"]').click()
     page.locator('#nextBtn').click()  # identity -> status
@@ -190,10 +190,11 @@ def test_planning_amount_flow_respects_total_20_year_plan_and_future_base(browse
 
     expect(page.locator('#resultView')).not_to_have_class('hidden')
     expect(page.locator('#resultView')).to_contain_text('已缴 16年8个月')
-    expect(page.locator('#resultView')).to_contain_text('未来计划 3年4个月')
-    expect(page.locator('#resultView')).to_contain_text('未来缴费 3年4个月')
-    expect(page.locator('#resultView')).to_contain_text('¥2,000')
-    expect(page.locator('#resultView')).not_to_contain_text('未来计划 20年')
+    expect(page.locator('#resultView')).to_contain_text('未来计划 5年4个月')
+    expect(page.locator('#resultView')).to_contain_text('未来缴费 5年4个月')
+    expect(page.locator('#resultView')).to_contain_text('停止工作前 5年4个月')
+    expect(page.locator('#resultView')).to_contain_text('¥20,000')
+    expect(page.locator('#resultView')).not_to_contain_text('未来缴费安排灵活就业')
     assert errors == []
     page.close()
 
