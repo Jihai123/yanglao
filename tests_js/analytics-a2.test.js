@@ -88,11 +88,13 @@ test('admin diagnostics action exposes validation and client error aggregates', 
   assert.match(php, /=== 'diagnostics'/);
 });
 
-test('admin dashboard exposes failure diagnostics without form data', async () => {
+test('admin dashboard exposes current-version failure diagnostics without form data', async () => {
   const html = await read('admin/index.html');
   assert.match(html, /测算失败诊断/);
-  assert.match(html, /DIAGNOSTICS_API='\/api\/admin\.php\?action=diagnostics'/);
+  assert.match(html, /DATA_API='\/api\/admin-v262\.php'/);
+  assert.match(html, /renderDiagnostics\(data\.diagnostics/);
   assert.match(html, /validation_attempts/);
+  assert.match(html, /当前版本 · 失败流程审计/);
   assert.doesNotMatch(html, /diagnostics\.php/);
   assert.doesNotMatch(html, /currentAccount|monthlyContributionBase|paidYears/);
 });
