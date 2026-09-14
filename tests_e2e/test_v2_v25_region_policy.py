@@ -1,6 +1,8 @@
 import pytest
 from playwright.sync_api import sync_playwright, expect
 
+from tests_e2e.v26_flow_helpers import early_to_amount, normal_to_amount, tune_page
+
 BASE_URL = "http://127.0.0.1:8765/index.html"
 
 
@@ -13,7 +15,7 @@ def browser():
 
 
 def fresh_page(browser):
-    page = browser.new_page(viewport={"width": 390, "height": 844})
+    page = tune_page(browser.new_page(viewport={"width": 390, "height": 844}))
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(BASE_URL, wait_until="networkidle")
@@ -23,21 +25,8 @@ def fresh_page(browser):
 
 
 def flex_to_amount(page):
-    page.locator('[data-intent="flex"]').click()
-    page.locator('#nextBtn').click()
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
-
-
-def normal_to_amount(page):
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click()
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    # V2.6 folds the old direct flex entry into "我的退休规划".
+    early_to_amount(page)
 
 
 def assert_public_reference_copy(page):
