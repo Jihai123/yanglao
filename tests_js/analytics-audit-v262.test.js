@@ -13,9 +13,18 @@ test('V2.6.2 dashboard defaults to current-version data and can switch to all hi
   assert.match(page, /<option value="all">全部历史<\/option>/);
   assert.match(page, /const DATA_API='\/api\/admin-v262\.php'/);
   assert.match(page, /scopeSelect/);
-  assert.match(api, /CURRENT_ANALYTICS_APP_VERSION = 'v2-prod-20260912-conversion'/);
   assert.match(api, /\$scope === 'all' \? 'all' : 'current'/);
   assert.match(api, /function audit_scope_clause/);
+});
+
+test('audit endpoint current version stays aligned with analytics client version', async () => {
+  const analytics = await read('js/analytics.js');
+  const api = await read('api/admin-v262.php');
+  const clientVersion = analytics.match(/const APP_VERSION = '([^']+)'/)?.[1];
+  const auditVersion = api.match(/const CURRENT_ANALYTICS_APP_VERSION = '([^']+)'/)?.[1];
+
+  assert.ok(clientVersion);
+  assert.equal(auditVersion, clientVersion);
 });
 
 test('current-version scope is applied to funnels, sources, devices and step friction', async () => {
