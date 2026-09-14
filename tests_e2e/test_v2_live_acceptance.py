@@ -1,6 +1,8 @@
 import pytest
 from playwright.sync_api import expect, sync_playwright
 
+from tests_e2e.v26_flow_helpers import tune_page
+
 
 @pytest.fixture(scope='module')
 def acceptance_browser():
@@ -13,7 +15,7 @@ def acceptance_browser():
 @pytest.fixture(params=[(1366, 900), (390, 844)])
 def live_page(acceptance_browser, request):
     width, height = request.param
-    page = acceptance_browser.new_page(viewport={"width": width, "height": height})
+    page = tune_page(acceptance_browser.new_page(viewport={"width": width, "height": height}))
     page.goto("http://127.0.0.1:8765/index.html", wait_until='networkidle')
     page.evaluate("localStorage.clear(); sessionStorage.clear();")
     page.reload(wait_until='networkidle')
@@ -35,7 +37,8 @@ def enter_normal_status(page):
 
 def test_hotfix_release_notes_are_visible(live_page):
     notes = live_page.locator('#releaseNotes')
-    expect(notes).to_contain_text('v2.5.1 · 2026-09-06')
+    expect(notes).to_contain_text('v2.6.0 · 2026-09-12')
+    expect(notes).to_contain_text('30秒快速测算')
     expect(notes).to_contain_text('继续上次测算')
     expect(notes).to_contain_text('v2.5 · 2026-09-04')
 
