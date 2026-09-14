@@ -326,6 +326,11 @@ window.addEventListener('yanglao:track', event => {
     track('result_view', { feature: 'resident', step: 'result' });
     return;
   }
+  if (name === 'pension_result_view' && String(params.feature || currentFlowFeature()) === 'quick') {
+    track(name, params);
+    track('result_view', { feature: 'quick', step: 'result' });
+    return;
+  }
   track(name, params);
 });
 
