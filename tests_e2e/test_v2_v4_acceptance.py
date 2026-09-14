@@ -1,6 +1,8 @@
 import pytest
 from playwright.sync_api import sync_playwright, expect
 
+from tests_e2e.v26_flow_helpers import early_to_amount, early_to_plan, enter_normal_status, normal_to_amount, tune_page
+
 BASE_URL = "http://127.0.0.1:8765/index.html"
 
 
@@ -13,7 +15,7 @@ def browser():
 
 
 def new_page(browser, width=390, height=844):
-    page = browser.new_page(viewport={"width": width, "height": height})
+    page = tune_page(browser.new_page(viewport={"width": width, "height": height}))
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(BASE_URL, wait_until="networkidle")
@@ -23,24 +25,22 @@ def new_page(browser, width=390, height=844):
 
 
 def goto_amount(page, intent="normal"):
-    page.locator(f'[data-intent="{intent}"]').click()
-    page.locator('#nextBtn').click()  # identity -> status
-    page.locator('#nextBtn').click()  # status -> plan
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
     if intent == "normal":
-        page.locator('[data-contribution-plan="stop_with_work"]').click()
-    page.locator('#nextBtn').click()  # plan -> amount
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+        normal_to_amount(page)
+    else:
+        early_to_amount(page)
 
 
 def test_homepage_has_clear_single_line_value_proposition_and_hierarchy(browser):
     page, errors = new_page(browser, 1280, 900)
-    expect(page.locator('.hero h1')).to_have_text('什么时候退休，能领多少？')
+    expect(page.locator('.hero h1')).to_have_text('先知道答案，再慢慢算准')
     assert '<br' not in page.locator('.hero h1').inner_html().lower()
-    expect(page.locator('.primary-intent')).to_have_count(2)
+    expect(page.locator('.conversion-entry')).to_have_count(3)
+    expect(page.locator('[data-intent="quick"]')).to_be_visible()
+    expect(page.locator('[data-intent="quick"]')).to_contain_text('30秒快速测算')
     expect(page.locator('#feedbackWall')).to_be_visible()
     expect(page.locator('#releaseNotes')).to_be_visible()
-    expect(page.locator('#releaseNotes')).to_contain_text('v2.3')
+    expect(page.locator('#releaseNotes')).to_contain_text('v2.6.0')
     assert errors == []
     page.close()
 
@@ -57,8 +57,7 @@ def test_home_button_returns_from_wizard_without_clearing(browser):
 
 def test_account_balance_has_lookup_help(browser):
     page, errors = new_page(browser)
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click()
+    enter_normal_status(page)
     expect(page.locator('#stepBody')).to_contain_text('个人账户余额在哪查？')
     assert errors == []
     page.close()
@@ -66,9 +65,7 @@ def test_account_balance_has_lookup_help(browser):
 
 def test_plan_moves_future_base_choice_to_amount_and_offers_verified_minimum(browser):
     page, errors = new_page(browser)
-    page.locator('[data-intent="early"]').click()
-    page.locator('#nextBtn').click()
-    page.locator('#nextBtn').click()
+    early_to_plan(page)
     expect(page.locator('[data-contribution-plan="to_minimum"]')).to_be_visible()
     expect(page.locator('#stepBody')).to_contain_text('缴够最低要求就停')
     expect(page.locator('[data-flex-base-mode="unknown"]')).to_have_count(0)
@@ -115,10 +112,7 @@ def test_history_segments_use_months_and_preserve_exact_user_value(browser):
 
 def test_valid_shaanxi_plan_shows_breakdown_and_multi_year_comparison(browser):
     page, errors = new_page(browser)
-    page.locator('[data-intent="early"]').click()
-    page.locator('#nextBtn').click()  # identity -> status
-    page.locator('#nextBtn').click()  # status -> plan
-    page.locator('#nextBtn').click()  # plan -> amount
+    early_to_amount(page)
 
     page.locator('#regionSelect').select_option('shaanxi')
     page.locator('[data-v25-flex-mode="custom"]').click()
