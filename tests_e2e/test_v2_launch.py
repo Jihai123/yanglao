@@ -42,18 +42,21 @@ def test_mobile_home_and_birth_input_do_not_overflow(browser):
     assert errors == []
     page.close()
 
-@pytest.mark.parametrize("intent", ["age", "normal", "early", "flex"])
-def test_all_employee_entry_points_reach_result(browser, intent):
+@pytest.mark.parametrize("intent", ["age", "quick", "early"])
+def test_all_public_employee_entry_points_reach_result(browser, intent):
     page, errors = new_page(browser)
     finish_employee(page, intent)
     expect(page.locator(".result-hero")).to_be_visible()
     assert errors == []
     page.close()
 
-def test_normal_flow_goes_directly_to_amount_without_plan(browser):
+def test_normal_precision_flow_goes_from_status_directly_to_amount(browser):
     page, errors = new_page(browser)
-    page.locator('[data-intent="normal"]').click()
+    page.locator('[data-intent="age"]').click()
     page.locator('#nextBtn').click()
+    expect(page.locator('#resultView')).to_be_visible()
+    page.locator('#continuePlanBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'status')
     page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
     expect(page.locator('[data-contribution-plan]')).to_have_count(0)
