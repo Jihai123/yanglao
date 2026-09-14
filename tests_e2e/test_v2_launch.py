@@ -42,24 +42,25 @@ def test_mobile_home_and_birth_input_do_not_overflow(browser):
     assert errors == []
     page.close()
 
-@pytest.mark.parametrize("intent", ["age", "normal", "early", "flex"])
-def test_all_employee_entry_points_reach_result(browser, intent):
+@pytest.mark.parametrize("intent", ["age", "quick", "early"])
+def test_all_public_employee_entry_points_reach_result(browser, intent):
     page, errors = new_page(browser)
     finish_employee(page, intent)
     expect(page.locator(".result-hero")).to_be_visible()
     assert errors == []
     page.close()
 
-def test_normal_flow_uses_real_future_contribution_choices(browser):
+def test_normal_precision_flow_goes_from_status_directly_to_amount(browser):
     page, errors = new_page(browser)
-    page.locator('[data-intent="normal"]').click()
+    page.locator('[data-intent="age"]').click()
     page.locator('#nextBtn').click()
+    expect(page.locator('#resultView')).to_be_visible()
+    page.locator('#continuePlanBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'status')
     page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
-    expect(page.locator('[data-contribution-plan]')).to_have_count(4)
-    for index in range(4):
-        expect(page.locator('[data-contribution-plan]').nth(index)).to_be_enabled()
-    expect(page.locator('#stepTitle')).to_contain_text('养老保险准备怎么缴')
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    expect(page.locator('[data-contribution-plan]')).to_have_count(0)
+    expect(page.locator('#stepTitle')).to_contain_text('估算养老金')
     assert errors == []
     page.close()
 
@@ -73,9 +74,9 @@ def test_retirement_planning_uses_three_modes_not_month_list(browser):
     assert errors == []
     page.close()
 
-def test_qualification_only_mode_reaches_result_without_amount(browser):
+def test_planning_qualification_only_mode_reaches_result_without_amount(browser):
     page, errors = new_page(browser)
-    page.locator('[data-intent="normal"]').click()
+    page.locator('[data-intent="early"]').click()
     page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
     page.locator('[data-contribution-plan="stop_with_work"]').click()
@@ -85,6 +86,18 @@ def test_qualification_only_mode_reaches_result_without_amount(browser):
     page.locator('#nextBtn').click()
     expect(page.locator('#resultView')).to_be_visible()
     expect(page.locator('#resultView')).to_contain_text('未估算')
+    assert errors == []
+    page.close()
+
+def test_quick_flow_reaches_result_and_emits_generic_result_event(browser):
+    page, errors = new_page(browser)
+    page.locator('[data-intent="quick"]').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'quick')
+    page.locator('#nextBtn').click()
+    expect(page.locator('#resultView')).to_be_visible()
+    events = page.evaluate("window.dataLayer.map(item => item.event)")
+    assert 'pension_result_view' in events
+    assert 'result_view' in events
     assert errors == []
     page.close()
 

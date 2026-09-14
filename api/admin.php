@@ -5,7 +5,7 @@ require __DIR__ . '/bootstrap.php';
 
 const ADMIN_COOKIE = 'yanglao_admin';
 const ADMIN_TOKEN_MESSAGE = 'yanglao-admin-v1';
-const DIAGNOSTICS_APP_VERSION = 'v2-prod-20260903-d3';
+const DIAGNOSTICS_APP_VERSION = 'v2-prod-20260912-conversion';
 
 $adminPassword = (string)($config['admin_password'] ?? '');
 if ($adminPassword === '') {
@@ -131,6 +131,22 @@ function diagnostics_for_window(PDO $pdo, string $where): array
     ";
     $amount = $pdo->query($amountSql)->fetch() ?: [];
 
+    $quickSql = "
+        SELECT
+          COUNT(DISTINCT CASE WHEN event_name = 'pension_start' AND feature = 'quick' AND flow_id <> '' THEN flow_id END) AS starts,
+          COUNT(DISTINCT CASE WHEN event_name = 'step_view' AND step = 'quick' AND flow_id <> '' THEN flow_id END) AS viewed_flows,
+          SUM(event_name = 'wizard_next' AND step = 'quick') AS next_attempts,
+          COUNT(DISTINCT CASE WHEN event_name = 'wizard_next' AND step = 'quick' AND flow_id <> '' THEN flow_id END) AS next_flows,
+          COUNT(DISTINCT CASE WHEN event_name = 'pension_step2_submit' AND feature = 'quick' AND flow_id <> '' THEN flow_id END) AS submit_flows,
+          COUNT(DISTINCT CASE WHEN event_name = 'pension_result_view' AND feature = 'quick' AND flow_id <> '' THEN flow_id END) AS result_flows,
+          SUM(event_name = 'validation_error' AND step = 'quick') AS validation_attempts,
+          COUNT(DISTINCT CASE WHEN event_name = 'validation_error' AND step = 'quick' AND flow_id <> '' THEN flow_id END) AS validation_flows
+        FROM usage_event
+        WHERE {$where}
+          AND event_name IN ('pension_start', 'step_view', 'wizard_next', 'pension_step2_submit', 'pension_result_view', 'validation_error')
+    ";
+    $quick = $pdo->query($quickSql)->fetch() ?: [];
+
     return [
         'reasons' => $reasons,
         'steps' => $steps,
@@ -141,6 +157,16 @@ function diagnostics_for_window(PDO $pdo, string $where): array
             'next_flows' => (int)($amount['next_flows'] ?? 0),
             'validation_attempts' => (int)($amount['validation_attempts'] ?? 0),
             'validation_flows' => (int)($amount['validation_flows'] ?? 0),
+        ],
+        'quick' => [
+            'starts' => (int)($quick['starts'] ?? 0),
+            'viewed_flows' => (int)($quick['viewed_flows'] ?? 0),
+            'next_attempts' => (int)($quick['next_attempts'] ?? 0),
+            'next_flows' => (int)($quick['next_flows'] ?? 0),
+            'submit_flows' => (int)($quick['submit_flows'] ?? 0),
+            'result_flows' => (int)($quick['result_flows'] ?? 0),
+            'validation_attempts' => (int)($quick['validation_attempts'] ?? 0),
+            'validation_flows' => (int)($quick['validation_flows'] ?? 0),
         ],
     ];
 }
@@ -160,16 +186,18 @@ function diagnostics_data(PDO $pdo): array
 function dashboard_data(PDO $pdo): array
 {
     $pdo->exec("SET time_zone = '+08:00'");
+    $resultEvent = "event_name IN ('result_view', 'pension_result_view')";
+    $flowResultEvent = "flow_event.event_name IN ('result_view', 'pension_result_view')";
 
     $todaySql = "
         SELECT
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' THEN visitor_id END) AS result_visitors,
+            COUNT(DISTINCT CASE WHEN {$resultEvent} THEN visitor_id END) AS result_visitors,
             COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS started_flows,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS result_flows,
+            COUNT(DISTINCT CASE WHEN {$resultEvent} AND flow_id <> '' THEN flow_id END) AS result_flows,
             SUM(event_name = 'page_view') AS page_views,
             SUM(event_name = 'intent_click') AS intent_clicks,
-            SUM(event_name = 'result_view') AS result_views,
+            COUNT(DISTINCT CASE WHEN {$resultEvent} AND flow_id <> '' THEN flow_id END) AS result_views,
             SUM(event_name = 'feedback_submit') AS feedback_submits,
             SUM(event_name = 'client_error') AS client_errors
         FROM usage_event
@@ -213,8 +241,8 @@ function dashboard_data(PDO $pdo): array
             DATE(created_at) AS day,
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
             COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS started_flows,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS result_flows,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' THEN visitor_id END) AS result_visitors,
+            COUNT(DISTINCT CASE WHEN {$resultEvent} AND flow_id <> '' THEN flow_id END) AS result_flows,
+            COUNT(DISTINCT CASE WHEN {$resultEvent} THEN visitor_id END) AS result_visitors,
             SUM(event_name = 'page_view') AS page_views
         FROM usage_event
         WHERE created_at >= CURDATE() - INTERVAL 6 DAY
@@ -251,7 +279,7 @@ function dashboard_data(PDO $pdo): array
             CASE WHEN source = '' THEN 'unknown' ELSE source END AS source,
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
             COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS starts,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS results
+            COUNT(DISTINCT CASE WHEN {$resultEvent} AND flow_id <> '' THEN flow_id END) AS results
         FROM usage_event
         WHERE created_at >= CURDATE() - INTERVAL 29 DAY
         GROUP BY CASE WHEN source = '' THEN 'unknown' ELSE source END
@@ -272,7 +300,7 @@ function dashboard_data(PDO $pdo): array
             CASE WHEN device = '' THEN 'unknown' ELSE device END AS device,
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
             COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND flow_id <> '' THEN flow_id END) AS starts,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND flow_id <> '' THEN flow_id END) AS results
+            COUNT(DISTINCT CASE WHEN {$resultEvent} AND flow_id <> '' THEN flow_id END) AS results
         FROM usage_event
         WHERE created_at >= CURDATE() - INTERVAL 29 DAY
         GROUP BY CASE WHEN device = '' THEN 'unknown' ELSE device END
@@ -292,12 +320,14 @@ function dashboard_data(PDO $pdo): array
         SELECT
             flow_start_event.feature,
             COUNT(DISTINCT flow_start_event.flow_id) AS starts,
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'quick' THEN flow_event.flow_id END) AS quick_step,
+            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'pension_step2_submit' AND flow_event.feature = 'quick' THEN flow_event.flow_id END) AS quick_submit,
             COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'identity' THEN flow_event.flow_id END) AS identity,
             COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'status' THEN flow_event.flow_id END) AS status_step,
             COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'plan' THEN flow_event.flow_id END) AS plan_step,
             COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'amount' THEN flow_event.flow_id END) AS amount_step,
             COUNT(DISTINCT CASE WHEN flow_event.event_name = 'step_view' AND flow_event.step = 'local' THEN flow_event.flow_id END) AS local_step,
-            COUNT(DISTINCT CASE WHEN flow_event.event_name = 'result_view' THEN flow_event.flow_id END) AS results,
+            COUNT(DISTINCT CASE WHEN {$flowResultEvent} THEN flow_event.flow_id END) AS results,
             COUNT(DISTINCT CASE WHEN flow_event.event_name = 'client_error' THEN flow_event.flow_id END) AS error_flows
         FROM usage_event flow_start_event
         LEFT JOIN usage_event flow_event
@@ -313,6 +343,8 @@ function dashboard_data(PDO $pdo): array
         $item = [
             'feature' => (string)$row['feature'],
             'starts' => (int)$row['starts'],
+            'quick' => (int)$row['quick_step'],
+            'submitted' => (int)$row['quick_submit'],
             'identity' => (int)$row['identity'],
             'status' => (int)$row['status_step'],
             'plan' => (int)$row['plan_step'],
@@ -356,7 +388,7 @@ function dashboard_data(PDO $pdo): array
             SUM(event_name = 'share_system') AS share_system,
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' AND source = 'share' AND visitor_id <> '' THEN visitor_id END) AS share_visitors,
             COUNT(DISTINCT CASE WHEN event_name = 'flow_start' AND source = 'share' AND flow_id <> '' THEN flow_id END) AS share_starts,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' AND source = 'share' AND flow_id <> '' THEN flow_id END) AS share_results,
+            COUNT(DISTINCT CASE WHEN {$resultEvent} AND source = 'share' AND flow_id <> '' THEN flow_id END) AS share_results,
             SUM(event_name = 'outbound_tool_click') AS outbound_tool_clicks
         FROM usage_event
         WHERE created_at >= CURDATE() - INTERVAL 29 DAY
@@ -405,7 +437,7 @@ function dashboard_data(PDO $pdo): array
         SELECT
             COUNT(DISTINCT CASE WHEN event_name = 'page_view' THEN visitor_id END) AS visitors,
             SUM(event_name = 'page_view') AS page_views,
-            COUNT(DISTINCT CASE WHEN event_name = 'result_view' THEN visitor_id END) AS result_visitors
+            COUNT(DISTINCT CASE WHEN {$resultEvent} THEN visitor_id END) AS result_visitors
         FROM usage_event
     ";
     $total = int_fields($pdo->query($totalSql)->fetch() ?: [], ['visitors', 'page_views', 'result_visitors']);
@@ -420,7 +452,7 @@ function dashboard_data(PDO $pdo): array
         'growth' => $growth,
         'feedback' => $feedback,
         'total' => $total,
-        'analytics_version' => 'a3',
+        'analytics_version' => 'a4',
         'generated_at' => date('Y-m-d H:i:s'),
     ];
 }

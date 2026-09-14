@@ -1,6 +1,8 @@
 import pytest
 from playwright.sync_api import sync_playwright, expect
 
+from tests_e2e.v26_flow_helpers import normal_to_amount, early_to_plan, tune_page
+
 BASE_URL = "http://127.0.0.1:8765/index.html"
 
 
@@ -13,22 +15,13 @@ def browser():
 
 
 def fresh_page(browser, width=390, height=844):
-    page = browser.new_page(viewport={"width": width, "height": height})
+    page = tune_page(browser.new_page(viewport={"width": width, "height": height}))
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(BASE_URL, wait_until="networkidle")
     page.evaluate("localStorage.clear(); sessionStorage.clear();")
     page.reload(wait_until="networkidle")
     return page, errors
-
-
-def normal_to_amount(page):
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
-    page.locator('[data-contribution-plan="stop_with_work"]').click()
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
 
 
 def test_female_unsure_shows_two_possible_retirement_results(browser):
@@ -46,8 +39,7 @@ def test_female_unsure_shows_two_possible_retirement_results(browser):
 
 def test_future_gap_plan_moves_flexible_base_choice_to_amount_step(browser):
     page, errors = fresh_page(browser)
-    page.locator('[data-intent="flex"]').click()
-    page.locator('#nextBtn').click(); page.locator('#nextBtn').click()
+    early_to_plan(page)
     expect(page.locator('[data-contribution-plan="actual_months"]')).to_be_visible()
     page.locator('[data-contribution-plan="actual_months"]').click()
     expect(page.locator('[data-key="actualFutureYears"]')).to_be_visible()

@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 
 BASE = "http://127.0.0.1:8765/index.html"
-APP_VERSION = "v2-prod-20260903-d3"
+APP_VERSION = "v2-prod-20260912-conversion"
 
 
 def test_analytics_a2_emits_flow_and_step_events():
@@ -16,21 +16,21 @@ def test_analytics_a2_emits_flow_and_step_events():
             });
             """
         )
-        page.goto(BASE)
+        page.goto(BASE, wait_until="networkidle")
         page.wait_for_function(
             f"""() => (window.dataLayer || []).some(e => e.event === 'page_view' && e.app_version === '{APP_VERSION}')"""
         )
 
-        page.locator('[data-intent="normal"]').click()
+        page.locator('[data-intent="quick"]').click()
         page.wait_for_function(
-            """() => (window.dataLayer || []).some(e => e.event === 'step_view' && e.step === 'identity')"""
+            """() => (window.dataLayer || []).some(e => e.event === 'step_view' && e.step === 'quick')"""
         )
 
         events = page.evaluate("window.__yanglaoEvents")
         data_layer = page.evaluate("window.dataLayer || []")
-        starts = [e for e in events if e.get("event") == "flow_start" and e.get("feature") == "normal"]
-        clicks = [e for e in events if e.get("event") == "intent_click" and e.get("feature") == "normal"]
-        steps = [e for e in events if e.get("event") == "step_view" and e.get("step") == "identity"]
+        starts = [e for e in events if e.get("event") == "flow_start" and e.get("feature") == "quick"]
+        clicks = [e for e in events if e.get("event") == "intent_click" and e.get("feature") == "quick"]
+        steps = [e for e in events if e.get("event") == "step_view" and e.get("step") == "quick"]
 
         debug = {"events": events, "data_layer": data_layer}
         assert starts, debug
@@ -54,7 +54,7 @@ def test_share_entry_is_attributed_without_personal_data():
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
-        page.goto(f"{BASE}?from=share&channel=card")
+        page.goto(f"{BASE}?from=share&channel=card", wait_until="networkidle")
         page.wait_for_function(
             f"""() => (window.dataLayer || []).some(e => e.event === 'page_view' && e.app_version === '{APP_VERSION}')"""
         )

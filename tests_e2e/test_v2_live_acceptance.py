@@ -1,6 +1,8 @@
 import pytest
 from playwright.sync_api import expect, sync_playwright
 
+from tests_e2e.v26_flow_helpers import tune_page
+
 
 @pytest.fixture(scope='module')
 def acceptance_browser():
@@ -13,8 +15,10 @@ def acceptance_browser():
 @pytest.fixture(params=[(1366, 900), (390, 844)])
 def live_page(acceptance_browser, request):
     width, height = request.param
-    page = acceptance_browser.new_page(viewport={"width": width, "height": height})
-    page.goto("http://127.0.0.1:8765/index.html")
+    page = tune_page(acceptance_browser.new_page(viewport={"width": width, "height": height}))
+    page.goto("http://127.0.0.1:8765/index.html", wait_until='networkidle')
+    page.evaluate("localStorage.clear(); sessionStorage.clear();")
+    page.reload(wait_until='networkidle')
     yield page
     page.close()
 
@@ -23,47 +27,57 @@ def advance(page):
     page.locator('#nextBtn').click()
 
 
+def enter_normal_status(page):
+    page.locator('[data-intent="age"]').click()
+    advance(page)
+    expect(page.locator('#resultView')).to_be_visible()
+    page.locator('#continuePlanBtn').click()
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'status')
+
+
 def test_hotfix_release_notes_are_visible(live_page):
     notes = live_page.locator('#releaseNotes')
-    expect(notes).to_contain_text('v2.5.1 · 2026-09-06')
+    expect(notes).to_contain_text('v2.6.0 · 2026-09-12')
+    expect(notes).to_contain_text('30秒快速测算')
     expect(notes).to_contain_text('继续上次测算')
     expect(notes).to_contain_text('v2.5 · 2026-09-04')
 
 
 def test_numeric_input_reaches_state_before_change(live_page):
     p = live_page
-    p.locator('[data-intent="normal"]').click()
-    advance(p)
-    # Reading a draft must not depend on blur/change firing first (e.g. autofill).
+    enter_normal_status(p)
     p.locator('[data-key="paidYears"]').fill('20')
     p.locator('[data-key="paidYears"]').evaluate("el => el.dispatchEvent(new Event('input', {bubbles:true}))")
     p.locator('[data-account="known"]').dispatch_event('click')
     expect(p.locator('[data-key="paidYears"]')).to_have_value('20')
     advance(p)
-    expect(p.locator('[data-contribution-plan="to_minimum"]')).to_contain_text('目前已缴 20年')
+    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    p.locator('#backBtn').click()
+    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'status')
+    expect(p.locator('[data-key="paidYears"]')).to_have_value('20')
 
 
-def test_flex_birth_change_updates_default_start_age(live_page):
+def test_early_birth_change_updates_default_stop_age(live_page):
     p = live_page
-    p.locator('[data-intent="flex"]').click()
+    p.locator('[data-intent="early"]').click()
     p.get_by_role('textbox', name='年月，可直接输入，例如1983-01').fill('1976-03')
     advance(p)
     advance(p)
-    advance(p)
-    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    stop_age = float(p.locator('[data-key="stopWorkAge"]').input_value())
+    assert stop_age >= 50
 
 
 def test_resume_available_without_reload_and_keeps_step(live_page):
     p = live_page
-    p.locator('[data-intent="normal"]').click()
-    advance(p)
+    enter_normal_status(p)
     p.locator('[data-key="paidYears"]').fill('21')
     p.locator('#homeBtn').click()
     expect(p.locator('#resumeBtn')).to_be_visible()
     p.locator('#resumeBtn').click()
     expect(p.locator('#stepBody')).to_have_attribute('data-step', 'status')
     expect(p.locator('[data-key="paidYears"]')).to_have_value('21')
-    p.reload()
+    p.reload(wait_until='networkidle')
     p.locator('#resumeBtn').click()
     expect(p.locator('#stepBody')).to_have_attribute('data-step', 'status')
     expect(p.locator('[data-key="paidYears"]')).to_have_value('21')
@@ -88,23 +102,28 @@ def test_resident_numeric_input_survives_account_toggle(live_page):
 
 def test_deemed_choice_keeps_details_open(live_page):
     p = live_page
-    p.locator('[data-intent="normal"]').click()
-    advance(p)
+    enter_normal_status(p)
     p.get_by_text('我有视同缴费年限', exact=True).click()
     p.locator('[data-deemed="yes"]').click()
     expect(p.locator('[data-key="deemedYears"]')).to_be_visible()
 
 
-@pytest.mark.parametrize('intent', ['normal', 'early', 'flex'])
+@pytest.mark.parametrize('intent', ['normal', 'early'])
 def test_employee_amount_path(live_page, intent):
     p = live_page
     errors = []
     p.on('pageerror', lambda error: errors.append(str(error)))
-    p.locator(f'[data-intent="{intent}"]').click()
-    advance(p)
+    if intent == 'normal':
+        enter_normal_status(p)
+    else:
+        p.locator('[data-intent="early"]').click()
+        advance(p)
     p.locator('[data-key="paidYears"]').fill('20')
     advance(p)
-    advance(p)
+    if p.locator('#stepBody').get_attribute('data-step') == 'plan':
+        p.locator('[data-after-stop="same"]').click()
+        advance(p)
+    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'amount')
     p.locator('#regionSelect').select_option('shaanxi')
     p.locator('[data-key="monthlyContributionBase"]').fill('6000')
     advance(p)

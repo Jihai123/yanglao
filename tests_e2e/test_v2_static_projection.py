@@ -1,6 +1,8 @@
 import pytest
 from playwright.sync_api import sync_playwright, expect
 
+from tests_e2e.v26_flow_helpers import early_to_plan, tune_page
+
 BASE_URL = "http://127.0.0.1:8765/index.html"
 
 
@@ -13,7 +15,7 @@ def browser():
 
 
 def fresh_page(browser):
-    page = browser.new_page(viewport={"width": 390, "height": 844})
+    page = tune_page(browser.new_page(viewport={"width": 390, "height": 844}))
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(BASE_URL, wait_until="networkidle")
@@ -24,10 +26,7 @@ def fresh_page(browser):
 
 def test_default_future_projection_is_static_zero_growth(browser):
     page, errors = fresh_page(browser)
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click()  # identity -> status
-    page.locator('#nextBtn').click()  # status -> future plan
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
+    early_to_plan(page)
     page.locator('#nextBtn').click()  # plan -> amount
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
 

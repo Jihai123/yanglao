@@ -1,6 +1,8 @@
 import pytest
 from playwright.sync_api import sync_playwright, expect
 
+from tests_e2e.v26_flow_helpers import early_to_amount, tune_page
+
 BASE_URL = "http://127.0.0.1:8765/index.html"
 
 
@@ -13,7 +15,7 @@ def browser():
 
 
 def fresh_page(browser):
-    page = browser.new_page(viewport={"width": 390, "height": 844})
+    page = tune_page(browser.new_page(viewport={"width": 390, "height": 844}))
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(BASE_URL, wait_until="networkidle")
@@ -23,23 +25,12 @@ def fresh_page(browser):
 
 
 def go_to_early_amount(page):
-    page.locator('[data-intent="early"]').click()
-    page.locator('#nextBtn').click()  # identity -> status
-    page.locator('#nextBtn').click()  # status -> plan
-    page.locator('[data-contribution-plan="stop_with_work"]').click()
-    page.locator('#nextBtn').click()  # plan -> amount
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    early_to_amount(page, 'stop_with_work')
     page.locator('[data-history-mode="segments"]').click()
 
 
-def go_normal_to_amount_without_future(page):
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click()  # identity -> status
-    page.locator('#nextBtn').click()  # status -> explicit future plan
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
-    page.locator('[data-contribution-plan="stop_with_work"]').click()
-    page.locator('#nextBtn').click()  # plan -> amount
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+def go_to_amount_without_future(page):
+    early_to_amount(page, 'stop_with_work')
 
 
 def test_history_months_survive_add_row(browser):
@@ -94,7 +85,7 @@ def test_history_months_survive_back_and_forward(browser):
 
 def test_complete_visible_history_is_not_rejected_as_incomplete(browser):
     page, errors = fresh_page(browser)
-    go_normal_to_amount_without_future(page)
+    go_to_amount_without_future(page)
 
     page.locator('#regionSelect').select_option('shaanxi')
     page.locator('[data-key="monthlyContributionBase"]').fill('10000')
@@ -115,14 +106,15 @@ def test_complete_visible_history_is_not_rejected_as_incomplete(browser):
 
 def test_approximate_paid_years_accept_detailed_same_year_history(browser):
     page, errors = fresh_page(browser)
-    page.locator('[data-intent="normal"]').click()
+    page.locator('[data-intent="early"]').click()
     page.locator('#nextBtn').click()  # identity -> status
 
     page.locator('[data-key="paidYears"]').fill('16')
     page.locator('[data-key="paidYears"]').press('Tab')
     page.locator('[data-key="paidMonthsExtra"]').fill('0')
     page.locator('[data-key="paidMonthsExtra"]').press('Tab')
-    page.locator('#nextBtn').click()  # status -> future plan
+    page.locator('#nextBtn').click()  # status -> plan
+    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
     page.locator('[data-contribution-plan="stop_with_work"]').click()
     page.locator('#nextBtn').click()  # plan -> amount
 
@@ -155,19 +147,19 @@ def test_approximate_paid_years_accept_detailed_same_year_history(browser):
     page.close()
 
 
-def test_normal_amount_flow_respects_total_20_year_plan_and_future_base(browser):
+def test_planning_to_minimum_counts_pre_stop_contributions_before_flex(browser):
     page, errors = fresh_page(browser)
-    page.locator('[data-intent="normal"]').click()
+    page.locator('[data-intent="early"]').click()
     page.locator('#nextBtn').click()  # identity -> status
 
     page.locator('[data-key="paidYears"]').fill('16')
     page.locator('[data-key="paidYears"]').press('Tab')
     page.locator('[data-key="paidMonthsExtra"]').fill('0')
     page.locator('[data-key="paidMonthsExtra"]').press('Tab')
-    page.locator('#nextBtn').click()  # status -> future plan
+    page.locator('#nextBtn').click()  # status -> plan
 
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
-    expect(page.locator('#stepTitle')).to_contain_text('养老保险准备怎么缴')
+    expect(page.locator('#stepTitle')).to_contain_text('社保怎么缴')
     page.locator('[data-contribution-plan="to_minimum"]').click()
     page.locator('[data-after-stop="flex"]').click()
     page.locator('#nextBtn').click()  # plan -> amount
@@ -198,10 +190,12 @@ def test_normal_amount_flow_respects_total_20_year_plan_and_future_base(browser)
 
     expect(page.locator('#resultView')).not_to_have_class('hidden')
     expect(page.locator('#resultView')).to_contain_text('已缴 16年8个月')
-    expect(page.locator('#resultView')).to_contain_text('未来计划 3年4个月')
-    expect(page.locator('#resultView')).to_contain_text('未来缴费 3年4个月')
-    expect(page.locator('#resultView')).to_contain_text('¥2,000')
-    expect(page.locator('#resultView')).not_to_contain_text('未来计划 20年')
+    expect(page.locator('#resultView')).to_contain_text('未来计划 5年4个月')
+    future_cell = page.locator('.result-cell').filter(has_text='未来缴费')
+    expect(future_cell).to_contain_text('5年4个月')
+    expect(page.locator('#resultView')).to_contain_text('停止工作前 5年4个月')
+    expect(page.locator('#resultView')).to_contain_text('¥20,000')
+    expect(page.locator('#resultView')).not_to_contain_text('未来缴费安排灵活就业')
     assert errors == []
     page.close()
 

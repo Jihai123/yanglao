@@ -1,6 +1,8 @@
 import pytest
 from playwright.sync_api import sync_playwright, expect
 
+from tests_e2e.v26_flow_helpers import early_to_amount, tune_page
+
 BASE_URL = "http://127.0.0.1:8765/index.html"
 
 
@@ -13,7 +15,7 @@ def browser():
 
 
 def fresh_page(browser):
-    page = browser.new_page(viewport={"width": 390, "height": 844})
+    page = tune_page(browser.new_page(viewport={"width": 390, "height": 844}))
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(BASE_URL, wait_until="networkidle")
@@ -22,15 +24,8 @@ def fresh_page(browser):
     return page, errors
 
 
-def normal_to_amount(page, stop_with_work=False):
-    page.locator('[data-intent="normal"]').click()
-    page.locator('#nextBtn').click()
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'plan')
-    if stop_with_work:
-        page.locator('[data-contribution-plan="stop_with_work"]').click()
-    page.locator('#nextBtn').click()
-    expect(page.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+def planning_to_amount(page, stop_with_work=False):
+    early_to_amount(page, 'stop_with_work' if stop_with_work else None)
 
 
 def test_v23_homepage_exposes_public_version_history(browser):
@@ -45,7 +40,7 @@ def test_v23_homepage_exposes_public_version_history(browser):
 
 def test_v23_verified_beijing_minimum_is_offered_and_unknown_is_removed(browser):
     page, errors = fresh_page(browser)
-    normal_to_amount(page)
+    planning_to_amount(page)
     page.locator('#regionSelect').select_option('beijing')
 
     expect(page.locator('[data-v25-flex-mode="minimum"]')).to_be_visible()
@@ -58,7 +53,7 @@ def test_v23_verified_beijing_minimum_is_offered_and_unknown_is_removed(browser)
 
 def test_v23_shaanxi_recent_official_minimum_is_offered_with_explicit_year(browser):
     page, errors = fresh_page(browser)
-    normal_to_amount(page)
+    planning_to_amount(page)
     page.locator('#regionSelect').select_option('shaanxi')
 
     minimum = page.locator('[data-v25-flex-mode="minimum"]')
@@ -74,7 +69,7 @@ def test_v23_shaanxi_recent_official_minimum_is_offered_with_explicit_year(brows
 
 def test_v23_missing_current_base_highlights_and_focuses_field(browser):
     page, errors = fresh_page(browser)
-    normal_to_amount(page, stop_with_work=True)
+    planning_to_amount(page, stop_with_work=True)
     page.locator('#regionSelect').select_option('shaanxi')
     page.locator('#nextBtn').click()
 
@@ -94,7 +89,7 @@ def test_v23_missing_current_base_highlights_and_focuses_field(browser):
 
 def test_v23_repeated_result_clicks_render_only_once(browser):
     page, errors = fresh_page(browser)
-    normal_to_amount(page)
+    planning_to_amount(page)
     page.locator('#regionSelect').select_option('beijing')
     base = page.locator('[data-key="monthlyContributionBase"]')
     base.fill('8000')
