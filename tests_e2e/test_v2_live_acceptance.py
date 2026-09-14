@@ -14,7 +14,9 @@ def acceptance_browser():
 def live_page(acceptance_browser, request):
     width, height = request.param
     page = acceptance_browser.new_page(viewport={"width": width, "height": height})
-    page.goto("http://127.0.0.1:8765/index.html")
+    page.goto("http://127.0.0.1:8765/index.html", wait_until='networkidle')
+    page.evaluate("localStorage.clear(); sessionStorage.clear();")
+    page.reload(wait_until='networkidle')
     yield page
     page.close()
 
@@ -40,7 +42,10 @@ def test_numeric_input_reaches_state_before_change(live_page):
     p.locator('[data-account="known"]').dispatch_event('click')
     expect(p.locator('[data-key="paidYears"]')).to_have_value('20')
     advance(p)
-    expect(p.locator('[data-contribution-plan="to_minimum"]')).to_contain_text('目前已缴 20年')
+    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'amount')
+    p.locator('#backBtn').click()
+    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'status')
+    expect(p.locator('[data-key="paidYears"]')).to_have_value('20')
 
 
 def test_flex_birth_change_updates_default_start_age(live_page):
@@ -104,7 +109,10 @@ def test_employee_amount_path(live_page, intent):
     advance(p)
     p.locator('[data-key="paidYears"]').fill('20')
     advance(p)
-    advance(p)
+    if p.locator('#stepBody').get_attribute('data-step') == 'plan':
+        p.locator('[data-after-stop="same"]').click()
+        advance(p)
+    expect(p.locator('#stepBody')).to_have_attribute('data-step', 'amount')
     p.locator('#regionSelect').select_option('shaanxi')
     p.locator('[data-key="monthlyContributionBase"]').fill('6000')
     advance(p)
