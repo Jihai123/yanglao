@@ -95,12 +95,19 @@
   <script>
     const API='/api/admin.php';
     const DIAGNOSTICS_API='/api/admin.php?action=diagnostics';
-    const featureNames={age:'查退休年龄',normal:'算退休养老金',early:'几年后不工作',flex:'离职 / 灵活就业',resident:'城乡居民养老',resume:'继续上次测算'};
+    const featureNames={age:'查退休年龄',quick:'30秒快速测算',normal:'算退休养老金',early:'几年后不工作',flex:'离职 / 灵活就业',resident:'城乡居民养老',resume:'继续上次测算'};
     const sourceNames={direct:'直接访问',internal:'站内',share:'分享带回',baidu:'百度',google:'Google',bing:'Bing',sogou:'搜狗','360':'360搜索',zhihu:'知乎',wechat:'微信',other:'其他',unknown:'旧数据/未知'};
     const deviceNames={desktop:'电脑',mobile:'手机',tablet:'平板',unknown:'旧数据/未知'};
-    const stepNames={identity:'身份',status:'参保状态',plan:'未来计划',amount:'金额信息',local:'当地标准',result:'结果'};
+    const stepNames={quick:'快速测算',identity:'身份',status:'参保状态',plan:'未来计划',amount:'金额信息',local:'当地标准',result:'结果'};
     const toolNames={job_value:'这 B 班值不值？',livable_city:'宜居城市排行榜'};
-    const expectedSteps={age:['identity'],normal:['identity','status','plan','amount'],early:['identity','status','plan','amount'],flex:['identity','status','plan','amount'],resident:['identity','amount','local']};
+    const funnelStages={
+      age:[['identity','身份']],
+      quick:[['quick','进入快速页'],['submitted','有效提交']],
+      normal:[['identity','身份'],['status','参保状态'],['amount','金额信息']],
+      early:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],
+      flex:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],
+      resident:[['identity','身份'],['amount','金额信息'],['local','当地标准']],
+    };
     const $=id=>document.getElementById(id);
     const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 
@@ -118,8 +125,8 @@
 
     function renderFunnels(rows){
       $('funnelList').innerHTML=rows.length?rows.map(row=>{
-        const steps=expectedSteps[row.feature]||[];
-        const stages=[`<span class="stage">开始<strong>${Number(row.starts||0)}</strong></span>`,...steps.map(step=>`<span class="arrow">→</span><span class="stage">${esc(stepNames[step]||step)}<strong>${Number(row[step]||0)}</strong></span>`),`<span class="arrow">→</span><span class="stage">结果<strong>${Number(row.results||0)}</strong></span>`].join('');
+        const stagesForFeature=funnelStages[row.feature]||[];
+        const stages=[`<span class="stage">开始<strong>${Number(row.starts||0)}</strong></span>`,...stagesForFeature.map(([key,label])=>`<span class="arrow">→</span><span class="stage">${esc(label)}<strong>${Number(row[key]||0)}</strong></span>`),`<span class="arrow">→</span><span class="stage">结果<strong>${Number(row.results||0)}</strong></span>`].join('');
         const errors=Number(row.error_flows||0)?`<span class="warn">错误流程 ${Number(row.error_flows)}</span>`:'';
         return `<div class="funnel-item"><div class="funnel-head"><h3>${esc(featureNames[row.feature]||row.feature||'其他')}</h3><div><strong>${Number(row.conversion||0).toFixed(1)}%</strong><span class="muted"> 完成</span>${errors}</div></div><div class="funnel-path">${stages}</div></div>`;
       }).join(''):'<div class="empty">增强漏斗刚上线，等真实用户开始测算后这里会出现数据。</div>';
@@ -131,13 +138,14 @@
     }
 
     function renderDiagRows(target,rows,label){
-      $(target).innerHTML=rows.length?rows.map(row=>`<div class="diag-row"><code>${esc(label(row))}</code><span class="muted">流程 ${Number(row.flows||0)}</span><strong>${Number(row.attempts||0)} 次</strong></div>`).join(''):'<div class="empty">暂无新版诊断数据</div>';
+      $(target).innerHTML=rows.length?rows.map(row=>`<div class="diag-row"><code>${esc(label(row))}</code><span class="muted">流程 ${Number(row.flows||0)}</span><strong>${Number(row.attempts||0)} 次</strong></div>`).join(''):'<div class="empty">暂无当前版本诊断数据</div>';
     }
 
     function renderDiagnostics(data){
       const today=data.today||{}; const week=data.seven_days||{};
+      const q=today.quick||{}; const qw=week.quick||{};
       const a=today.amount||{}; const w=week.amount||{};
-      $('amountDiagnostic').innerHTML=`今天：金额信息 <strong>${Number(a.next_attempts||0)}</strong> 次下一步（${Number(a.next_flows||0)} 个流程），其中 <strong>${Number(a.validation_attempts||0)}</strong> 次被校验拦截（${Number(a.validation_flows||0)} 个流程）。<br>最近7天：<strong>${Number(w.next_attempts||0)}</strong> 次下一步，<strong>${Number(w.validation_attempts||0)}</strong> 次校验拦截。`;
+      $('amountDiagnostic').innerHTML=`当前诊断版本：<strong>${esc(data.app_version||'-')}</strong><br>今天快速测算：开始 <strong>${Number(q.starts||0)}</strong> → 进入 <strong>${Number(q.viewed_flows||0)}</strong> → 有效提交 <strong>${Number(q.submit_flows||0)}</strong> → 结果 <strong>${Number(q.result_flows||0)}</strong>；下一步 ${Number(q.next_attempts||0)} 次，其中校验拦截 ${Number(q.validation_attempts||0)} 次（${Number(q.validation_flows||0)} 个流程）。<br>最近7天快速测算：开始 <strong>${Number(qw.starts||0)}</strong> → 有效提交 <strong>${Number(qw.submit_flows||0)}</strong> → 结果 <strong>${Number(qw.result_flows||0)}</strong>。<br>今天精准金额页：<strong>${Number(a.next_attempts||0)}</strong> 次下一步（${Number(a.next_flows||0)} 个流程），其中 <strong>${Number(a.validation_attempts||0)}</strong> 次被校验拦截（${Number(a.validation_flows||0)} 个流程）；最近7天 ${Number(w.next_attempts||0)} 次下一步、${Number(w.validation_attempts||0)} 次校验拦截。`;
       renderDiagRows('todayReasonList',today.reasons||[],row=>row.reason||'unknown');
       renderDiagRows('weekReasonList',week.reasons||[],row=>row.reason||'unknown');
       renderDiagRows('stepErrorList',week.steps||[],row=>stepNames[row.step]||row.step||'unknown');
@@ -155,7 +163,7 @@
       const trend=data.trend||[]; const maxVisitors=Math.max(1,...trend.map(row=>Number(row.visitors||0)));
       $('trendList').innerHTML=trend.length?trend.map(row=>`<div class="trend-row"><span>${esc(String(row.day).slice(5))}</span><div class="bar-wrap"><div class="bar" style="width:${Math.max(2,Number(row.visitors||0)/maxVisitors*100)}%"></div></div><span class="started muted">开始 ${Number(row.started_flows||0)}</span><strong>结果 ${Number(row.result_flows||0)}</strong></div>`).join(''):'<div class="empty">还没有记录</div>';
       renderBars('sourceList',data.sources||[],'source','visitors',sourceNames); renderBars('deviceList',data.devices||[],'device','visitors',deviceNames);
-      const friction=data.step_friction||[]; const order={identity:1,status:2,plan:3,amount:4,local:5}; friction.sort((a,b)=>(order[a.step]||99)-(order[b.step]||99));
+      const friction=data.step_friction||[]; const order={quick:1,identity:2,status:3,plan:4,amount:5,local:6}; friction.sort((a,b)=>(order[a.step]||99)-(order[b.step]||99));
       $('frictionList').innerHTML=friction.length?friction.map(row=>{ const retries=Math.max(0,Number(row.next_attempts||0)-Number(row.next_flows||0)); return `<div class="friction-row"><span>${esc(stepNames[row.step]||row.step)}</span><span class="muted">进入 <strong>${Number(row.viewed_flows||0)}</strong></span><span>点下一步 <strong>${Number(row.next_flows||0)}</strong></span><span class="attempts muted">重复点击 ${retries}</span></div>`; }).join(''):'<div class="empty">还没有新版步骤数据</div>';
       renderFunnels(data.funnels||[]); renderGrowth(data.growth||{});
       const feedback=data.feedback||[]; $('feedbackList').innerHTML=feedback.length?feedback.map(item=>`<article class="feedback-item"><p>${esc(item.content)}</p><time>${esc(item.created_at)}</time></article>`).join(''):'<div class="empty">还没有吐槽</div>';
