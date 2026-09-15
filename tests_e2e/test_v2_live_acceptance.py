@@ -37,9 +37,10 @@ def enter_normal_status(page):
 
 def test_hotfix_release_notes_are_visible(live_page):
     notes = live_page.locator('#releaseNotes')
+    expect(notes).to_contain_text('v2.6.3 · 2026-09-15')
+    expect(notes).to_contain_text('历史缴费年月校验')
     expect(notes).to_contain_text('v2.6.0 · 2026-09-12')
     expect(notes).to_contain_text('30秒快速测算')
-    expect(notes).to_contain_text('继续上次测算')
     expect(notes).to_contain_text('v2.5 · 2026-09-04')
 
 

@@ -120,9 +120,10 @@ test('homepage loads v2.4 growth layer and cache-busted analytics', async () => 
 test('release notes expose the current pension conversion release', async () => {
   const source = await read('js/release-v25.js');
   const trust = await read('js/trust-v5.js');
-  assert.match(source, /RELEASE_VERSION = 'v2\.6\.0'/);
-  assert.match(source, /RELEASE_DATE = '2026-09-12'/);
-  assert.match(source, /30秒快速测算/);
-  assert.match(source, /转化漏斗埋点/);
-  assert.match(trust, /release-v25\.js\?v=20260912-conversion/);
+  assert.match(source, /RELEASE_VERSION = 'v2\.6\.3'/);
+  assert.match(source, /RELEASE_DATE = '2026-09-15'/);
+  assert.match(source, /历史缴费年月校验/);
+  assert.match(source, /Quick 升级到精准测算后改为新建独立流程统计/);
+  assert.match(source, /v2\.6\.0 · 2026-09-12/);
+  assert.match(trust, /release-v25\.js\?v=20260915-v263/);
 });
