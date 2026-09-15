@@ -8,11 +8,13 @@ const read = path => readFile(new URL(path, root), 'utf8');
 test('V2.6.2 dashboard defaults to current-version data and can switch to all history', async () => {
   const page = await read('admin/index.html');
   const api = await read('api/admin-v262.php');
+  const proxy = await read('api/adminv.php');
 
   assert.match(page, /<option value="current">当前版本 V2\.6<\/option>/);
   assert.match(page, /<option value="all">全部历史<\/option>/);
-  assert.match(page, /const DATA_API='\/api\/admin-v262\.php'/);
+  assert.match(page, /const DATA_API='\/api\/adminv\.php'/);
   assert.match(page, /scopeSelect/);
+  assert.match(proxy, /admin-v262\.php/);
   assert.match(api, /\$scope === 'all' \? 'all' : 'current'/);
   assert.match(api, /function audit_scope_clause/);
 });
