@@ -27,7 +27,7 @@ function ensureUxStyles() {
   const style = document.createElement('style');
   style.id = 'v263PrecisionUxStyles';
   style.textContent = `
-    #stepBody [aria-invalid="true"] {
+    #stepBody [data-v263-error-target="1"] {
       border-color: #b54747 !important;
       box-shadow: 0 0 0 3px rgba(181, 71, 71, .12);
     }
@@ -51,8 +51,11 @@ function constrainHistoryMonths() {
   });
 }
 
-function clearFieldError() {
-  document.querySelectorAll('#stepBody [aria-invalid="true"]').forEach(input => input.removeAttribute('aria-invalid'));
+function clearV263FieldError() {
+  document.querySelectorAll('#stepBody [data-v263-error-target="1"]').forEach(input => {
+    input.removeAttribute('aria-invalid');
+    input.removeAttribute('data-v263-error-target');
+  });
   document.querySelectorAll('#stepBody .v263-field-error').forEach(node => node.remove());
 }
 
@@ -105,7 +108,8 @@ function focusValidationError() {
   const target = historyValidationTarget(error.textContent);
   if (!target) return;
 
-  clearFieldError();
+  clearV263FieldError();
+  target.setAttribute('data-v263-error-target', '1');
   target.setAttribute('aria-invalid', 'true');
   const holder = target.closest('.history-month, .history-base, .field') || target.parentElement;
   if (holder && !holder.querySelector('.v263-field-error')) {
@@ -148,7 +152,7 @@ document.addEventListener('click', event => {
   }
 
   if (event.target.closest('#nextBtn')) {
-    clearFieldError();
+    clearV263FieldError();
     setTimeout(() => {
       patchRenderedUi();
       focusValidationError();
@@ -158,7 +162,7 @@ document.addEventListener('click', event => {
 
 document.addEventListener('input', event => {
   if (!event.target.matches('[data-history-index][data-history-field]')) return;
-  if (event.target.getAttribute('aria-invalid') === 'true') clearFieldError();
+  if (event.target.dataset.v263ErrorTarget === '1') clearV263FieldError();
 });
 
 document.addEventListener('change', event => {
