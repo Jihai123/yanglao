@@ -91,18 +91,21 @@ test('admin diagnostics action exposes validation and client error aggregates', 
 test('admin dashboard exposes current-version failure diagnostics without form data', async () => {
   const html = await read('admin/index.html');
   assert.match(html, /测算失败诊断/);
-  assert.match(html, /DATA_API='\/api\/adminv\.php'/);
+  assert.match(html, /DATA_API='\/api\/admin\.php'/);
+  assert.match(html, /action=v262&scope=/);
   assert.match(html, /renderDiagnostics\(data\.diagnostics/);
   assert.match(html, /validation_attempts/);
   assert.match(html, /当前版本 · 失败流程审计/);
-  assert.doesNotMatch(html, /diagnostics\.php/);
   assert.doesNotMatch(html, /currentAccount|monthlyContributionBase|paidYears/);
 });
 
-test('production-safe admin analytics entrypoint delegates to v2.6.2 implementation', async () => {
-  const proxy = await read('api/adminv.php');
-  assert.match(proxy, /admin-v262\.php/);
-  assert.match(proxy, /require/);
+test('enhanced analytics is served by the already-deployed admin php endpoint', async () => {
+  const php = await read('api/admin.php');
+  const html = await read('admin/index.html');
+  assert.match(php, /if \(\$action === 'v262'\)/);
+  assert.match(php, /'audit' => failure_flow_audit\(\$pdo\)/);
+  assert.match(html, /const AUTH_API='\/api\/admin\.php'/);
+  assert.match(html, /const DATA_API='\/api\/admin\.php'/);
 });
 
 test('homepage loads v2.4 growth layer and cache-busted analytics', async () => {
