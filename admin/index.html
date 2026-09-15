@@ -6,176 +6,83 @@
   <meta name="robots" content="noindex,nofollow" />
   <title>退休规划助手 · 使用看板</title>
   <style>
-    :root { color-scheme: light; --bg:#f5f3ed; --card:#fffdf9; --ink:#17392f; --muted:#6d7771; --line:#dedbd2; --accent:#1f6756; --soft:#eaf4f0; --danger:#a33a2e; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:#1d2925; }
-    button,input { font:inherit; }
-    .shell { width:min(1120px,calc(100% - 32px)); margin:0 auto; padding:26px 0 48px; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:18px; }
-    h1 { margin:0; font-size:24px; color:var(--ink); } h2 { margin:0 0 14px; font-size:18px; color:var(--ink); } h3 { margin:0; font-size:15px; color:var(--ink); }
-    .muted { color:var(--muted); } .actions { display:flex; gap:10px; }
-    .btn { border:1px solid var(--line); background:white; color:var(--ink); border-radius:10px; padding:9px 14px; cursor:pointer; }
-    .btn.primary { background:var(--accent); color:white; border-color:var(--accent); }
-    .grid { display:grid; gap:14px; } .cards { grid-template-columns:repeat(4,minmax(0,1fr)); } .two { grid-template-columns:1fr 1fr; margin-top:14px; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 7px 24px rgba(22,57,47,.04); }
-    .metric span { display:block; font-size:12px; color:var(--muted); margin-bottom:9px; } .metric strong { display:block; font-size:28px; line-height:1; color:var(--ink); } .metric small { display:block; margin-top:8px; color:var(--muted); }
-    .notice { margin-bottom:14px; padding:11px 14px; border-radius:12px; background:var(--soft); color:#315f53; font-size:13px; line-height:1.55; }
-    .trend-row,.bar-row,.friction-row,.diag-row { display:grid; gap:10px; align-items:center; min-height:36px; border-top:1px solid #ebe8e0; }
-    .trend-row:first-child,.bar-row:first-child,.friction-row:first-child,.diag-row:first-child { border-top:0; }
-    .trend-row { grid-template-columns:82px 1fr 72px 72px; } .bar-row { grid-template-columns:115px 1fr 58px; } .friction-row { grid-template-columns:110px 1fr 92px 92px; }
-    .diag-row { grid-template-columns:minmax(140px,1fr) 80px 80px; font-size:13px; } .diag-row code { font-size:12px; overflow-wrap:anywhere; }
-    .bar-row small { display:block; margin-top:2px; color:var(--muted); font-size:11px; }
-    .bar-wrap { height:9px; border-radius:999px; background:#edf0ed; overflow:hidden; } .bar { height:100%; background:var(--accent); border-radius:inherit; min-width:2px; }
-    .funnel-list { display:grid; gap:10px; } .funnel-item { border-top:1px solid #ebe8e0; padding-top:13px; } .funnel-item:first-child { border-top:0; padding-top:0; }
-    .funnel-head { display:flex; justify-content:space-between; gap:12px; align-items:baseline; } .funnel-path { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:10px; }
-    .stage { background:#f1f5f2; border-radius:9px; padding:7px 9px; font-size:12px; white-space:nowrap; } .stage strong { margin-left:5px; color:var(--ink); } .arrow { color:#9ba59f; } .warn { color:var(--danger); font-size:12px; margin-left:8px; }
-    .diagnostic-summary { margin:0; line-height:1.65; } .diagnostic-summary strong { color:var(--ink); }
-    .growth-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }.growth-item { padding:12px; border-radius:12px; background:#f4f7f5; }.growth-item span { display:block; color:var(--muted); font-size:12px; }.growth-item strong { display:block; margin-top:5px; font-size:22px; color:var(--ink); }.growth-flow { display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin-top:14px; }.growth-note { margin:10px 0 0; color:var(--muted); font-size:12px; line-height:1.6; }
-    .feedback-item { padding:13px 0; border-top:1px solid #ebe8e0; } .feedback-item:first-child { border-top:0; padding-top:0; } .feedback-item p { margin:0 0 6px; white-space:pre-wrap; line-height:1.55; } .feedback-item time { font-size:12px; color:var(--muted); }
-    .empty { padding:20px 0; color:var(--muted); } .login-wrap { min-height:70vh; display:grid; place-items:center; } .login-card { width:min(420px,100%); } .login-card p { color:var(--muted); line-height:1.6; }
-    .login-card input { width:100%; border:1px solid var(--line); border-radius:10px; padding:12px 13px; background:white; margin:8px 0 12px; } .login-error { color:var(--danger); min-height:22px; font-size:13px; }
-    .hidden { display:none !important; } .foot { text-align:right; margin-top:12px; font-size:12px; color:var(--muted); }
-    @media (max-width:900px) { .cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .two { grid-template-columns:1fr; } .growth-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @media (max-width:560px) { .shell { width:min(100% - 20px,1120px); padding-top:16px; } .topbar { align-items:flex-start; } .cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .metric strong { font-size:24px; } .trend-row { grid-template-columns:70px 1fr 56px; } .trend-row .started { display:none; } .bar-row { grid-template-columns:90px 1fr 46px; } .friction-row { grid-template-columns:88px 1fr 70px; } .friction-row .attempts { display:none; } .diag-row { grid-template-columns:minmax(120px,1fr) 58px 58px; } }
+    :root{color-scheme:light;--bg:#f5f3ed;--card:#fffdf9;--ink:#17392f;--muted:#6d7771;--line:#dedbd2;--accent:#1f6756;--soft:#eaf4f0;--danger:#a33a2e;--warn:#8b5a19}
+    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:#1d2925}button,input,select{font:inherit}.shell{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:26px 0 48px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}h1{margin:0;font-size:24px;color:var(--ink)}h2{margin:0 0 14px;font-size:18px;color:var(--ink)}h3{margin:0;font-size:15px;color:var(--ink)}.muted{color:var(--muted)}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.btn,.scope-select{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:9px 14px}.btn{cursor:pointer}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.grid{display:grid;gap:14px}.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.two{grid-template-columns:1fr 1fr;margin-top:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 7px 24px rgba(22,57,47,.04)}.metric span{display:block;font-size:12px;color:var(--muted);margin-bottom:9px}.metric strong{display:block;font-size:28px;line-height:1;color:var(--ink)}.metric small{display:block;margin-top:8px;color:var(--muted)}.notice{margin-bottom:14px;padding:11px 14px;border-radius:12px;background:var(--soft);color:#315f53;font-size:13px;line-height:1.55}.notice.warn{background:#fff3df;color:#7a4e14}.trend-row,.bar-row,.friction-row,.diag-row{display:grid;gap:10px;align-items:center;min-height:36px;border-top:1px solid #ebe8e0}.trend-row:first-child,.bar-row:first-child,.friction-row:first-child,.diag-row:first-child{border-top:0}.trend-row{grid-template-columns:82px 1fr 72px 72px}.bar-row{grid-template-columns:115px 1fr 58px}.friction-row{grid-template-columns:110px 1fr 92px 92px}.diag-row{grid-template-columns:minmax(140px,1fr) 80px 80px;font-size:13px}.diag-row code{font-size:12px;overflow-wrap:anywhere}.bar-row small{display:block;margin-top:2px;color:var(--muted);font-size:11px}.bar-wrap{height:9px;border-radius:999px;background:#edf0ed;overflow:hidden}.bar{height:100%;background:var(--accent);border-radius:inherit;min-width:2px}.funnel-list{display:grid;gap:10px}.funnel-item{border-top:1px solid #ebe8e0;padding-top:13px}.funnel-item:first-child{border-top:0;padding-top:0}.funnel-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.funnel-path{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}.stage{background:#f1f5f2;border-radius:9px;padding:7px 9px;font-size:12px;white-space:nowrap}.stage strong{margin-left:5px;color:var(--ink)}.arrow{color:#9ba59f}.warn-text{color:var(--danger);font-size:12px;margin-left:8px}.diagnostic-summary{margin:0;line-height:1.65}.growth-grid,.audit-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.growth-item,.audit-metric{padding:12px;border-radius:12px;background:#f4f7f5}.growth-item span,.audit-metric span{display:block;color:var(--muted);font-size:12px}.growth-item strong,.audit-metric strong{display:block;margin-top:5px;font-size:22px;color:var(--ink)}.growth-flow{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:14px}.growth-note,.scope-note{color:var(--muted);font-size:12px;line-height:1.6}.scope-note{margin:-6px 0 14px}.feedback-item,.audit-flow{padding:13px 0;border-top:1px solid #ebe8e0}.feedback-item:first-child,.audit-flow:first-child{border-top:0;padding-top:0}.feedback-item p{margin:0 0 6px;white-space:pre-wrap;line-height:1.55}.feedback-item time{font-size:12px;color:var(--muted)}.audit-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.audit-status{font-size:12px;border-radius:999px;padding:4px 8px;background:#eef3f0;color:var(--ink)}.audit-status.pending{background:#fff3df;color:var(--warn)}.audit-meta{margin-top:6px;font-size:12px;color:var(--muted)}.audit-reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.audit-reason{background:#f7f1ee;color:#75473f;border-radius:8px;padding:5px 7px;font-size:12px}.timeline{margin-top:10px;display:grid;gap:6px}.timeline-row{display:grid;grid-template-columns:52px 150px 100px 1fr;gap:8px;font-size:12px;align-items:baseline}.empty{padding:20px 0;color:var(--muted)}.login-wrap{min-height:70vh;display:grid;place-items:center}.login-card{width:min(420px,100%)}.login-card p{color:var(--muted);line-height:1.6}.login-card input{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:#fff;margin:8px 0 12px}.login-error{color:var(--danger);min-height:22px;font-size:13px}.hidden{display:none!important}.foot{text-align:right;margin-top:12px;font-size:12px;color:var(--muted)}
+    @media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.growth-grid,.audit-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.shell{width:min(100% - 20px,1120px);padding-top:16px}.topbar{align-items:flex-start;flex-direction:column}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.metric strong{font-size:24px}.trend-row{grid-template-columns:70px 1fr 56px}.trend-row .started{display:none}.bar-row{grid-template-columns:90px 1fr 46px}.friction-row{grid-template-columns:88px 1fr 70px}.friction-row .attempts{display:none}.diag-row{grid-template-columns:minmax(120px,1fr) 58px 58px}.timeline-row{grid-template-columns:46px 1fr}.timeline-row .timeline-step,.timeline-row .timeline-reason{grid-column:2}}
   </style>
 </head>
 <body>
-  <main class="shell">
-    <section id="loginView" class="login-wrap">
-      <form id="loginForm" class="card login-card">
-        <h1>使用看板</h1>
-        <p>输入管理员密码后查看访问、来源、测算漏斗、分享增长、失败诊断和最近吐槽。这里不展示用户填写的养老金数据。</p>
-        <label for="password">管理员密码</label><input id="password" type="password" autocomplete="current-password" required />
-        <button class="btn primary" type="submit">进入看板</button><div id="loginError" class="login-error"></div>
-      </form>
+<main class="shell">
+  <section id="loginView" class="login-wrap">
+    <form id="loginForm" class="card login-card">
+      <h1>使用看板</h1>
+      <p>输入管理员密码后查看访问、来源、测算漏斗、分享增长、失败诊断和最近吐槽。这里不展示用户填写的养老金数据。</p>
+      <label for="password">管理员密码</label>
+      <input id="password" type="password" autocomplete="current-password" required />
+      <button class="btn primary" type="submit">进入看板</button>
+      <div id="loginError" class="login-error"></div>
+    </form>
+  </section>
+
+  <section id="dashboardView" class="hidden">
+    <header class="topbar">
+      <div><h1>退休规划助手 · 使用看板</h1><div class="muted" id="subtitle">今天</div></div>
+      <div class="actions"><label class="muted" for="scopeSelect">数据版本</label><select id="scopeSelect" class="scope-select"><option value="current">当前版本 V2.6</option><option value="all">全部历史</option></select><button class="btn" id="refreshBtn" type="button">刷新</button><button class="btn" id="logoutBtn" type="button">退出</button></div>
+    </header>
+    <div class="notice">增强分析只记录来源类别、设备类别、匿名测算流程、步骤、分享动作、相关工具点击、固定校验原因码和安全的脚本定位信息；不记录出生年月、工资、缴费基数、个人账户余额、错误正文、stack 或分享卡片里的养老金金额。</div>
+    <div id="adminDataWarning" class="notice warn hidden"></div>
+    <div class="scope-note" id="scopeNote">默认只看当前 V2.6，避免旧流程数据污染当前判断。</div>
+
+    <section class="grid cards">
+      <div class="card metric"><span>今日访客</span><strong id="mVisitors">0</strong><small>匿名去重</small></div><div class="card metric"><span>今日 PV</span><strong id="mPv">0</strong><small>页面访问</small></div><div class="card metric"><span>开始测算</span><strong id="mStarts">0</strong><small>独立测算流程</small></div><div class="card metric"><span>到达结果</span><strong id="mResults">0</strong><small>独立测算流程</small></div><div class="card metric"><span>测算完成率</span><strong id="mFlowConversion">0%</strong><small>结果流程 / 开始流程</small></div><div class="card metric"><span>首次访客</span><strong id="mNew">0</strong><small>今天首次出现</small></div><div class="card metric"><span>回访访客</span><strong id="mReturning">0</strong><small>此前来过</small></div><div class="card metric"><span>前端错误</span><strong id="mErrors">0</strong><small>不记录错误正文</small></div>
     </section>
+    <section class="grid two"><div class="card"><h2>最近 7 天</h2><div id="trendList"></div></div><div class="card"><h2>最近 30 天来源</h2><div id="sourceList"></div></div></section>
+    <section class="grid two"><div class="card"><h2>最近 30 天设备</h2><div id="deviceList"></div></div><div class="card"><h2>最近 30 天步骤卡点</h2><div id="frictionList"></div></div></section>
+    <section class="card" style="margin-top:14px"><h2>最近 30 天各入口测算漏斗</h2><div id="funnelList" class="funnel-list"></div></section>
+    <section class="grid two" style="margin-top:14px"><div class="card"><h2>分享增长 · 最近 30 天</h2><div id="shareGrowth"></div></div><div class="card"><h2>相关工具导流 · 最近 30 天</h2><div id="toolGrowth"></div></div></section>
+    <section style="margin-top:14px"><div class="card"><h2>测算失败诊断</h2><p class="diagnostic-summary" id="amountDiagnostic">诊断埋点刚上线，等待新版真实数据。</p></div><div class="grid two"><div class="card"><h2>今天 · 校验失败 Top</h2><div id="todayReasonList"></div></div><div class="card"><h2>最近 7 天 · 校验失败 Top</h2><div id="weekReasonList"></div></div></div><div class="grid two"><div class="card"><h2>最近 7 天 · 按步骤</h2><div id="stepErrorList"></div></div><div class="card"><h2>最近 7 天 · 按入口</h2><div id="featureErrorList"></div></div></div><div class="card" style="margin-top:14px"><h2>最近 7 天 · 前端错误定位</h2><div id="clientErrorList"></div></div></section>
+    <section class="card" style="margin-top:14px"><h2>当前版本 · 失败流程审计</h2><p class="scope-note">只展示匿名流程引用、入口、来源、设备、步骤、固定错误码和恢复状态，不展示用户填写的数据。最多显示最近 20 个被校验拦截的流程。</p><div id="auditSummary" class="audit-summary"></div><div id="auditFlowList"></div></section>
+    <section class="card" style="margin-top:14px"><h2>最近吐槽</h2><div id="feedbackList"></div></section>
+    <div class="foot" id="generatedAt"></div>
+  </section>
+</main>
+<script>
+  const AUTH_API='/api/admin.php';
+  const DATA_API='/api/admin-v262.php';
+  const featureNames={age:'查退休年龄',quick:'30秒快速测算',normal:'算退休养老金',early:'几年后不工作',flex:'离职 / 灵活就业',resident:'城乡居民养老',resume:'继续上次测算'};
+  const sourceNames={direct:'直接访问',internal:'站内',share:'分享带回',baidu:'百度',google:'Google',bing:'Bing',sogou:'搜狗','360':'360搜索',zhihu:'知乎',wechat:'微信',other:'其他',unknown:'旧数据/未知'};
+  const deviceNames={desktop:'电脑',mobile:'手机',tablet:'平板',unknown:'旧数据/未知'};
+  const stepNames={quick:'快速测算',identity:'身份',status:'参保状态',plan:'未来计划',amount:'金额信息',local:'当地标准',result:'结果'};
+  const eventNames={flow_start:'开始流程',step_view:'进入步骤',wizard_next:'点下一步',pension_step1_submit:'提交第1步',pension_step2_submit:'有效提交',validation_error:'校验拦截',result_view:'到达结果',pension_result_view:'养老金结果'};
+  const toolNames={job_value:'这 B 班值不值？',livable_city:'宜居城市排行榜'};
+  const funnelStages={age:[['identity','身份']],quick:[['quick','进入快速页'],['submitted','有效提交']],normal:[['identity','身份'],['status','参保状态'],['amount','金额信息']],early:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],flex:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],resident:[['identity','身份'],['amount','金额信息'],['local','当地标准']]};
+  const $=id=>document.getElementById(id);
+  const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
-    <section id="dashboardView" class="hidden">
-      <header class="topbar"><div><h1>退休规划助手 · 使用看板</h1><div class="muted" id="subtitle">今天</div></div><div class="actions"><button class="btn" id="refreshBtn" type="button">刷新</button><button class="btn" id="logoutBtn" type="button">退出</button></div></header>
-      <div class="notice">增强分析只记录来源类别、设备类别、匿名测算流程、步骤、分享动作、相关工具点击、固定校验原因码和安全的脚本定位信息；不记录出生年月、工资、缴费基数、个人账户余额、错误正文、stack 或分享卡片里的养老金金额。</div>
+  function showLogin(message=''){ $('dashboardView').classList.add('hidden'); $('loginView').classList.remove('hidden'); $('loginError').textContent=message; $('password').focus(); }
+  function showDashboard(){ $('loginView').classList.add('hidden'); $('dashboardView').classList.remove('hidden'); $('loginError').textContent=''; }
+  function showDataWarning(message=''){ const el=$('adminDataWarning'); if(!message){el.textContent='';el.classList.add('hidden');return;} el.textContent=message; el.classList.remove('hidden'); }
 
-      <section class="grid cards">
-        <div class="card metric"><span>今日访客</span><strong id="mVisitors">0</strong><small>匿名去重</small></div>
-        <div class="card metric"><span>今日 PV</span><strong id="mPv">0</strong><small>页面访问</small></div>
-        <div class="card metric"><span>开始测算</span><strong id="mStarts">0</strong><small>独立测算流程</small></div>
-        <div class="card metric"><span>到达结果</span><strong id="mResults">0</strong><small>独立测算流程</small></div>
-        <div class="card metric"><span>测算完成率</span><strong id="mFlowConversion">0%</strong><small>结果流程 / 开始流程</small></div>
-        <div class="card metric"><span>首次访客</span><strong id="mNew">0</strong><small>今天首次出现</small></div>
-        <div class="card metric"><span>回访访客</span><strong id="mReturning">0</strong><small>此前来过</small></div>
-        <div class="card metric"><span>前端错误</span><strong id="mErrors">0</strong><small>不记录错误正文</small></div>
-      </section>
+  function renderBars(target,rows,labelKey,valueKey,labels){const max=Math.max(1,...rows.map(row=>Number(row[valueKey]||0)));$(target).innerHTML=rows.length?rows.map(row=>{const detail=Object.prototype.hasOwnProperty.call(row,'conversion')?`<small>开始 ${Number(row.starts||0)} · 结果 ${Number(row.results||0)} · ${Number(row.conversion||0).toFixed(1)}%</small>`:'';return `<div class="bar-row"><span>${esc(labels[row[labelKey]]||row[labelKey]||'未知')}${detail}</span><div class="bar-wrap"><div class="bar" style="width:${Math.max(2,Number(row[valueKey]||0)/max*100)}%"></div></div><strong>${Number(row[valueKey]||0)}</strong></div>`}).join(''):'<div class="empty">还没有数据</div>'}
+  function renderFunnels(rows){$('funnelList').innerHTML=rows.length?rows.map(row=>{const stages=[`<span class="stage">开始<strong>${Number(row.starts||0)}</strong></span>`,...(funnelStages[row.feature]||[]).map(([key,label])=>`<span class="arrow">→</span><span class="stage">${esc(label)}<strong>${Number(row[key]||0)}</strong></span>`),`<span class="arrow">→</span><span class="stage">结果<strong>${Number(row.results||0)}</strong></span>`].join('');const errors=Number(row.error_flows||0)?`<span class="warn-text">错误流程 ${Number(row.error_flows)}</span>`:'';return `<div class="funnel-item"><div class="funnel-head"><h3>${esc(featureNames[row.feature]||row.feature||'其他')}</h3><div><strong>${Number(row.conversion||0).toFixed(1)}%</strong><span class="muted"> 完成</span>${errors}</div></div><div class="funnel-path">${stages}</div></div>`}).join(''):'<div class="empty">当前范围内还没有测算流程。</div>'}
+  function renderGrowth(g={}){$('shareGrowth').innerHTML=`<div class="growth-grid"><div class="growth-item"><span>打开分享</span><strong>${Number(g.share_open||0)}</strong></div><div class="growth-item"><span>生成卡片</span><strong>${Number(g.share_card_generate||0)}</strong></div><div class="growth-item"><span>保存卡片</span><strong>${Number(g.share_card_save||0)}</strong></div><div class="growth-item"><span>复制/系统分享</span><strong>${Number(g.share_copy_text||0)+Number(g.share_copy_link||0)+Number(g.share_system||0)}</strong></div></div><div class="growth-flow"><span class="stage">分享访问<strong>${Number(g.share_visitors||0)}</strong></span><span class="arrow">→</span><span class="stage">开始测算<strong>${Number(g.share_starts||0)}</strong></span><span class="arrow">→</span><span class="stage">到达结果<strong>${Number(g.share_results||0)}</strong></span></div><p class="growth-note">分享访问开始率 ${Number(g.share_start_rate||0).toFixed(1)}% · 分享访问结果率 ${Number(g.share_result_rate||0).toFixed(1)}%。</p>`;const tools=g.tools||[];const max=Math.max(1,...tools.map(row=>Number(row.clicks||0)));$('toolGrowth').innerHTML=tools.length?tools.map(row=>`<div class="bar-row"><span>${esc(toolNames[row.feature]||row.feature||'其他工具')}</span><div class="bar-wrap"><div class="bar" style="width:${Math.max(2,Number(row.clicks||0)/max*100)}%"></div></div><strong>${Number(row.clicks||0)}</strong></div>`).join(''):`<div class="empty">还没有相关工具点击 · 总计 ${Number(g.outbound_tool_clicks||0)}</div>`}
+  function renderDiagRows(target,rows,label){$(target).innerHTML=rows.length?rows.map(row=>`<div class="diag-row"><code>${esc(label(row))}</code><span class="muted">流程 ${Number(row.flows||0)}</span><strong>${Number(row.attempts||0)} 次</strong></div>`).join(''):'<div class="empty">暂无当前版本诊断数据</div>'}
+  function renderDiagnostics(data={}){const today=data.today||{},week=data.seven_days||{},q=today.quick||{},qw=week.quick||{},a=today.amount||{},w=week.amount||{};$('amountDiagnostic').innerHTML=`当前诊断版本：<strong>${esc(data.app_version||'-')}</strong><br>今天快速测算：开始 <strong>${Number(q.starts||0)}</strong> → 进入 <strong>${Number(q.viewed_flows||0)}</strong> → 有效提交 <strong>${Number(q.submit_flows||0)}</strong> → 结果 <strong>${Number(q.result_flows||0)}</strong>；下一步 ${Number(q.next_attempts||0)} 次，其中校验拦截 ${Number(q.validation_attempts||0)} 次（${Number(q.validation_flows||0)} 个流程）。<br>最近7天快速测算：开始 <strong>${Number(qw.starts||0)}</strong> → 有效提交 <strong>${Number(qw.submit_flows||0)}</strong> → 结果 <strong>${Number(qw.result_flows||0)}</strong>。<br>今天精准金额页：<strong>${Number(a.next_attempts||0)}</strong> 次下一步（${Number(a.next_flows||0)} 个流程），其中 <strong>${Number(a.validation_attempts||0)}</strong> 次被校验拦截（${Number(a.validation_flows||0)} 个流程）；最近7天 ${Number(w.next_attempts||0)} 次下一步、${Number(w.validation_attempts||0)} 次校验拦截。`;renderDiagRows('todayReasonList',today.reasons||[],row=>row.reason||'unknown');renderDiagRows('weekReasonList',week.reasons||[],row=>row.reason||'unknown');renderDiagRows('stepErrorList',week.steps||[],row=>stepNames[row.step]||row.step||'unknown');renderDiagRows('featureErrorList',week.features||[],row=>featureNames[row.feature]||row.feature||'unknown');renderDiagRows('clientErrorList',week.client_errors||[],row=>`${row.error_type||'client_error'} · ${row.script_name||'未定位脚本'} · ${stepNames[row.step]||row.step||'未知步骤'}`)}
+  function renderAudit(audit={}){$('auditSummary').innerHTML=`<div class="audit-metric"><span>被拦截流程</span><strong>${Number(audit.blocked_flows||0)}</strong></div><div class="audit-metric"><span>最终恢复成功</span><strong>${Number(audit.recovered_flows||0)}</strong></div><div class="audit-metric"><span>暂未恢复</span><strong>${Number(audit.not_recovered_flows||0)}</strong></div><div class="audit-metric"><span>平均拦截次数</span><strong>${Number(audit.avg_attempts_per_blocked_flow||0).toFixed(1)}</strong></div>`;const flows=audit.flows||[];$('auditFlowList').innerHTML=flows.length?flows.map(flow=>`<article class="audit-flow"><div class="audit-head"><div><h3>流程 <code>${esc(flow.flow_ref||'')}</code></h3><div class="audit-meta">${esc(featureNames[flow.feature]||flow.feature||'未知入口')} · ${esc(sourceNames[flow.source]||flow.source||'未知来源')} · ${esc(deviceNames[flow.device]||flow.device||'未知设备')} · 拦截 ${Number(flow.validation_attempts||0)} 次</div></div><span class="audit-status ${flow.recovered?'':'pending'}">${flow.recovered?'已恢复到结果':'暂未恢复'}</span></div><div class="audit-reasons">${(flow.reasons||[]).map(item=>`<span class="audit-reason">${esc(item.reason)} × ${Number(item.count||0)}</span>`).join('')}</div><div class="timeline">${(flow.timeline||[]).map(item=>`<div class="timeline-row"><span class="muted">${esc(item.time||'')}</span><code>${esc(eventNames[item.event]||item.event||'')}</code><span class="timeline-step">${esc(stepNames[item.step]||item.step||'')}</span><span class="timeline-reason">${item.reason?esc(item.reason):''}</span></div>`).join('')}</div></article>`).join(''):'<div class="empty">最近 7 天当前版本没有被校验拦截的流程。</div>'}
+  function render(data){const today=data.today||{};$('mVisitors').textContent=today.visitors||0;$('mPv').textContent=today.page_views||0;$('mStarts').textContent=today.started_flows||0;$('mResults').textContent=today.result_flows||0;$('mFlowConversion').textContent=`${Number(today.flow_conversion||0).toFixed(1)}%`;$('mNew').textContent=today.new_visitors||0;$('mReturning').textContent=today.returning_visitors||0;$('mErrors').textContent=today.client_errors||0;const scopeLabel=data.scope==='all'?'全部历史':'当前版本 V2.6';$('subtitle').textContent=`${scopeLabel} · 累计访客 ${data.total?.visitors||0} · 累计 PV ${data.total?.page_views||0} · 今日吐槽 ${today.feedback_submits||0}`;$('scopeNote').textContent=data.scope==='all'?'当前显示跨版本历史数据；漏斗结构变化时不要用它直接评价 V2.6。':'当前仅统计 v2-prod-20260912-conversion，避免旧流程污染当前漏斗。';const trend=data.trend||[],maxVisitors=Math.max(1,...trend.map(row=>Number(row.visitors||0)));$('trendList').innerHTML=trend.length?trend.map(row=>`<div class="trend-row"><span>${esc(String(row.day).slice(5))}</span><div class="bar-wrap"><div class="bar" style="width:${Math.max(2,Number(row.visitors||0)/maxVisitors*100)}%"></div></div><span class="started muted">开始 ${Number(row.started_flows||0)}</span><strong>结果 ${Number(row.result_flows||0)}</strong></div>`).join(''):'<div class="empty">还没有记录</div>';renderBars('sourceList',data.sources||[],'source','visitors',sourceNames);renderBars('deviceList',data.devices||[],'device','visitors',deviceNames);const friction=data.step_friction||[];friction.sort((a,b)=>({quick:1,identity:2,status:3,plan:4,amount:5,local:6}[a.step]||99)-({quick:1,identity:2,status:3,plan:4,amount:5,local:6}[b.step]||99));$('frictionList').innerHTML=friction.length?friction.map(row=>`<div class="friction-row"><span>${esc(stepNames[row.step]||row.step)}</span><span class="muted">进入 <strong>${Number(row.viewed_flows||0)}</strong></span><span>点下一步 <strong>${Number(row.next_flows||0)}</strong></span><span class="attempts muted">重复点击 ${Math.max(0,Number(row.next_attempts||0)-Number(row.next_flows||0))}</span></div>`).join(''):'<div class="empty">还没有步骤数据</div>';renderFunnels(data.funnels||[]);renderGrowth(data.growth||{});const feedback=data.feedback||[];$('feedbackList').innerHTML=feedback.length?feedback.map(item=>`<article class="feedback-item"><p>${esc(item.content)}</p><time>${esc(item.created_at)}</time></article>`).join(''):'<div class="empty">还没有吐槽</div>';$('generatedAt').textContent=data.generated_at?`分析版本 ${data.analytics_version||'-'} · 数据范围：${scopeLabel} · 数据生成：${data.generated_at}`:'';showDashboard()}
 
-      <section class="grid two"><div class="card"><h2>最近 7 天</h2><div id="trendList"></div></div><div class="card"><h2>最近 30 天来源</h2><div id="sourceList"></div></div></section>
-      <section class="grid two"><div class="card"><h2>最近 30 天设备</h2><div id="deviceList"></div></div><div class="card"><h2>最近 30 天步骤卡点</h2><div id="frictionList"></div></div></section>
-      <section class="card" style="margin-top:14px"><h2>最近 30 天各入口测算漏斗</h2><div id="funnelList" class="funnel-list"></div></section>
+  function renderLegacyFallback(dashboard){render({...dashboard,scope:'all',analytics_version:dashboard.analytics_version||'a4'});$('scopeSelect').value='all';showDataWarning('登录已成功，但增强分析接口暂时未完成加载。当前先显示基础看板，系统会继续尝试恢复当前版本分析；不会把你退回登录页。');$('auditSummary').innerHTML='<div class="empty">增强审计正在重试。</div>';$('auditFlowList').innerHTML=''}
 
-      <section class="grid two" style="margin-top:14px">
-        <div class="card"><h2>分享增长 · 最近 30 天</h2><div id="shareGrowth"></div></div>
-        <div class="card"><h2>相关工具导流 · 最近 30 天</h2><div id="toolGrowth"></div></div>
-      </section>
+  async function fetchEnhanced(scope){const res=await fetch(`${DATA_API}?scope=${encodeURIComponent(scope)}`,{credentials:'same-origin',cache:'no-store'});let data={};try{data=await res.json()}catch{}return {res,data}}
+  async function loadDashboard(options={}){const scope=$('scopeSelect').value==='all'?'all':'current';const preserveSession=Boolean(options.preserveSession);const fallbackDashboard=options.fallbackDashboard||null;let lastStatus=0;for(let attempt=0;attempt<3;attempt+=1){if(attempt>0)await sleep(180*attempt);const {res,data}=await fetchEnhanced(scope);lastStatus=res.status;if(res.ok&&data.ok){showDataWarning('');render(data.dashboard);renderDiagnostics(data.diagnostics||{});renderAudit(data.audit||{});return true}if(res.status!==401)break}if(fallbackDashboard){renderLegacyFallback(fallbackDashboard);return false}if(lastStatus===401&&!preserveSession){showLogin();return false}showDataWarning(`增强分析暂时不可用（HTTP ${lastStatus||'-'}），保留当前已登录看板，不会退出登录。`);showDashboard();return false}
 
-      <section style="margin-top:14px">
-        <div class="card"><h2>测算失败诊断</h2><p class="diagnostic-summary" id="amountDiagnostic">诊断埋点刚上线，等待新版真实数据。</p></div>
-        <div class="grid two">
-          <div class="card"><h2>今天 · 校验失败 Top</h2><div id="todayReasonList"></div></div>
-          <div class="card"><h2>最近 7 天 · 校验失败 Top</h2><div id="weekReasonList"></div></div>
-        </div>
-        <div class="grid two">
-          <div class="card"><h2>最近 7 天 · 按步骤</h2><div id="stepErrorList"></div></div>
-          <div class="card"><h2>最近 7 天 · 按入口</h2><div id="featureErrorList"></div></div>
-        </div>
-        <div class="card" style="margin-top:14px"><h2>最近 7 天 · 前端错误定位</h2><div id="clientErrorList"></div></div>
-      </section>
-
-      <section class="card" style="margin-top:14px"><h2>最近吐槽</h2><div id="feedbackList"></div></section>
-      <div class="foot" id="generatedAt"></div>
-    </section>
-  </main>
-
-  <script>
-    const API='/api/admin.php';
-    const DIAGNOSTICS_API='/api/admin.php?action=diagnostics';
-    const featureNames={age:'查退休年龄',quick:'30秒快速测算',normal:'算退休养老金',early:'几年后不工作',flex:'离职 / 灵活就业',resident:'城乡居民养老',resume:'继续上次测算'};
-    const sourceNames={direct:'直接访问',internal:'站内',share:'分享带回',baidu:'百度',google:'Google',bing:'Bing',sogou:'搜狗','360':'360搜索',zhihu:'知乎',wechat:'微信',other:'其他',unknown:'旧数据/未知'};
-    const deviceNames={desktop:'电脑',mobile:'手机',tablet:'平板',unknown:'旧数据/未知'};
-    const stepNames={quick:'快速测算',identity:'身份',status:'参保状态',plan:'未来计划',amount:'金额信息',local:'当地标准',result:'结果'};
-    const toolNames={job_value:'这 B 班值不值？',livable_city:'宜居城市排行榜'};
-    const funnelStages={
-      age:[['identity','身份']],
-      quick:[['quick','进入快速页'],['submitted','有效提交']],
-      normal:[['identity','身份'],['status','参保状态'],['amount','金额信息']],
-      early:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],
-      flex:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],
-      resident:[['identity','身份'],['amount','金额信息'],['local','当地标准']],
-    };
-    const $=id=>document.getElementById(id);
-    const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-
-    function showLogin(message=''){ $('dashboardView').classList.add('hidden'); $('loginView').classList.remove('hidden'); $('loginError').textContent=message; $('password').focus(); }
-    function showDashboard(){ $('loginView').classList.add('hidden'); $('dashboardView').classList.remove('hidden'); }
-
-    function renderBars(target,rows,labelKey,valueKey,labels){
-      const max=Math.max(1,...rows.map(row=>Number(row[valueKey]||0)));
-      $(target).innerHTML=rows.length?rows.map(row=>{
-        const hasConversion=Object.prototype.hasOwnProperty.call(row,'conversion');
-        const detail=hasConversion?`<small>开始 ${Number(row.starts||0)} · 结果 ${Number(row.results||0)} · ${Number(row.conversion||0).toFixed(1)}%</small>`:'';
-        return `<div class="bar-row"><span>${esc(labels[row[labelKey]]||row[labelKey]||'未知')}${detail}</span><div class="bar-wrap"><div class="bar" style="width:${Math.max(2,Number(row[valueKey]||0)/max*100)}%"></div></div><strong>${Number(row[valueKey]||0)}</strong></div>`;
-      }).join(''):'<div class="empty">还没有新版数据</div>';
-    }
-
-    function renderFunnels(rows){
-      $('funnelList').innerHTML=rows.length?rows.map(row=>{
-        const stagesForFeature=funnelStages[row.feature]||[];
-        const stages=[`<span class="stage">开始<strong>${Number(row.starts||0)}</strong></span>`,...stagesForFeature.map(([key,label])=>`<span class="arrow">→</span><span class="stage">${esc(label)}<strong>${Number(row[key]||0)}</strong></span>`),`<span class="arrow">→</span><span class="stage">结果<strong>${Number(row.results||0)}</strong></span>`].join('');
-        const errors=Number(row.error_flows||0)?`<span class="warn">错误流程 ${Number(row.error_flows)}</span>`:'';
-        return `<div class="funnel-item"><div class="funnel-head"><h3>${esc(featureNames[row.feature]||row.feature||'其他')}</h3><div><strong>${Number(row.conversion||0).toFixed(1)}%</strong><span class="muted"> 完成</span>${errors}</div></div><div class="funnel-path">${stages}</div></div>`;
-      }).join(''):'<div class="empty">增强漏斗刚上线，等真实用户开始测算后这里会出现数据。</div>';
-    }
-
-    function renderGrowth(growth={}){
-      $('shareGrowth').innerHTML=`<div class="growth-grid"><div class="growth-item"><span>打开分享</span><strong>${Number(growth.share_open||0)}</strong></div><div class="growth-item"><span>生成卡片</span><strong>${Number(growth.share_card_generate||0)}</strong></div><div class="growth-item"><span>保存卡片</span><strong>${Number(growth.share_card_save||0)}</strong></div><div class="growth-item"><span>复制/系统分享</span><strong>${Number(growth.share_copy_text||0)+Number(growth.share_copy_link||0)+Number(growth.share_system||0)}</strong></div></div><div class="growth-flow"><span class="stage">分享访问<strong>${Number(growth.share_visitors||0)}</strong></span><span class="arrow">→</span><span class="stage">开始测算<strong>${Number(growth.share_starts||0)}</strong></span><span class="arrow">→</span><span class="stage">到达结果<strong>${Number(growth.share_results||0)}</strong></span></div><p class="growth-note">分享访问开始率 ${Number(growth.share_start_rate||0).toFixed(1)}% · 分享访问结果率 ${Number(growth.share_result_rate||0).toFixed(1)}%。只统计匿名动作与来源，不上传分享卡片里的养老金金额。</p>`;
-      const tools=growth.tools||[]; const max=Math.max(1,...tools.map(row=>Number(row.clicks||0))); $('toolGrowth').innerHTML=tools.length?tools.map(row=>`<div class="bar-row"><span>${esc(toolNames[row.feature]||row.feature||'其他工具')}</span><div class="bar-wrap"><div class="bar" style="width:${Math.max(2,Number(row.clicks||0)/max*100)}%"></div></div><strong>${Number(row.clicks||0)}</strong></div>`).join(''):`<div class="empty">还没有相关工具点击 · 总计 ${Number(growth.outbound_tool_clicks||0)}</div>`;
-    }
-
-    function renderDiagRows(target,rows,label){
-      $(target).innerHTML=rows.length?rows.map(row=>`<div class="diag-row"><code>${esc(label(row))}</code><span class="muted">流程 ${Number(row.flows||0)}</span><strong>${Number(row.attempts||0)} 次</strong></div>`).join(''):'<div class="empty">暂无当前版本诊断数据</div>';
-    }
-
-    function renderDiagnostics(data){
-      const today=data.today||{}; const week=data.seven_days||{};
-      const q=today.quick||{}; const qw=week.quick||{};
-      const a=today.amount||{}; const w=week.amount||{};
-      $('amountDiagnostic').innerHTML=`当前诊断版本：<strong>${esc(data.app_version||'-')}</strong><br>今天快速测算：开始 <strong>${Number(q.starts||0)}</strong> → 进入 <strong>${Number(q.viewed_flows||0)}</strong> → 有效提交 <strong>${Number(q.submit_flows||0)}</strong> → 结果 <strong>${Number(q.result_flows||0)}</strong>；下一步 ${Number(q.next_attempts||0)} 次，其中校验拦截 ${Number(q.validation_attempts||0)} 次（${Number(q.validation_flows||0)} 个流程）。<br>最近7天快速测算：开始 <strong>${Number(qw.starts||0)}</strong> → 有效提交 <strong>${Number(qw.submit_flows||0)}</strong> → 结果 <strong>${Number(qw.result_flows||0)}</strong>。<br>今天精准金额页：<strong>${Number(a.next_attempts||0)}</strong> 次下一步（${Number(a.next_flows||0)} 个流程），其中 <strong>${Number(a.validation_attempts||0)}</strong> 次被校验拦截（${Number(a.validation_flows||0)} 个流程）；最近7天 ${Number(w.next_attempts||0)} 次下一步、${Number(w.validation_attempts||0)} 次校验拦截。`;
-      renderDiagRows('todayReasonList',today.reasons||[],row=>row.reason||'unknown');
-      renderDiagRows('weekReasonList',week.reasons||[],row=>row.reason||'unknown');
-      renderDiagRows('stepErrorList',week.steps||[],row=>stepNames[row.step]||row.step||'unknown');
-      renderDiagRows('featureErrorList',week.features||[],row=>featureNames[row.feature]||row.feature||'unknown');
-      renderDiagRows('clientErrorList',week.client_errors||[],row=>{
-        const pos=row.script_name?`${row.script_name}${row.line_no?`:${row.line_no}${row.column_no?`:${row.column_no}`:''}`:''}`:'未定位脚本';
-        return `${row.error_type||'client_error'} · ${pos} · ${stepNames[row.step]||row.step||'未知步骤'}`;
-      });
-    }
-
-    function render(data){
-      const today=data.today||{};
-      $('mVisitors').textContent=today.visitors||0; $('mPv').textContent=today.page_views||0; $('mStarts').textContent=today.started_flows||0; $('mResults').textContent=today.result_flows||0; $('mFlowConversion').textContent=`${Number(today.flow_conversion||0).toFixed(1)}%`; $('mNew').textContent=today.new_visitors||0; $('mReturning').textContent=today.returning_visitors||0; $('mErrors').textContent=today.client_errors||0;
-      $('subtitle').textContent=`累计访客 ${data.total?.visitors||0} · 累计 PV ${data.total?.page_views||0} · 今日吐槽 ${today.feedback_submits||0}`;
-      const trend=data.trend||[]; const maxVisitors=Math.max(1,...trend.map(row=>Number(row.visitors||0)));
-      $('trendList').innerHTML=trend.length?trend.map(row=>`<div class="trend-row"><span>${esc(String(row.day).slice(5))}</span><div class="bar-wrap"><div class="bar" style="width:${Math.max(2,Number(row.visitors||0)/maxVisitors*100)}%"></div></div><span class="started muted">开始 ${Number(row.started_flows||0)}</span><strong>结果 ${Number(row.result_flows||0)}</strong></div>`).join(''):'<div class="empty">还没有记录</div>';
-      renderBars('sourceList',data.sources||[],'source','visitors',sourceNames); renderBars('deviceList',data.devices||[],'device','visitors',deviceNames);
-      const friction=data.step_friction||[]; const order={quick:1,identity:2,status:3,plan:4,amount:5,local:6}; friction.sort((a,b)=>(order[a.step]||99)-(order[b.step]||99));
-      $('frictionList').innerHTML=friction.length?friction.map(row=>{ const retries=Math.max(0,Number(row.next_attempts||0)-Number(row.next_flows||0)); return `<div class="friction-row"><span>${esc(stepNames[row.step]||row.step)}</span><span class="muted">进入 <strong>${Number(row.viewed_flows||0)}</strong></span><span>点下一步 <strong>${Number(row.next_flows||0)}</strong></span><span class="attempts muted">重复点击 ${retries}</span></div>`; }).join(''):'<div class="empty">还没有新版步骤数据</div>';
-      renderFunnels(data.funnels||[]); renderGrowth(data.growth||{});
-      const feedback=data.feedback||[]; $('feedbackList').innerHTML=feedback.length?feedback.map(item=>`<article class="feedback-item"><p>${esc(item.content)}</p><time>${esc(item.created_at)}</time></article>`).join(''):'<div class="empty">还没有吐槽</div>';
-      $('generatedAt').textContent=data.generated_at?`分析版本 ${data.analytics_version||'-'} · 数据生成：${data.generated_at}`:''; showDashboard();
-    }
-
-    async function loadDiagnostics(){ const res=await fetch(DIAGNOSTICS_API,{credentials:'same-origin',cache:'no-store'}); if(!res.ok)return; const data=await res.json(); if(data.ok)renderDiagnostics(data); }
-    async function loadDashboard(){ const res=await fetch(API,{credentials:'same-origin',cache:'no-store'}); if(res.status===401){showLogin();return;} const data=await res.json(); if(!res.ok||!data.ok) throw new Error(data.error||'load_failed'); render(data.dashboard); await loadDiagnostics(); }
-    $('loginForm').addEventListener('submit',async event=>{ event.preventDefault(); $('loginError').textContent='正在验证…'; try{ const res=await fetch(API,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'login',password:$('password').value})}); const data=await res.json(); if(res.status===401){$('loginError').textContent='密码不对。';return;} if(!res.ok||!data.ok){$('loginError').textContent=`暂时无法打开：${data.error||res.status}`;return;} $('password').value=''; render(data.dashboard); await loadDiagnostics(); }catch{$('loginError').textContent='连接失败，请稍后再试。';} });
-    $('refreshBtn').addEventListener('click',()=>loadDashboard().catch(()=>{}));
-    $('logoutBtn').addEventListener('click',async()=>{ await fetch(API,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})}).catch(()=>{}); showLogin(); });
-    loadDashboard().catch(()=>showLogin('看板接口暂时不可用。'));
-  </script>
+  $('loginForm').addEventListener('submit',async event=>{event.preventDefault();$('loginError').textContent='正在验证…';try{const res=await fetch(AUTH_API,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'login',password:$('password').value})});const data=await res.json();if(res.status===401){$('loginError').textContent='密码不对。';return}if(!res.ok||!data.ok){$('loginError').textContent=`暂时无法打开：${data.error||res.status}`;return}$('password').value='';renderLegacyFallback(data.dashboard||{});await loadDashboard({preserveSession:true,fallbackDashboard:data.dashboard||{}})}catch{$('loginError').textContent='连接失败，请稍后再试。'}});
+  $('scopeSelect').addEventListener('change',()=>loadDashboard({preserveSession:true}).catch(()=>showDataWarning('增强分析加载失败，当前登录状态仍保留。')));
+  $('refreshBtn').addEventListener('click',()=>loadDashboard({preserveSession:true}).catch(()=>showDataWarning('刷新失败，当前登录状态仍保留。')));
+  $('logoutBtn').addEventListener('click',async()=>{await fetch(AUTH_API,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout'})}).catch(()=>{});showLogin()});
+  loadDashboard().catch(()=>showLogin('看板接口暂时不可用。'));
+</script>
 </body>
 </html>
