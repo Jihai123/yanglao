@@ -7,30 +7,29 @@ const read = path => readFile(new URL(path, root), 'utf8');
 
 test('V2.6.2 dashboard defaults to current-version data and can switch to all history', async () => {
   const page = await read('admin/index.html');
-  const api = await read('api/admin-v262.php');
-  const proxy = await read('api/adminv.php');
+  const api = await read('api/admin.php');
 
   assert.match(page, /<option value="current">当前版本 V2\.6<\/option>/);
   assert.match(page, /<option value="all">全部历史<\/option>/);
-  assert.match(page, /const DATA_API='\/api\/adminv\.php'/);
+  assert.match(page, /const DATA_API='\/api\/admin\.php'/);
+  assert.match(page, /action=v262&scope=/);
   assert.match(page, /scopeSelect/);
-  assert.match(proxy, /admin-v262\.php/);
-  assert.match(api, /\$scope === 'all' \? 'all' : 'current'/);
-  assert.match(api, /function audit_scope_clause/);
+  assert.match(api, /\$scope = \$scope === 'current' \? 'current' : 'all'/);
+  assert.match(api, /function scope_clause/);
 });
 
 test('audit endpoint current version stays aligned with analytics client version', async () => {
   const analytics = await read('js/analytics.js');
-  const api = await read('api/admin-v262.php');
+  const api = await read('api/admin.php');
   const clientVersion = analytics.match(/const APP_VERSION = '([^']+)'/)?.[1];
-  const auditVersion = api.match(/const CURRENT_ANALYTICS_APP_VERSION = '([^']+)'/)?.[1];
+  const auditVersion = api.match(/const DIAGNOSTICS_APP_VERSION = '([^']+)'/)?.[1];
 
   assert.ok(clientVersion);
   assert.equal(auditVersion, clientVersion);
 });
 
 test('current-version scope is applied to funnels, sources, devices and step friction', async () => {
-  const api = await read('api/admin-v262.php');
+  const api = await read('api/admin.php');
 
   assert.match(api, /WHERE created_at >= CURDATE\(\) - INTERVAL 29 DAY AND \{\$scopeClause\}/);
   assert.match(api, /AND \{\$flowEventScope\}/);
@@ -41,10 +40,10 @@ test('current-version scope is applied to funnels, sources, devices and step fri
 });
 
 test('failure-flow audit returns recovery metrics and an anonymous timeline only', async () => {
-  const api = await read('api/admin-v262.php');
+  const api = await read('api/admin.php');
   const page = await read('admin/index.html');
 
-  assert.match(api, /function audit_flow_details/);
+  assert.match(api, /function failure_flow_audit/);
   assert.match(api, /'blocked_flows'/);
   assert.match(api, /'recovered_flows'/);
   assert.match(api, /'not_recovered_flows'/);
@@ -58,11 +57,17 @@ test('failure-flow audit returns recovery metrics and an anonymous timeline only
 });
 
 test('audit timeline intentionally excludes personal pension inputs and raw error text', async () => {
-  const api = await read('api/admin-v262.php');
+  const api = await read('api/admin.php');
 
   const timelineSelect = api.match(/SELECT created_at, event_name, feature, step, reason_code, source, device[\s\S]*?LIMIT 100/)?.[0] || '';
   assert.ok(timelineSelect);
   assert.doesNotMatch(timelineSelect, /birth|salary|wage|contribution_base|account_balance|error_message|stack/i);
   assert.match(timelineSelect, /validation_error/);
   assert.match(timelineSelect, /pension_result_view/);
+});
+
+test('no separately routed analytics php endpoint remains publicly deployable', async () => {
+  const page = await read('admin/index.html');
+  assert.doesNotMatch(page, /adminv\.php|admin-v262\.php/);
+  assert.match(page, /\/api\/admin\.php/);
 });
