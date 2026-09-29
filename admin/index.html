@@ -92,6 +92,7 @@
   const stepNames={quick:'快速测算',identity:'身份',status:'参保状态',plan:'未来计划',amount:'金额信息',local:'当地标准',result:'结果'};
   const eventNames={flow_start:'开始流程',step_view:'进入步骤',wizard_next:'点下一步',pension_step1_submit:'提交第1步',pension_step2_submit:'有效提交',validation_error:'校验拦截',result_view:'到达结果',pension_result_view:'养老金结果',pension_full_result_view:'完整金额结果',pension_partial_result_view:'部分金额结果',pension_qualification_result_view:'只看资格结果'};
   const toolNames={job_value:'这 B 班值不值？',livable_city:'宜居城市排行榜'};
+  const partialReasonNames={deemed_status_unknown:'视同缴费状态不确定',transition_unknown:'过渡性养老金金额未知',deemed_rules_unknown:'视同缴费地方计发规则未完整'};
   const funnelStages={age:[['identity','身份']],quick:[['quick','进入快速页'],['submitted','有效提交']],normal:[['identity','身份'],['status','参保状态'],['amount','金额信息']],early:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],flex:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],resident:[['identity','身份'],['amount','金额信息'],['local','当地标准']]};
   const $=id=>document.getElementById(id);
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -153,7 +154,7 @@
     $('amountDiagnostic').innerHTML=`当前诊断版本：<strong>${esc(data.app_version||'-')}</strong><br>今天快速测算：开始 <strong>${Number(q.starts||0)}</strong> → 进入 <strong>${Number(q.viewed_flows||0)}</strong> → 有效提交 <strong>${Number(q.submit_flows||0)}</strong> → 结果 <strong>${Number(q.result_flows||0)}</strong>；下一步 ${Number(q.next_attempts||0)} 次，其中校验拦截 ${Number(q.validation_attempts||0)} 次（${Number(q.validation_flows||0)} 个流程）。<br>最近7天快速测算：开始 <strong>${Number(qw.starts||0)}</strong> → 有效提交 <strong>${Number(qw.submit_flows||0)}</strong> → 结果 <strong>${Number(qw.result_flows||0)}</strong>。<br>今天精准金额页：<strong>${Number(a.next_attempts||0)}</strong> 次下一步（${Number(a.next_flows||0)} 个流程），其中 <strong>${Number(a.validation_attempts||0)}</strong> 次被校验拦截（${Number(a.validation_flows||0)} 个流程）；最近7天 ${Number(w.next_attempts||0)} 次下一步、${Number(w.validation_attempts||0)} 次校验拦截。`;
     $('resultQuality').innerHTML=`<div class="diag-row"><code>完整金额结果</code><span></span><strong>${Number(wq.full_results||0)}</strong></div><div class="diag-row"><code>部分金额结果</code><span></span><strong>${Number(wq.partial_results||0)}</strong></div><div class="diag-row"><code>只看资格结果</code><span></span><strong>${Number(wq.qualification_results||0)}</strong></div>`;
     const partialReasons=wq.partial_reasons||[];
-    $('partialReasonList').innerHTML=partialReasons.length?partialReasons.map(row=>`<div class="diag-row"><code>${esc(row.reason||'unknown')}</code><span class="muted">流程</span><strong>${Number(row.flows||0)}</strong></div>`).join(''):'<div class="empty">最近 7 天没有部分结果</div>';
+    $('partialReasonList').innerHTML=partialReasons.length?partialReasons.map(row=>`<div class="diag-row"><code>${esc(partialReasonNames[row.reason]||row.reason||'unknown')}</code><span class="muted">流程</span><strong>${Number(row.flows||0)}</strong></div>`).join(''):'<div class="empty">最近 7 天没有部分结果</div>';
     renderDiagRows('todayReasonList',today.reasons||[],row=>row.reason||'unknown');
     renderDiagRows('weekReasonList',week.reasons||[],row=>row.reason||'unknown');
     renderDiagRows('stepErrorList',week.steps||[],row=>stepNames[row.step]||row.step||'unknown');
