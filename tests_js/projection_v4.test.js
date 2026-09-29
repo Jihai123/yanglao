@@ -151,3 +151,38 @@ test('没有视同缴费时仍输出完整金额结果', () => {
   assert.ok(result.fullPensionCenter > 0);
   assert.equal(result.fullPensionCenter, result.pensionCenter);
 });
+
+
+test('计算核心不会让 confirmed=0 静默变成完整结果', () => {
+  const result = projectPlanV4({
+    ...base,
+    deemedStatus: 'confirmed',
+    deemedMonths: 0,
+    transitionAmountKnown: false,
+    transitionAmount: null,
+  });
+  assert.equal(result.amountAvailable, false);
+  assert.equal(result.amountStatus, 'unavailable');
+  assert.ok(result.amountMissingReasons.some(item => item.includes('未填写视同缴费年限')));
+});
+
+test('非 confirmed 状态不会把残留视同月数计入资格', () => {
+  const none = projectPlanV4({
+    ...base,
+    paidMonths: 10 * 12,
+    deemedStatus: 'none',
+    deemedMonths: 5 * 12,
+    futureContributionSegments: [],
+  });
+  const unknown = projectPlanV4({
+    ...base,
+    paidMonths: 10 * 12,
+    deemedStatus: 'unknown',
+    deemedMonths: 5 * 12,
+    futureContributionSegments: [],
+  });
+  assert.equal(none.deemedMonths, 0);
+  assert.equal(unknown.deemedMonths, 0);
+  assert.equal(none.qualifyingContributionMonths, 10 * 12);
+  assert.equal(unknown.qualifyingContributionMonths, 10 * 12);
+});
