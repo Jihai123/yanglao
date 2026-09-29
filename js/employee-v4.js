@@ -729,6 +729,8 @@ function showStepError(message) {
   let target = null;
   if (message.includes('累计缴费月数')) target = stepBody.querySelector('[data-key="paidMonthsExtra"]');
   else if (message.includes('出生年月')) target = stepBody.querySelector('[data-key="birth"]');
+  else if (message.includes('已确认的视同缴费年限')) target = stepBody.querySelector('[data-key="deemedYears"]');
+  else if (message.includes('过渡性养老金月额')) target = stepBody.querySelector('[data-key="transitionAmount"]');
 
   if (target) {
     target.dataset.v264ValidationTarget = '1';
@@ -850,9 +852,11 @@ function renderAgeResult() {
 function renderContributionStatus(result) {
   const required = monthsText(result.requiredContributionMonths);
   const paid = monthsText(result.paidMonths);
+  const deemed = monthsText(result.deemedMonths);
   const future = monthsText(result.futureContributionMonths);
-  if (result.eligible) return `<div class="decision-card decision-good"><span class="decision-label">最低缴费年限</span><strong>按当前计划可以满足</strong><p>最低 ${required} · 已缴 ${paid} · 未来计划 ${future}</p></div>`;
-  return `<div class="decision-card decision-danger"><span class="decision-label">最低缴费年限</span><strong>按当前计划还差 ${monthsText(result.plannedContributionShortageMonths)}</strong><p>最低 ${required} · 已缴 ${paid} · 未来计划 ${future}</p></div>`;
+  const basis = `最低 ${required} · 实际已缴 ${paid}${result.deemedMonths > 0 ? ` · 已认定视同 ${deemed}` : ''} · 未来计划 ${future}`;
+  if (result.eligible) return `<div class="decision-card decision-good"><span class="decision-label">最低缴费年限</span><strong>按当前已确认资料可以满足</strong><p>${basis}</p></div>`;
+  return `<div class="decision-card decision-danger"><span class="decision-label">最低缴费年限</span><strong>按当前已确认资料还差 ${monthsText(result.plannedContributionShortageMonths)}</strong><p>${basis}</p></div>`;
 }
 
 function segmentSummary(result) {
@@ -864,10 +868,15 @@ function renderAmountBlock(result) {
   if (state.amountMode === 'skip') return `<div class="amount-decision"><span>养老金金额</span><strong>本次未估算</strong></div>`;
   if (!result.amountAvailable) return `<div class="amount-decision amount-muted"><span>养老金金额</span><strong>还缺必要信息</strong><p>${result.amountMissingReasons.join('；')}</p><button type="button" class="small-link inline-action" id="editAmountBtn">补充信息 →</button></div>`;
   if (result.amountStatus !== 'full') {
-    const partialCopy = result.amountStatus === 'partial_deemed_unknown'
-      ? '你还不确定是否存在视同缴费年限。这里先展示目前可以可靠估算的部分；如果之后确认存在，完整待遇还可能包含过渡性养老金。'
-      : '你已经确认有视同缴费年限，但暂不知道过渡性养老金金额。这里先展示可以可靠估算的部分，不把未知金额按 0 元计算。';
-    return `<div class="amount-decision amount-partial" data-amount-status="${result.amountStatus}"><span>目前可估算的养老金部分</span><strong>约 ${money(result.knownPensionCenter)}</strong><p>参考范围 ${money(result.knownPensionLow)}～${money(result.knownPensionHigh)} / 月 · ${result.amountConfidence}</p><div class="status warn"><strong>未包含过渡性养老金</strong><br>${partialCopy}</div><div class="pension-breakdown"><div><span>基础养老金</span><strong>${money(result.basicCenter)}</strong></div><div><span>个人账户养老金</span><strong>${money(result.personalCenter)}</strong></div><div><span>过渡性养老金</span><strong>待核定 · 未计入</strong></div></div><p class="muted">完整养老金 = 当前已知部分 + 过渡性养老金（如适用，以当地经办机构核定为准）。</p><details class="inline-help"><summary>为什么这里只显示已知部分？</summary><ul>${result.confidenceReasons.map(reason => `<li>${reason}</li>`).join('')}</ul></details></div>`;
+    const isDeemedUnknown = result.amountStatus === 'partial_deemed_unknown';
+    const hasKnownTransition = result.amountStatus === 'partial_deemed_rules_unknown' && result.transitionKnown;
+    const partialCopy = isDeemedUnknown
+      ? '你还不确定是否存在视同缴费年限，因此当前金额只基于已确认的实际缴费资料。若后续确认存在，最低缴费年限判断、基础养老金和是否涉及过渡性养老金都可能变化。'
+      : hasKnownTransition
+        ? '已确认的视同缴费年限已计入最低缴费年限判断，也已计入你填写的过渡性养老金金额；但视同缴费对基础养老金的具体计发仍受当地规则影响，因此这里仍不是完整总额。'
+        : '已确认的视同缴费年限已计入最低缴费年限判断；金额部分只按实际缴费资料估算基础养老金，未完整纳入当地视同缴费计发规则，也未包含未知的过渡性养老金。';
+    const transitionDisplay = result.transitionKnown ? money(result.transitionCenter) : (isDeemedUnknown ? '是否适用待确认' : '待核定 · 未计入');
+    return `<div class="amount-decision amount-partial" data-amount-status="${result.amountStatus}"><span>按当前已确认资料可估算的部分</span><strong>约 ${money(result.knownPensionCenter)}</strong><p>参考范围 ${money(result.knownPensionLow)}～${money(result.knownPensionHigh)} / 月 · ${result.amountConfidence}</p><div class="status warn"><strong>这不是完整养老金总额</strong><br>${partialCopy}</div><div class="pension-breakdown"><div><span>基础养老金（按实际缴费部分估算）</span><strong>${money(result.basicCenter)}</strong></div><div><span>个人账户养老金</span><strong>${money(result.personalCenter)}</strong></div><div><span>过渡性养老金</span><strong>${transitionDisplay}</strong></div></div><p class="muted">完整待遇可能因视同缴费认定、当地基础养老金计发口径及过渡性养老金核定而变化，以当地经办机构最终核定为准。</p><details class="inline-help"><summary>为什么这里只显示已确认可估部分？</summary><ul>${result.confidenceReasons.map(reason => `<li>${reason}</li>`).join('')}</ul></details></div>`;
   }
   return `<div class="amount-decision amount-good" data-amount-status="full"><span>预计每月养老金</span><strong>约 ${money(result.fullPensionCenter ?? result.pensionCenter)}</strong><p>参考范围 ${money(result.fullPensionLow ?? result.pensionLow)}～${money(result.fullPensionHigh ?? result.pensionHigh)} / 月 · ${result.amountConfidence}</p><div class="pension-breakdown"><div><span>基础养老金</span><strong>${money(result.basicCenter)}</strong></div><div><span>个人账户养老金</span><strong>${money(result.personalCenter)}</strong></div>${result.transitionKnown ? `<div><span>过渡性养老金</span><strong>${money(result.transitionCenter || 0)}</strong></div>` : ''}</div><details class="inline-help"><summary>为什么是${result.amountConfidence}？</summary><ul>${result.confidenceReasons.map(reason => `<li>${reason}</li>`).join('')}</ul></details></div>`;
 }
@@ -890,7 +899,7 @@ function comparisonRows(result) {
   if (!result.amountAvailable) return '';
   const window = contributionWindow();
   const maxFuture = Math.max(0, window.claim - window.current);
-  const minTarget = Math.min(maxFuture, Math.max(window.beforeStop, result.requiredContributionMonths - result.paidMonths));
+  const minTarget = Math.min(maxFuture, Math.max(window.beforeStop, result.requiredContributionMonths - result.paidMonths - result.deemedMonths));
   const candidates = [
     { label: '缴够最低要求', months: minTarget },
     { label: '最低要求后再多缴3年', months: Math.min(maxFuture, minTarget + 36) },
@@ -909,14 +918,14 @@ function comparisonRows(result) {
     if (basePension === null) basePension = comparable;
     rows.push({
       ...candidate,
-      totalMonths: result.paidMonths + candidate.months,
+      totalMonths: result.paidMonths + result.deemedMonths + candidate.months,
       pension: comparable,
       delta: comparable - basePension,
     });
   }
   if (rows.length < 2) return '';
   const partial = result.amountStatus !== 'full';
-  return `<div class="card section compare-card"><div class="section-heading"><div><span class="section-kicker">方案比较</span><h2>${partial ? '不同缴费方案的已知部分比较' : '多缴几年，能多领多少？'}</h2></div></div><div class="compare-table">${rows.map(row => `<div class="compare-row"><div><strong>${row.label}</strong><span>累计缴费 ${monthsText(row.totalMonths)}</span></div><div class="compare-money"><strong>${money(row.pension)}/月</strong><span>${row.delta > 1 ? `比最低方案约多 ${money(row.delta)}/月` : '基准方案'}</span></div></div>`).join('')}</div><p class="muted compact-copy">${partial ? '以下金额均未包含过渡性养老金，适合比较方案差异，不代表最终完整待遇。' : '按同一套地区参数和缴费基数假设重算，用来比较方案，不代表未来最终核定金额。'}</p></div>`;
+  return `<div class="card section compare-card"><div class="section-heading"><div><span class="section-kicker">方案比较</span><h2>${partial ? '不同缴费方案的已确认可估部分比较' : '多缴几年，能多领多少？'}</h2></div></div><div class="compare-table">${rows.map(row => `<div class="compare-row"><div><strong>${row.label}</strong><span>计入最低年限 ${monthsText(row.totalMonths)}</span></div><div class="compare-money"><strong>${money(row.pension)}/月</strong><span>${row.delta > 1 ? `比最低方案约多 ${money(row.delta)}/月` : '基准方案'}</span></div></div>`).join('')}</div><p class="muted compact-copy">${partial ? '以下金额只比较当前可估算部分；视同缴费相关的当地基础养老金计发规则和未知过渡性养老金未完整纳入，不代表最终完整待遇。' : '按同一套地区参数和缴费基数假设重算，用来比较方案，不代表未来最终核定金额。'}</p></div>`;
 }
 
 function timelineItem(title, sub) {
@@ -996,12 +1005,12 @@ function renderResult() {
   const claim = claimAgeMonths(category);
   const date = result.claimDate;
   const segments = segmentSummary(result);
-  resultView.innerHTML = `<div class="result-hero clean-result"><div class="soft">你的退休计划</div><div class="result-money">${ageText(claim)}办理退休</div><div class="soft">预计 ${date.year}年${date.month}月</div><div class="result-grid"><div class="result-cell"><div class="k">停止工作</div><div class="v">${ageText(stop)}</div></div><div class="result-cell"><div class="k">已缴费</div><div class="v">${monthsText(result.paidMonths)}</div></div><div class="result-cell"><div class="k">未来缴费</div><div class="v">${monthsText(result.futureContributionMonths)}</div></div><div class="result-cell"><div class="k">最低要求</div><div class="v">${monthsText(result.requiredContributionMonths)}</div></div></div></div>
+  resultView.innerHTML = `<div class="result-hero clean-result"><div class="soft">你的退休计划</div><div class="result-money">${ageText(claim)}办理退休</div><div class="soft">预计 ${date.year}年${date.month}月</div><div class="result-grid"><div class="result-cell"><div class="k">停止工作</div><div class="v">${ageText(stop)}</div></div><div class="result-cell"><div class="k">实际已缴</div><div class="v">${monthsText(result.paidMonths)}</div></div>${result.deemedMonths > 0 ? `<div class="result-cell"><div class="k">已认定视同</div><div class="v">${monthsText(result.deemedMonths)}</div></div>` : ''}<div class="result-cell"><div class="k">未来缴费</div><div class="v">${monthsText(result.futureContributionMonths)}</div></div><div class="result-cell"><div class="k">最低要求</div><div class="v">${monthsText(result.requiredContributionMonths)}</div></div></div></div>
     ${renderContributionStatus(result)}
     ${segments ? `<div class="plain-note section"><strong>未来缴费安排</strong><span>${segments}</span></div>` : ''}
     <div class="card section"><div class="section-heading"><div><span class="section-kicker">待遇估算</span><h2>养老金金额</h2></div></div>${renderAmountBlock(result)}</div>
     ${comparisonRows(result)}
-    <div class="card section"><div class="section-heading"><div><span class="section-kicker">时间线</span><h2>你的计划</h2></div></div><div class="timeline modern-timeline">${timelineItem('现在', `已实际缴 ${monthsText(result.paidMonths)}`)}${state.intent === 'normal' ? '' : timelineItem(ageText(stop), '停止工作')}${timelineItem(ageText(claim), `${date.year}年${date.month}月办理退休`)}</div></div>
+    <div class="card section"><div class="section-heading"><div><span class="section-kicker">时间线</span><h2>你的计划</h2></div></div><div class="timeline modern-timeline">${timelineItem('现在', `已实际缴 ${monthsText(result.paidMonths)}${result.deemedMonths > 0 ? `，另有已认定视同 ${monthsText(result.deemedMonths)}` : ''}`)}${state.intent === 'normal' ? '' : timelineItem(ageText(stop), '停止工作')}${timelineItem(ageText(claim), `${date.year}年${date.month}月办理退休`)}</div></div>
     <div class="card section source-summary"><p>${PENSION_SCOPE} · 政策版本 ${POLICY_VERSION} · 最终待遇以经办机构核定为准。</p></div>
     <div class="result-actions three-actions"><button class="btn primary" id="editPlanBtn" type="button">调整方案</button><button class="btn secondary" id="homeResultBtn" type="button">返回首页</button><button class="btn ghost" id="newPlanBtn" type="button">清空重算</button></div>`;
   save();
@@ -1045,15 +1054,29 @@ document.getElementById('restartBtn')?.addEventListener('click', resetAll);
 
 const saved = loadSaved();
 if (saved) {
+  const savedHasDeemedStatus = Object.prototype.hasOwnProperty.call(saved, 'deemedStatus');
+  const legacyHasDeemed = Boolean(saved.hasDeemed);
   Object.assign(state, saved);
-  if (!['none', 'unknown', 'confirmed'].includes(state.deemedStatus)) {
-    state.deemedStatus = state.hasDeemed ? 'confirmed' : 'none';
+  if (!savedHasDeemedStatus) {
+    state.deemedStatus = legacyHasDeemed ? 'confirmed' : 'none';
+    state.deemedMigrationNeedsReview = legacyHasDeemed;
+    if (legacyHasDeemed && !(saved.transitionAmountKnown && Number(saved.transitionAmount) > 0)) {
+      state.transitionAmountKnown = false;
+      state.transitionAmount = '';
+    }
+  } else if (!['none', 'unknown', 'confirmed'].includes(state.deemedStatus)) {
+    state.deemedStatus = legacyHasDeemed ? 'confirmed' : 'none';
   }
   state.hasDeemed = state.deemedStatus === 'confirmed';
   migrateHistorySegments();
+  if (state.deemedMigrationNeedsReview && ['normal', 'early', 'flex'].includes(state.intent)) {
+    state.step = Math.max(0, activeSteps().indexOf('status'));
+  }
   document.getElementById('resumeBox')?.classList.remove('hidden');
   const resumeText = document.getElementById('resumeText');
-  if (resumeText) resumeText.textContent = '上次填写的信息还在，可以继续。';
+  if (resumeText) resumeText.textContent = state.deemedMigrationNeedsReview
+    ? '上次保存了视同缴费信息；新版拆分了实际缴费与视同缴费口径，请先确认一次。'
+    : '上次填写的信息还在，可以继续。';
 }
 document.getElementById('resumeBtn')?.addEventListener('click', () => {
   state.step = Math.max(0, Math.min(Number(state.step) || 0, activeSteps().length - 1));
