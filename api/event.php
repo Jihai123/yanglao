@@ -34,6 +34,9 @@ $allowed = [
     'pension_step1_submit',
     'pension_step2_submit',
     'pension_result_view',
+    'pension_full_result_view',
+    'pension_partial_result_view',
+    'pension_qualification_result_view',
     'pension_upgrade_click',
     'pension_save',
     'validation_error',
@@ -61,7 +64,7 @@ if (!in_array($source, $allowedSources, true)) $source = 'other';
 $allowedDevices = ['desktop', 'mobile', 'tablet'];
 if (!in_array($device, $allowedDevices, true)) $device = '';
 
-if ($eventName !== 'validation_error') $reasonCode = '';
+if (!in_array($eventName, ['validation_error', 'pension_partial_result_view'], true)) $reasonCode = '';
 if ($eventName !== 'client_error') {
     $errorType = '';
     $scriptName = '';
