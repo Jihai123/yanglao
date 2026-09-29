@@ -292,7 +292,11 @@ export function projectPlanV4(input) {
   const coreAmountAvailable = missing.length === 0;
   const amountStatus = !coreAmountAvailable
     ? 'unavailable'
-    : (partialReason || 'full');
+    : partialReason === 'deemed_status_unknown'
+      ? 'partial_deemed_unknown'
+      : partialReason === 'transition_unknown'
+        ? 'partial_transition_unknown'
+        : 'full';
   const amountAvailable = coreAmountAvailable;
 
   if (coreAmountAvailable) {
