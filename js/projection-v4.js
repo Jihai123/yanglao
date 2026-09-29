@@ -215,7 +215,11 @@ export function projectPlanV4(input) {
   const monthsToClaim = Math.max(0, claimAgeMonths - currentAgeMonths);
 
   const paidMonths = Math.max(0, Math.round(safeNumber(input.paidMonths)));
-  const deemedMonths = Math.max(0, Math.round(safeNumber(input.deemedMonths)));
+  const inputDeemedMonths = Math.max(0, Math.round(safeNumber(input.deemedMonths)));
+  const deemedStatus = ['none', 'unknown', 'confirmed'].includes(input.deemedStatus)
+    ? input.deemedStatus
+    : (inputDeemedMonths > 0 ? 'confirmed' : 'none');
+  const deemedMonths = deemedStatus === 'confirmed' ? inputDeemedMonths : 0;
   const monthlyContributionBase = Math.max(0, safeNumber(input.monthlyContributionBase));
   const socialWageGrowth = clamp(safeNumber(input.socialWageGrowth, 0.03), -0.02, 0.12);
   const historicalReferenceGrowth = clamp(safeNumber(input.historicalReferenceGrowth, 0.03), 0, 0.12);
@@ -253,9 +257,6 @@ export function projectPlanV4(input) {
 
   const missing = [];
   const confidenceReasons = [];
-  const deemedStatus = ['none', 'unknown', 'confirmed'].includes(input.deemedStatus)
-    ? input.deemedStatus
-    : (deemedMonths > 0 ? 'confirmed' : 'none');
   const transitionAmountProvided = input.transitionAmount !== null
     && input.transitionAmount !== undefined
     && String(input.transitionAmount).trim() !== ''
@@ -264,6 +265,7 @@ export function projectPlanV4(input) {
     && Boolean(input.transitionAmountKnown)
     && transitionAmountProvided;
   if (input.amountMode === 'skip') missing.push('本次选择只看退休资格');
+  if (deemedStatus === 'confirmed' && !(deemedMonths > 0)) missing.push('已确认视同缴费状态但未填写视同缴费年限');
   if (!(monthlyContributionBase > 0)) missing.push('缺少当前月缴费基数');
   if (!(currentCalcBase > 0)) missing.push('缺少待遇领取地可用的养老金计发基准');
   if (futureSegments.some(item => item.months > 0 && !(item.monthlyContributionBase > 0))) missing.push('未来缴费基数没有填完整');
