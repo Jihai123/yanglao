@@ -59,6 +59,10 @@ test('event API accepts diagnostics and growth events while persisting safe fiel
     assert.match(php, new RegExp(field));
   }
   assert.match(php, /'share'/);
+  assert.match(php, /allowedPartialReasons/);
+  for (const reason of ['deemed_status_unknown', 'transition_unknown', 'deemed_rules_unknown']) {
+    assert.match(php, new RegExp(reason));
+  }
   assert.doesNotMatch(php, /error_message|stack_trace/);
 });
 
@@ -96,6 +100,8 @@ test('admin dashboard exposes current-version failure diagnostics without form d
   assert.match(html, /renderDiagnostics\(data\.diagnostics/);
   assert.match(html, /validation_attempts/);
   assert.match(html, /当前版本 · 失败流程审计/);
+  assert.match(html, /V2\.6\.4 当前版本诊断/);
+  assert.match(html, /今日完整金额结果/);
   assert.match(html, /精准结果完整度/);
   assert.match(html, /部分结果原因/);
   assert.match(html, /旧统计基线（V2\.6\.0～V2\.6\.3）/);
@@ -127,8 +133,8 @@ test('release notes expose the current pension conversion release', async () => 
   const trust = await read('js/trust-v5.js');
   assert.match(source, /RELEASE_VERSION = 'v2\.6\.4'/);
   assert.match(source, /RELEASE_DATE = '2026-09-29'/);
-  assert.match(source, /不知道过渡性养老金/);
-  assert.match(source, /未包含过渡性养老金/);
+  assert.match(source, /视同缴费年限会计入最低缴费年限判断/);
+  assert.match(source, /不会冒充完整养老金总额/);
   assert.match(source, /v2\.6\.3 · 2026-09-15/);
   assert.match(source, /v2\.6\.0 · 2026-09-12/);
   assert.match(trust, /release-v25\.js\?v=20260929-v264/);
@@ -143,15 +149,20 @@ test('v2.6.4 partial pension keeps unknown transition out of the full total', as
 
   assert.match(employee, /deemedStatus: 'none'/);
   assert.match(employee, /data-deemed-status="unknown"/);
-  assert.match(employee, /state\.hasDeemed \? 'confirmed' : 'none'/);
-  assert.match(employee, /deemedStatus: 'none'/);
+  assert.match(employee, /savedHasDeemedStatus/);
+  assert.match(employee, /state\.deemedStatus = legacyHasDeemed \? 'confirmed' : 'none'/);
+  assert.match(employee, /deemedMigrationNeedsReview/);
   assert.match(employee, /不知道，先算已知部分/);
-  assert.match(employee, /目前可估算的养老金部分/);
-  assert.match(employee, /完整养老金 = 当前已知部分/);
+  assert.match(employee, /按当前已确认资料可估算的部分/);
+  assert.match(employee, /这不是完整养老金总额/);
+  assert.match(employee, /累计实际缴费（不含视同缴费）/);
   assert.doesNotMatch(employee, /暂不能把它省略后给出总金额/);
 
   assert.match(projection, /partial_transition_unknown/);
   assert.match(projection, /partial_deemed_unknown/);
+  assert.match(projection, /partial_deemed_rules_unknown/);
+  assert.match(projection, /qualifyingContributionMonths/);
+  assert.match(projection, /actualContributionMonths/);
   assert.match(projection, /knownPensionCenter/);
   assert.match(projection, /fullPensionCenter/);
   assert.match(projection, /transitionCenter = transitionKnown/);
