@@ -172,7 +172,7 @@ def test_v264_legacy_has_deemed_saved_plan_is_migrated_and_forced_to_review(brow
     expect(page.locator('#resumeText')).to_contain_text('新版拆分了实际缴费与视同缴费口径')
     page.locator('#resumeBtn').click()
     expect(page.locator('#stepBody')).to_have_attribute('data-step', 'status')
-    expect(page.locator('[data-deemed-status="confirmed"]')).to_have_class(pytest.approx if False else "choice active")
+    expect(page.locator('[data-deemed-status="confirmed"]')).to_have_class("choice active")
     expect(page.locator('#stepBody')).to_contain_text('请确认一次旧数据口径')
     expect(page.locator('[data-key="paidYears"]')).to_have_value('15')
     assert errors == []
