@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = path => readFile(new URL(path, root), 'utf8');
 
-test('V2.6.2 dashboard defaults to current-version data and can switch to all history', async () => {
+test('V2.6.4 dashboard defaults to current-version data and keeps legacy/all scopes', async () => {
   const page = await read('admin/index.html');
   const api = await read('api/admin.php');
 
@@ -14,7 +14,7 @@ test('V2.6.2 dashboard defaults to current-version data and can switch to all hi
   assert.match(page, /const DATA_API='\/api\/admin\.php'/);
   assert.match(page, /action=v262&scope=/);
   assert.match(page, /scopeSelect/);
-  assert.match(api, /\$scope = \$scope === 'current' \? 'current' : 'all'/);
+  assert.match(api, /in_array\(\$scope, \['current', 'legacy'\]/);
   assert.match(api, /function scope_clause/);
 });
 
@@ -36,7 +36,7 @@ test('current-version scope is applied to funnels, sources, devices and step fri
   assert.match(api, /AND \{\$flowStartScope\}/);
   assert.match(api, /event_name IN \('step_view', 'wizard_next'\) AND \{\$scopeClause\}/);
   assert.match(api, /'scope' => \$scope/);
-  assert.match(api, /'analytics_version' => 'a5'/);
+  assert.match(api, /'analytics_version' => 'a6'/);
 });
 
 test('failure-flow audit returns recovery metrics and an anonymous timeline only', async () => {
