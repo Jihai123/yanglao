@@ -167,7 +167,10 @@ test('v2.6.4 partial pension keeps unknown transition out of the full total', as
   assert.match(projection, /fullPensionCenter/);
   assert.match(projection, /transitionCenter = transitionKnown/);
 
-  assert.match(growth, /当前金额未包含过渡性养老金/);
+  assert.match(growth, /partial_deemed_rules_unknown/);
+  assert.match(growth, /当前金额已包含你填写的过渡性养老金/);
+  assert.match(growth, /是否存在视同缴费年限仍待确认/);
+  assert.match(growth, /当前金额未包含尚未核定的过渡性养老金/);
   assert.match(growth, /partial-link/);
   assert.match(admin, /DIAGNOSTICS_APP_VERSION = 'v2-prod-20260929-v264'/);
   assert.match(admin, /LEGACY_BASELINE_APP_VERSION = 'v2-prod-20260912-conversion'/);
