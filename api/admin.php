@@ -5,7 +5,8 @@ require __DIR__ . '/bootstrap.php';
 
 const ADMIN_COOKIE = 'yanglao_admin';
 const ADMIN_TOKEN_MESSAGE = 'yanglao-admin-v1';
-const DIAGNOSTICS_APP_VERSION = 'v2-prod-20260912-conversion';
+const DIAGNOSTICS_APP_VERSION = 'v2-prod-20260929-v264';
+const LEGACY_BASELINE_APP_VERSION = 'v2-prod-20260912-conversion';
 
 $adminPassword = (string)($config['admin_password'] ?? '');
 if ($adminPassword === '') {
@@ -50,9 +51,10 @@ function add_conversion(array $row): array
 
 function scope_clause(PDO $pdo, string $scope, string $alias = ''): string
 {
-    if ($scope !== 'current') return '1=1';
     $prefix = $alias !== '' ? $alias . '.' : '';
-    return $prefix . 'app_version = ' . $pdo->quote(DIAGNOSTICS_APP_VERSION);
+    if ($scope === 'current') return $prefix . 'app_version = ' . $pdo->quote(DIAGNOSTICS_APP_VERSION);
+    if ($scope === 'legacy') return $prefix . 'app_version = ' . $pdo->quote(LEGACY_BASELINE_APP_VERSION);
+    return '1=1';
 }
 
 function diagnostics_for_window(PDO $pdo, string $where): array
@@ -154,6 +156,30 @@ function diagnostics_for_window(PDO $pdo, string $where): array
     ";
     $quick = $pdo->query($quickSql)->fetch() ?: [];
 
+    $qualitySql = "
+        SELECT
+          COUNT(DISTINCT CASE WHEN event_name = 'pension_full_result_view' AND flow_id <> '' THEN flow_id END) AS full_results,
+          COUNT(DISTINCT CASE WHEN event_name = 'pension_partial_result_view' AND flow_id <> '' THEN flow_id END) AS partial_results,
+          COUNT(DISTINCT CASE WHEN event_name = 'pension_qualification_result_view' AND flow_id <> '' THEN flow_id END) AS qualification_results
+        FROM usage_event
+        WHERE {$where}
+          AND event_name IN ('pension_full_result_view','pension_partial_result_view','pension_qualification_result_view')
+    ";
+    $quality = $pdo->query($qualitySql)->fetch() ?: [];
+    $partialReasonSql = "
+        SELECT reason_code, COUNT(DISTINCT flow_id) AS flows
+        FROM usage_event
+        WHERE {$where}
+          AND event_name = 'pension_partial_result_view'
+          AND reason_code <> ''
+        GROUP BY reason_code
+        ORDER BY flows DESC, reason_code ASC
+    ";
+    $partialReasons = array_map(static fn(array $row): array => [
+        'reason' => (string)$row['reason_code'],
+        'flows' => (int)$row['flows'],
+    ], $pdo->query($partialReasonSql)->fetchAll());
+
     return [
         'reasons' => $reasons,
         'steps' => $steps,
@@ -164,6 +190,12 @@ function diagnostics_for_window(PDO $pdo, string $where): array
             'next_flows' => (int)($amount['next_flows'] ?? 0),
             'validation_attempts' => (int)($amount['validation_attempts'] ?? 0),
             'validation_flows' => (int)($amount['validation_flows'] ?? 0),
+        ],
+        'result_quality' => [
+            'full_results' => (int)($quality['full_results'] ?? 0),
+            'partial_results' => (int)($quality['partial_results'] ?? 0),
+            'qualification_results' => (int)($quality['qualification_results'] ?? 0),
+            'partial_reasons' => $partialReasons,
         ],
         'quick' => [
             'starts' => (int)($quick['starts'] ?? 0),
@@ -215,7 +247,7 @@ function failure_flow_audit(PDO $pdo): array
          WHERE flow_id = ?
            AND app_version = ?
            AND created_at >= CURDATE() - INTERVAL 6 DAY
-           AND event_name IN ('flow_start','step_view','wizard_next','pension_step1_submit','pension_step2_submit','validation_error','result_view','pension_result_view')
+           AND event_name IN ('flow_start','step_view','wizard_next','pension_step1_submit','pension_step2_submit','validation_error','result_view','pension_result_view','pension_full_result_view','pension_partial_result_view','pension_qualification_result_view')
          ORDER BY id ASC
          LIMIT 100"
     );
@@ -230,6 +262,7 @@ function failure_flow_audit(PDO $pdo): array
         $eventRows = $eventStmt->fetchAll();
         $timeline = [];
         $isRecovered = false;
+        $recoveryType = '';
         $reasonCounts = [];
         foreach ($eventRows as $event) {
             $eventName = (string)$event['event_name'];
@@ -238,8 +271,20 @@ function failure_flow_audit(PDO $pdo): array
             if ($eventName === 'validation_error' && $reason !== '') {
                 $reasonCounts[$reason] = ($reasonCounts[$reason] ?? 0) + 1;
             }
-            if (in_array($eventName, ['result_view', 'pension_result_view'], true) && $createdAt >= $firstErrorAt) {
-                $isRecovered = true;
+            if ($createdAt >= $firstErrorAt) {
+                if ($eventName === 'pension_full_result_view') {
+                    $isRecovered = true;
+                    $recoveryType = 'full';
+                } elseif ($eventName === 'pension_partial_result_view') {
+                    $isRecovered = true;
+                    $recoveryType = 'partial';
+                } elseif ($eventName === 'pension_qualification_result_view') {
+                    $isRecovered = true;
+                    $recoveryType = 'qualification';
+                } elseif (in_array($eventName, ['result_view', 'pension_result_view'], true) && $recoveryType === '') {
+                    $isRecovered = true;
+                    $recoveryType = 'legacy';
+                }
             }
             $timeline[] = [
                 'time' => substr($createdAt, 11, 5),
@@ -261,6 +306,7 @@ function failure_flow_audit(PDO $pdo): array
             'last_error_at' => (string)$flowRow['last_error_at'],
             'validation_attempts' => $attempts,
             'recovered' => $isRecovered,
+            'recovery_type' => $recoveryType,
             'reasons' => array_map(static fn(string $reason, int $count): array => ['reason' => $reason, 'count' => $count], array_keys($reasonCounts), array_values($reasonCounts)),
             'timeline' => $timeline,
         ];
@@ -280,7 +326,7 @@ function failure_flow_audit(PDO $pdo): array
 
 function dashboard_data(PDO $pdo, string $scope = 'all'): array
 {
-    $scope = $scope === 'current' ? 'current' : 'all';
+    $scope = in_array($scope, ['current', 'legacy'], true) ? $scope : 'all';
     $scopeClause = scope_clause($pdo, $scope);
     $flowStartScope = scope_clause($pdo, $scope, 'flow_start_event');
     $flowEventScope = scope_clause($pdo, $scope, 'flow_event');
@@ -472,7 +518,10 @@ function dashboard_data(PDO $pdo, string $scope = 'all'): array
     return [
         'today' => $today, 'trend' => $trend, 'sources' => $sources, 'devices' => $devices, 'funnels' => $funnels,
         'step_friction' => $stepFriction, 'growth' => $growth, 'feedback' => $feedback, 'total' => $total,
-        'scope' => $scope, 'app_version' => DIAGNOSTICS_APP_VERSION, 'analytics_version' => 'a5', 'generated_at' => date('Y-m-d H:i:s'),
+        'scope' => $scope,
+        'app_version' => $scope === 'legacy' ? LEGACY_BASELINE_APP_VERSION : DIAGNOSTICS_APP_VERSION,
+        'analytics_version' => 'a6',
+        'generated_at' => date('Y-m-d H:i:s'),
     ];
 }
 
@@ -522,7 +571,7 @@ if ($action === 'diagnostics') {
 
 if ($action === 'v262') {
     $scope = (string)($_GET['scope'] ?? 'current');
-    $scope = $scope === 'all' ? 'all' : 'current';
+    $scope = in_array($scope, ['current', 'legacy', 'all'], true) ? $scope : 'current';
     try {
         respond([
             'ok' => true,
