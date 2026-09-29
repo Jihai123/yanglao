@@ -237,9 +237,11 @@ export function projectPlanV4(input) {
 
   const futureSegments = normalizeFutureSegments(input, monthsToClaim, monthlyContributionBase);
   const futureContributionMonths = futureSegments.reduce((sum, segment) => sum + segment.months, 0);
-  const totalContributionMonths = paidMonths + futureContributionMonths;
-  const remainingActualContributionMonths = Math.max(0, requiredContributionMonths - paidMonths);
-  const plannedContributionShortageMonths = Math.max(0, requiredContributionMonths - totalContributionMonths);
+  const actualContributionMonths = paidMonths + futureContributionMonths;
+  const qualifyingContributionMonths = actualContributionMonths + deemedMonths;
+  const totalContributionMonths = qualifyingContributionMonths;
+  const remainingActualContributionMonths = Math.max(0, requiredContributionMonths - paidMonths - deemedMonths);
+  const plannedContributionShortageMonths = Math.max(0, requiredContributionMonths - qualifyingContributionMonths);
   const eligible = plannedContributionShortageMonths === 0;
 
   const accountKnown = Boolean(input.accountKnown && safeNumber(input.currentAccount) >= 0);
@@ -254,7 +256,13 @@ export function projectPlanV4(input) {
   const deemedStatus = ['none', 'unknown', 'confirmed'].includes(input.deemedStatus)
     ? input.deemedStatus
     : (deemedMonths > 0 ? 'confirmed' : 'none');
-  const transitionKnown = deemedStatus === 'confirmed' && Boolean(input.transitionAmountKnown);
+  const transitionAmountProvided = input.transitionAmount !== null
+    && input.transitionAmount !== undefined
+    && String(input.transitionAmount).trim() !== ''
+    && Number.isFinite(Number(input.transitionAmount));
+  const transitionKnown = deemedStatus === 'confirmed'
+    && Boolean(input.transitionAmountKnown)
+    && transitionAmountProvided;
   if (input.amountMode === 'skip') missing.push('本次选择只看退休资格');
   if (!(monthlyContributionBase > 0)) missing.push('缺少当前月缴费基数');
   if (!(currentCalcBase > 0)) missing.push('缺少待遇领取地可用的养老金计发基准');
@@ -263,6 +271,7 @@ export function projectPlanV4(input) {
   let partialReason = '';
   if (deemedStatus === 'unknown') partialReason = 'deemed_status_unknown';
   else if (deemedStatus === 'confirmed' && deemedMonths > 0 && !transitionKnown) partialReason = 'transition_unknown';
+  else if (deemedStatus === 'confirmed' && deemedMonths > 0 && transitionKnown) partialReason = 'deemed_rules_unknown';
 
   if (calcBaseSourceQuality === 'direct') confidenceReasons.push('计发基准来自政府公开来源');
   else if (calcBaseSourceQuality === 'corroborated') confidenceReasons.push('计发基准为公开文件引述的人社数据');
@@ -285,7 +294,7 @@ export function projectPlanV4(input) {
   let fullPensionHigh = null;
   let basicCenter = 0;
   let personalCenter = 0;
-  const transitionCenter = transitionKnown ? Math.max(0, safeNumber(input.transitionAmount)) : null;
+  const transitionCenter = transitionKnown ? Math.max(0, Number(input.transitionAmount)) : null;
   let todayPowerCenter = 0;
   let uncertaintyRatio = null;
   let amountConfidence = '暂不估金额';
@@ -296,7 +305,9 @@ export function projectPlanV4(input) {
       ? 'partial_deemed_unknown'
       : partialReason === 'transition_unknown'
         ? 'partial_transition_unknown'
-        : 'full';
+        : partialReason === 'deemed_rules_unknown'
+          ? 'partial_deemed_rules_unknown'
+          : 'full';
   const amountAvailable = coreAmountAvailable;
 
   if (coreAmountAvailable) {
@@ -337,21 +348,23 @@ export function projectPlanV4(input) {
       band: 0.005,
     });
 
-    const totalYears = totalContributionMonths / 12;
-    basicCenter = calcCenter * ((1 + combinedIndex.center) / 2) * totalYears * 0.01;
-    const basicLow = calcLow * ((1 + combinedIndex.low) / 2) * totalYears * 0.01;
-    const basicHigh = calcHigh * ((1 + combinedIndex.high) / 2) * totalYears * 0.01;
+    const actualYears = actualContributionMonths / 12;
+    // V2.6.4 safety: recognised deemed service counts for eligibility, but its
+    // local deemed-index/base-pension treatment is not guessed here.
+    basicCenter = calcCenter * ((1 + combinedIndex.center) / 2) * actualYears * 0.01;
+    const basicLow = calcLow * ((1 + combinedIndex.low) / 2) * actualYears * 0.01;
+    const basicHigh = calcHigh * ((1 + combinedIndex.high) / 2) * actualYears * 0.01;
     personalCenter = accountCenter / divisorCenter;
     const personalLow = accountLow / divisorInfo.maxDivisor;
     const personalHigh = accountHigh / divisorInfo.minDivisor;
 
-    knownPensionCenter = basicCenter + personalCenter;
-    knownPensionLow = basicLow + personalLow;
-    knownPensionHigh = basicHigh + personalHigh;
+    knownPensionCenter = basicCenter + personalCenter + (transitionKnown ? transitionCenter : 0);
+    knownPensionLow = basicLow + personalLow + (transitionKnown ? transitionCenter : 0);
+    knownPensionHigh = basicHigh + personalHigh + (transitionKnown ? transitionCenter : 0);
     if (amountStatus === 'full') {
-      fullPensionCenter = knownPensionCenter + (transitionCenter || 0);
-      fullPensionLow = knownPensionLow + (transitionCenter || 0);
-      fullPensionHigh = knownPensionHigh + (transitionCenter || 0);
+      fullPensionCenter = knownPensionCenter;
+      fullPensionLow = knownPensionLow;
+      fullPensionHigh = knownPensionHigh;
       pensionCenter = fullPensionCenter;
       pensionLow = fullPensionLow;
       pensionHigh = fullPensionHigh;
@@ -381,6 +394,8 @@ export function projectPlanV4(input) {
     deemedMonths,
     futureContributionMonths,
     futureContributionSegments: futureSegments,
+    actualContributionMonths,
+    qualifyingContributionMonths,
     totalContributionMonths,
     remainingActualContributionMonths,
     plannedContributionShortageMonths,
