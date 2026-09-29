@@ -108,6 +108,11 @@ def test_v264_known_transition_still_partial_when_local_deemed_rules_are_unknown
     expect(partial).to_contain_text('已计入你填写的过渡性养老金金额')
     expect(partial).to_contain_text('仍不是完整总额')
     expect(partial).to_contain_text('¥500')
+    share_box = page.locator('[data-v24-share-box]')
+    expect(share_box).to_contain_text('已包含你填写的过渡性养老金')
+    expect(share_box).to_contain_text('当地计发规则尚未完整纳入')
+    expect(share_box).not_to_contain_text('当前金额未包含过渡性养老金')
+    expect(page.locator('[data-v24-card]')).to_have_count(0)
     expect(page.locator('.amount-decision.amount-good')).to_have_count(0)
     assert errors == []
     page.close()

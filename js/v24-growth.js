@@ -280,12 +280,19 @@ function injectShareBox() {
   if (!result || result.classList.contains('hidden')) return;
   if (result.querySelector('[data-v24-share-box]')) return;
 
-  const partialCard = result.querySelector('.amount-decision.amount-partial')?.closest('.card');
+  const partialAmount = result.querySelector('.amount-decision.amount-partial');
+  const partialCard = partialAmount?.closest('.card');
   if (partialCard) {
+    const partialStatus = partialAmount?.dataset.amountStatus || '';
+    const partialMessage = partialStatus === 'partial_deemed_rules_unknown'
+      ? '当前金额已包含你填写的过渡性养老金，但视同缴费对基础养老金的当地计发规则尚未完整纳入，因此仍不是完整养老金总额。'
+      : partialStatus === 'partial_deemed_unknown'
+        ? '是否存在视同缴费年限仍待确认，当前金额只基于已确认资料，因此不生成“养老金总额”分享卡。'
+        : '当前金额未包含尚未核定的过渡性养老金，因此不生成“养老金总额”分享卡，避免把已知部分误当成完整待遇。';
     const box = document.createElement('div');
     box.className = 'v24-share-box';
     box.dataset.v24ShareBox = '1';
-    box.innerHTML = `<span class="v24-share-kicker">结果还不是完整养老金</span><h3>先保存这个测算入口</h3><p>当前金额未包含过渡性养老金，因此不生成“养老金总额”分享卡，避免把已知部分误当成完整待遇。</p><div class="v24-share-actions"><button class="v24-share-tertiary" data-v24-copy-link type="button">复制测算链接</button></div><div class="v24-share-toast" aria-live="polite"></div>`;
+    box.innerHTML = `<span class="v24-share-kicker">结果还不是完整养老金</span><h3>先保存这个测算入口</h3><p>${partialMessage}</p><div class="v24-share-actions"><button class="v24-share-tertiary" data-v24-copy-link type="button">复制测算链接</button></div><div class="v24-share-toast" aria-live="polite"></div>`;
     partialCard.appendChild(box);
     const toast = box.querySelector('.v24-share-toast');
     box.querySelector('[data-v24-copy-link]').addEventListener('click', async () => {
