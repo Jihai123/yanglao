@@ -559,6 +559,8 @@ function renderPlan() {
   const r = retirement();
   const required = minimumRequiredMonths();
   const already = paidMonths();
+  const deemed = deemedMonths();
+  const counted = already + deemed;
   stepTitle.textContent = state.intent === 'flex' ? '以后准备怎么缴？' : '停止工作后，社保怎么缴？';
   stepDesc.textContent = '';
   stepBody.innerHTML = `
@@ -566,7 +568,7 @@ function renderPlan() {
     <div class="field"><label>什么时候办理退休？</label>${retirementModeChoices(r)}</div>
     ${state.retirementMode !== 'statutory' ? `<div class="field"><label>${state.retirementMode === 'early' ? '提前多久' : '延后多久'}</label><div class="segment segment-three">${[12,24,36].map(months => `<button type="button" data-retirement-offset="${months}" class="${Number(state.retirementOffsetMonths) === months ? 'active' : ''}">${months/12}年</button>`).join('')}</div></div>` : ''}
     <div class="field"><label>停止工作后缴多久？</label><div class="choice-stack">
-      <button type="button" class="choice ${state.contributionPlan === 'to_minimum' ? 'active' : ''}" data-contribution-plan="to_minimum"><strong>缴够最低要求就停</strong><span>最低要求 ${monthsText(required)}，目前已缴 ${monthsText(already)}</span></button>
+      <button type="button" class="choice ${state.contributionPlan === 'to_minimum' ? 'active' : ''}" data-contribution-plan="to_minimum"><strong>缴够最低要求就停</strong><span>最低要求 ${monthsText(required)}，目前计入最低年限 ${monthsText(counted)}${deemed > 0 ? `（实际 ${monthsText(already)} + 视同 ${monthsText(deemed)}）` : ''}</span></button>
       <button type="button" class="choice ${state.contributionPlan === 'continuous_to_claim' ? 'active' : ''}" data-contribution-plan="continuous_to_claim"><strong>一直缴到退休</strong></button>
       <button type="button" class="choice ${state.contributionPlan === 'actual_months' ? 'active' : ''}" data-contribution-plan="actual_months"><strong>再缴一段时间</strong></button>
       <button type="button" class="choice ${state.contributionPlan === 'stop_with_work' ? 'active' : ''}" data-contribution-plan="stop_with_work"><strong>停止工作后不再缴</strong></button>
