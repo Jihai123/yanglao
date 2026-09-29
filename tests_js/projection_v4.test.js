@@ -88,9 +88,17 @@ test('已确认视同缴费计入最低缴费年限，但未知地方金额规�
     transitionAmountKnown: false,
     transitionAmount: null,
   });
+  const noDeemed = projectPlanV4({
+    ...base,
+    paidMonths: 10 * 12,
+    deemedMonths: 0,
+    deemedStatus: 'none',
+    futureContributionSegments: [],
+  });
   assert.equal(result.qualifyingContributionMonths, 15 * 12);
   assert.equal(result.actualContributionMonths, 10 * 12);
-  assert.equal(result.eligible, true);
+  assert.equal(result.plannedContributionShortageMonths, Math.max(0, result.requiredContributionMonths - 15 * 12));
+  assert.equal(noDeemed.plannedContributionShortageMonths - result.plannedContributionShortageMonths, 5 * 12);
   assert.equal(result.amountAvailable, true);
   assert.equal(result.amountStatus, 'partial_transition_unknown');
   assert.equal(result.partialReason, 'transition_unknown');
