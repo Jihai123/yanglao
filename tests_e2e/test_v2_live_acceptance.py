@@ -37,8 +37,8 @@ def enter_normal_status(page):
 
 def test_hotfix_release_notes_are_visible(live_page):
     notes = live_page.locator('#releaseNotes')
+    expect(notes).to_contain_text('v2.6.4 · 2026-09-29')
     expect(notes).to_contain_text('v2.6.3 · 2026-09-15')
-    expect(notes).to_contain_text('历史缴费年月校验')
     expect(notes).to_contain_text('v2.6.0 · 2026-09-12')
     expect(notes).to_contain_text('30秒快速测算')
     expect(notes).to_contain_text('v2.5 · 2026-09-04')
@@ -104,8 +104,8 @@ def test_resident_numeric_input_survives_account_toggle(live_page):
 def test_deemed_choice_keeps_details_open(live_page):
     p = live_page
     enter_normal_status(p)
-    p.get_by_text('我有视同缴费年限', exact=True).click()
-    p.locator('[data-deemed="yes"]').click()
+    p.get_by_text('是否有被认定的视同缴费年限？', exact=True).click()
+    p.locator('[data-deemed-status="confirmed"]').click()
     expect(p.locator('[data-key="deemedYears"]')).to_be_visible()
 
 
