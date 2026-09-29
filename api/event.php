@@ -64,7 +64,12 @@ if (!in_array($source, $allowedSources, true)) $source = 'other';
 $allowedDevices = ['desktop', 'mobile', 'tablet'];
 if (!in_array($device, $allowedDevices, true)) $device = '';
 
-if (!in_array($eventName, ['validation_error', 'pension_partial_result_view'], true)) $reasonCode = '';
+if ($eventName === 'pension_partial_result_view') {
+    $allowedPartialReasons = ['deemed_status_unknown', 'transition_unknown', 'deemed_rules_unknown'];
+    if (!in_array($reasonCode, $allowedPartialReasons, true)) $reasonCode = '';
+} elseif ($eventName !== 'validation_error') {
+    $reasonCode = '';
+}
 if ($eventName !== 'client_error') {
     $errorType = '';
     $scriptName = '';

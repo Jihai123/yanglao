@@ -50,9 +50,6 @@
       <div class="card metric"><span>首次访客</span><strong id="mNew">0</strong><small>今天首次出现</small></div>
       <div class="card metric"><span>回访访客</span><strong id="mReturning">0</strong><small>此前来过</small></div>
       <div class="card metric"><span>前端错误</span><strong id="mErrors">0</strong><small>不记录错误正文</small></div>
-      <div class="card metric"><span>完整金额结果</span><strong id="mFullResults">0</strong><small>精准测算 · 今日</small></div>
-      <div class="card metric"><span>部分金额结果</span><strong id="mPartialResults">0</strong><small>精准测算 · 今日</small></div>
-      <div class="card metric"><span>只看资格结果</span><strong id="mQualificationResults">0</strong><small>精准测算 · 今日</small></div>
     </section>
 
     <section class="grid two"><div class="card"><h2>最近 7 天</h2><div id="trendList"></div></div><div class="card"><h2>最近 30 天来源</h2><div id="sourceList"></div></div></section>
@@ -61,7 +58,13 @@
     <section class="grid two" style="margin-top:14px"><div class="card"><h2>分享增长 · 最近 30 天</h2><div id="shareGrowth"></div></div><div class="card"><h2>相关工具导流 · 最近 30 天</h2><div id="toolGrowth"></div></div></section>
 
     <section style="margin-top:14px">
-      <div class="card"><h2>测算失败诊断</h2><p class="scope-note">诊断、结果完整度和下面的失败流程审计始终只看当前 V2.6.4，不随上方“旧统计基线 / 全部历史”切换，避免把旧错误口径混进当前判断。</p><p class="diagnostic-summary" id="amountDiagnostic">诊断埋点刚上线，等待新版真实数据。</p></div>
+      <div class="card"><h2>V2.6.4 当前版本诊断</h2><p class="scope-note">下面的结果质量、失败诊断和失败流程审计始终只看当前 V2.6.4，不随上方“旧统计基线 / 全部历史”切换，避免不同统计口径混在一起。</p></div>
+      <div class="grid cards">
+        <div class="card metric"><span>今日完整金额结果</span><strong id="mFullResults">0</strong><small>V2.6.4 精准测算</small></div>
+        <div class="card metric"><span>今日部分金额结果</span><strong id="mPartialResults">0</strong><small>V2.6.4 精准测算</small></div>
+        <div class="card metric"><span>今日只看资格结果</span><strong id="mQualificationResults">0</strong><small>V2.6.4 精准测算</small></div>
+      </div>
+      <div class="card"><h2>测算失败诊断</h2><p class="diagnostic-summary" id="amountDiagnostic">诊断埋点刚上线，等待新版真实数据。</p></div>
       <div class="grid two"><div class="card"><h2>今天 · 校验失败 Top</h2><div id="todayReasonList"></div></div><div class="card"><h2>最近 7 天 · 校验失败 Top</h2><div id="weekReasonList"></div></div></div>
       <div class="grid two"><div class="card"><h2>最近 7 天 · 精准结果完整度</h2><div id="resultQuality"></div></div><div class="card"><h2>最近 7 天 · 部分结果原因</h2><div id="partialReasonList"></div></div></div>
       <div class="grid two"><div class="card"><h2>最近 7 天 · 按步骤</h2><div id="stepErrorList"></div></div><div class="card"><h2>最近 7 天 · 按入口</h2><div id="featureErrorList"></div></div></div>
@@ -83,12 +86,13 @@
 <script>
   const AUTH_API='/api/admin.php';
   const DATA_API='/api/admin.php';
-  const featureNames={age:'查退休年龄',quick:'30秒快速测算',normal:'算退休养老金',early:'几年后不工作',flex:'离职 / 灵活就业',resident:'城乡居民养老',resume:'继续上次测算'};
+  const featureNames={age:'查退休年龄',quick:'30秒快速测算',normal:'算退休养老金',early:'我的退休规划',flex:'离职 / 灵活就业',resident:'城乡居民养老',resume:'继续上次测算'};
   const sourceNames={direct:'直接访问',internal:'站内',share:'分享带回',baidu:'百度',google:'Google',bing:'Bing',sogou:'搜狗','360':'360搜索',zhihu:'知乎',wechat:'微信',other:'其他',unknown:'旧数据/未知'};
   const deviceNames={desktop:'电脑',mobile:'手机',tablet:'平板',unknown:'旧数据/未知'};
   const stepNames={quick:'快速测算',identity:'身份',status:'参保状态',plan:'未来计划',amount:'金额信息',local:'当地标准',result:'结果'};
   const eventNames={flow_start:'开始流程',step_view:'进入步骤',wizard_next:'点下一步',pension_step1_submit:'提交第1步',pension_step2_submit:'有效提交',validation_error:'校验拦截',result_view:'到达结果',pension_result_view:'养老金结果',pension_full_result_view:'完整金额结果',pension_partial_result_view:'部分金额结果',pension_qualification_result_view:'只看资格结果'};
   const toolNames={job_value:'这 B 班值不值？',livable_city:'宜居城市排行榜'};
+  const partialReasonNames={deemed_status_unknown:'视同缴费状态不确定',transition_unknown:'过渡性养老金金额未知',deemed_rules_unknown:'视同缴费地方计发规则未完整'};
   const funnelStages={age:[['identity','身份']],quick:[['quick','进入快速页'],['submitted','有效提交']],normal:[['identity','身份'],['status','参保状态'],['amount','金额信息']],early:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],flex:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],resident:[['identity','身份'],['amount','金额信息'],['local','当地标准']]};
   const $=id=>document.getElementById(id);
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -150,7 +154,7 @@
     $('amountDiagnostic').innerHTML=`当前诊断版本：<strong>${esc(data.app_version||'-')}</strong><br>今天快速测算：开始 <strong>${Number(q.starts||0)}</strong> → 进入 <strong>${Number(q.viewed_flows||0)}</strong> → 有效提交 <strong>${Number(q.submit_flows||0)}</strong> → 结果 <strong>${Number(q.result_flows||0)}</strong>；下一步 ${Number(q.next_attempts||0)} 次，其中校验拦截 ${Number(q.validation_attempts||0)} 次（${Number(q.validation_flows||0)} 个流程）。<br>最近7天快速测算：开始 <strong>${Number(qw.starts||0)}</strong> → 有效提交 <strong>${Number(qw.submit_flows||0)}</strong> → 结果 <strong>${Number(qw.result_flows||0)}</strong>。<br>今天精准金额页：<strong>${Number(a.next_attempts||0)}</strong> 次下一步（${Number(a.next_flows||0)} 个流程），其中 <strong>${Number(a.validation_attempts||0)}</strong> 次被校验拦截（${Number(a.validation_flows||0)} 个流程）；最近7天 ${Number(w.next_attempts||0)} 次下一步、${Number(w.validation_attempts||0)} 次校验拦截。`;
     $('resultQuality').innerHTML=`<div class="diag-row"><code>完整金额结果</code><span></span><strong>${Number(wq.full_results||0)}</strong></div><div class="diag-row"><code>部分金额结果</code><span></span><strong>${Number(wq.partial_results||0)}</strong></div><div class="diag-row"><code>只看资格结果</code><span></span><strong>${Number(wq.qualification_results||0)}</strong></div>`;
     const partialReasons=wq.partial_reasons||[];
-    $('partialReasonList').innerHTML=partialReasons.length?partialReasons.map(row=>`<div class="diag-row"><code>${esc(row.reason||'unknown')}</code><span class="muted">流程</span><strong>${Number(row.flows||0)}</strong></div>`).join(''):'<div class="empty">最近 7 天没有部分结果</div>';
+    $('partialReasonList').innerHTML=partialReasons.length?partialReasons.map(row=>`<div class="diag-row"><code>${esc(partialReasonNames[row.reason]||row.reason||'unknown')}</code><span class="muted">流程</span><strong>${Number(row.flows||0)}</strong></div>`).join(''):'<div class="empty">最近 7 天没有部分结果</div>';
     renderDiagRows('todayReasonList',today.reasons||[],row=>row.reason||'unknown');
     renderDiagRows('weekReasonList',week.reasons||[],row=>row.reason||'unknown');
     renderDiagRows('stepErrorList',week.steps||[],row=>stepNames[row.step]||row.step||'unknown');

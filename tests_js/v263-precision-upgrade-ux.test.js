@@ -38,6 +38,6 @@ test('page release history keeps V2.6.3 under current V2.6.4', async () => {
   assert.match(release, /RELEASE_VERSION = 'v2\.6\.4'/);
   assert.match(release, /RELEASE_DATE = '2026-09-29'/);
   assert.match(release, /v2\.6\.3 · 2026-09-15/);
-  assert.match(release, /不知道过渡性养老金/);
+  assert.match(release, /视同缴费年限会计入最低缴费年限判断/);
   assert.match(release, /v2\.6\.0 · 2026-09-12/);
 });
