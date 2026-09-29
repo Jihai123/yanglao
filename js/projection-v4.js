@@ -251,13 +251,18 @@ export function projectPlanV4(input) {
 
   const missing = [];
   const confidenceReasons = [];
+  const deemedStatus = ['none', 'unknown', 'confirmed'].includes(input.deemedStatus)
+    ? input.deemedStatus
+    : (deemedMonths > 0 ? 'confirmed' : 'none');
+  const transitionKnown = deemedStatus === 'confirmed' && Boolean(input.transitionAmountKnown);
   if (input.amountMode === 'skip') missing.push('本次选择只看退休资格');
   if (!(monthlyContributionBase > 0)) missing.push('缺少当前月缴费基数');
   if (!(currentCalcBase > 0)) missing.push('缺少待遇领取地可用的养老金计发基准');
   if (futureSegments.some(item => item.months > 0 && !(item.monthlyContributionBase > 0))) missing.push('未来缴费基数没有填完整');
-  if (deemedMonths > 0 && !(safeNumber(input.transitionAmount) >= 0 && input.transitionAmountKnown)) {
-    missing.push('存在视同缴费年限，需要当地过渡性养老金规则或已核定金额');
-  }
+
+  let partialReason = '';
+  if (deemedStatus === 'unknown') partialReason = 'deemed_status_unknown';
+  else if (deemedStatus === 'confirmed' && deemedMonths > 0 && !transitionKnown) partialReason = 'transition_unknown';
 
   if (calcBaseSourceQuality === 'direct') confidenceReasons.push('计发基准来自政府公开来源');
   else if (calcBaseSourceQuality === 'corroborated') confidenceReasons.push('计发基准为公开文件引述的人社数据');
@@ -272,15 +277,29 @@ export function projectPlanV4(input) {
   let pensionCenter = 0;
   let pensionLow = 0;
   let pensionHigh = 0;
+  let knownPensionCenter = 0;
+  let knownPensionLow = 0;
+  let knownPensionHigh = 0;
+  let fullPensionCenter = null;
+  let fullPensionLow = null;
+  let fullPensionHigh = null;
   let basicCenter = 0;
   let personalCenter = 0;
-  let transitionCenter = Math.max(0, safeNumber(input.transitionAmount));
+  const transitionCenter = transitionKnown ? Math.max(0, safeNumber(input.transitionAmount)) : null;
   let todayPowerCenter = 0;
   let uncertaintyRatio = null;
   let amountConfidence = '暂不估金额';
-  const amountAvailable = missing.length === 0;
+  const coreAmountAvailable = missing.length === 0;
+  const amountStatus = !coreAmountAvailable
+    ? 'unavailable'
+    : partialReason === 'deemed_status_unknown'
+      ? 'partial_deemed_unknown'
+      : partialReason === 'transition_unknown'
+        ? 'partial_transition_unknown'
+        : 'full';
+  const amountAvailable = coreAmountAvailable;
 
-  if (amountAvailable) {
+  if (coreAmountAvailable) {
     const baseYearPoint = yearFraction(calcBaseYear, 7);
     const claimYearPoint = yearFraction(claimDate.year, claimDate.month);
     const yearsFromBase = Math.max(0, claimYearPoint - baseYearPoint);
@@ -326,9 +345,21 @@ export function projectPlanV4(input) {
     const personalLow = accountLow / divisorInfo.maxDivisor;
     const personalHigh = accountHigh / divisorInfo.minDivisor;
 
-    pensionCenter = basicCenter + personalCenter + transitionCenter;
-    pensionLow = basicLow + personalLow + transitionCenter;
-    pensionHigh = basicHigh + personalHigh + transitionCenter;
+    knownPensionCenter = basicCenter + personalCenter;
+    knownPensionLow = basicLow + personalLow;
+    knownPensionHigh = basicHigh + personalHigh;
+    if (amountStatus === 'full') {
+      fullPensionCenter = knownPensionCenter + (transitionCenter || 0);
+      fullPensionLow = knownPensionLow + (transitionCenter || 0);
+      fullPensionHigh = knownPensionHigh + (transitionCenter || 0);
+      pensionCenter = fullPensionCenter;
+      pensionLow = fullPensionLow;
+      pensionHigh = fullPensionHigh;
+    } else {
+      pensionCenter = knownPensionCenter;
+      pensionLow = knownPensionLow;
+      pensionHigh = knownPensionHigh;
+    }
     todayPowerCenter = pensionCenter / Math.pow(1 + inflation, monthsToClaim / 12);
     uncertaintyRatio = pensionCenter > 0 ? (pensionHigh - pensionLow) / pensionCenter : 1;
 
@@ -357,12 +388,21 @@ export function projectPlanV4(input) {
     monthsToClaim,
     historyContributionSegments: historySegments,
     amountAvailable,
+    amountStatus,
+    partialReason,
+    transitionKnown,
     amountMissingReasons: missing,
     amountConfidence,
     confidenceReasons,
     pensionCenter,
     pensionLow,
     pensionHigh,
+    knownPensionCenter,
+    knownPensionLow,
+    knownPensionHigh,
+    fullPensionCenter,
+    fullPensionLow,
+    fullPensionHigh,
     basicCenter,
     personalCenter,
     transitionCenter,

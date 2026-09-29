@@ -7,7 +7,7 @@ const FLOW_KEY = 'yanglao-v6-flow';
 const FLOW_FEATURE_KEY = 'yanglao-v6-flow-feature';
 const SOURCE_KEY = 'yanglao-v6-source';
 const NORMAL_AMOUNT_FLOW_KEY = 'yanglao-v6-normal-amount-flow';
-const APP_VERSION = 'v2-prod-20260912-conversion';
+const APP_VERSION = 'v2-prod-20260929-v264';
 
 let volatileVisitor = '';
 let volatileSession = '';

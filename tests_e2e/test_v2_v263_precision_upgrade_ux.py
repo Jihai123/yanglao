@@ -96,9 +96,9 @@ def test_v263_future_history_month_is_bounded_and_error_focuses_field(browser):
 def test_v263_release_notes_are_current(browser):
     page, errors = fresh_page(browser)
     notes = page.locator('#releaseNotes')
-    expect(notes.locator('.v23-version-badge')).to_have_text('v2.6.3')
+    expect(notes.locator('.v23-version-badge')).to_have_text('v2.6.4')
+    expect(notes).to_contain_text('v2.6.4 · 2026-09-29')
     expect(notes).to_contain_text('v2.6.3 · 2026-09-15')
-    expect(notes).to_contain_text('历史缴费年月校验')
     expect(notes).to_contain_text('v2.6.0 · 2026-09-12')
     assert errors == []
     page.close()

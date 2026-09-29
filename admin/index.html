@@ -32,14 +32,14 @@
       <div><h1>退休规划助手 · 使用看板</h1><div class="muted" id="subtitle">今天</div></div>
       <div class="actions">
         <label class="muted" for="scopeSelect">数据版本</label>
-        <select id="scopeSelect" class="scope-select"><option value="current">当前版本 V2.6</option><option value="all">全部历史</option></select>
+        <select id="scopeSelect" class="scope-select"><option value="current">当前版本 V2.6.4</option><option value="legacy">旧统计基线（V2.6.0～V2.6.3）</option><option value="all">全部历史</option></select>
         <button class="btn" id="refreshBtn" type="button">刷新</button>
         <button class="btn" id="logoutBtn" type="button">退出</button>
       </div>
     </header>
     <div class="notice">增强分析只记录来源类别、设备类别、匿名测算流程、步骤、分享动作、相关工具点击、固定校验原因码和安全的脚本定位信息；不记录出生年月、工资、缴费基数、个人账户余额、错误正文、stack 或分享卡片里的养老金金额。</div>
     <div id="adminDataWarning" class="notice warn hidden"></div>
-    <div class="scope-note" id="scopeNote">默认只看当前 V2.6，避免旧流程数据污染当前判断。</div>
+    <div class="scope-note" id="scopeNote">默认只看当前 V2.6.4（v2-prod-20260929-v264）。旧统计基线混合了 V2.6.0～V2.6.3，不用于直接评价单一旧版本。</div>
 
     <section class="grid cards">
       <div class="card metric"><span>今日访客</span><strong id="mVisitors">0</strong><small>匿名去重</small></div>
@@ -50,6 +50,9 @@
       <div class="card metric"><span>首次访客</span><strong id="mNew">0</strong><small>今天首次出现</small></div>
       <div class="card metric"><span>回访访客</span><strong id="mReturning">0</strong><small>此前来过</small></div>
       <div class="card metric"><span>前端错误</span><strong id="mErrors">0</strong><small>不记录错误正文</small></div>
+      <div class="card metric"><span>完整金额结果</span><strong id="mFullResults">0</strong><small>精准测算 · 今日</small></div>
+      <div class="card metric"><span>部分金额结果</span><strong id="mPartialResults">0</strong><small>精准测算 · 今日</small></div>
+      <div class="card metric"><span>只看资格结果</span><strong id="mQualificationResults">0</strong><small>精准测算 · 今日</small></div>
     </section>
 
     <section class="grid two"><div class="card"><h2>最近 7 天</h2><div id="trendList"></div></div><div class="card"><h2>最近 30 天来源</h2><div id="sourceList"></div></div></section>
@@ -58,8 +61,9 @@
     <section class="grid two" style="margin-top:14px"><div class="card"><h2>分享增长 · 最近 30 天</h2><div id="shareGrowth"></div></div><div class="card"><h2>相关工具导流 · 最近 30 天</h2><div id="toolGrowth"></div></div></section>
 
     <section style="margin-top:14px">
-      <div class="card"><h2>测算失败诊断</h2><p class="diagnostic-summary" id="amountDiagnostic">诊断埋点刚上线，等待新版真实数据。</p></div>
+      <div class="card"><h2>测算失败诊断</h2><p class="scope-note">诊断、结果完整度和下面的失败流程审计始终只看当前 V2.6.4，不随上方“旧统计基线 / 全部历史”切换，避免把旧错误口径混进当前判断。</p><p class="diagnostic-summary" id="amountDiagnostic">诊断埋点刚上线，等待新版真实数据。</p></div>
       <div class="grid two"><div class="card"><h2>今天 · 校验失败 Top</h2><div id="todayReasonList"></div></div><div class="card"><h2>最近 7 天 · 校验失败 Top</h2><div id="weekReasonList"></div></div></div>
+      <div class="grid two"><div class="card"><h2>最近 7 天 · 精准结果完整度</h2><div id="resultQuality"></div></div><div class="card"><h2>最近 7 天 · 部分结果原因</h2><div id="partialReasonList"></div></div></div>
       <div class="grid two"><div class="card"><h2>最近 7 天 · 按步骤</h2><div id="stepErrorList"></div></div><div class="card"><h2>最近 7 天 · 按入口</h2><div id="featureErrorList"></div></div></div>
       <div class="card" style="margin-top:14px"><h2>最近 7 天 · 前端错误定位</h2><div id="clientErrorList"></div></div>
     </section>
@@ -83,7 +87,7 @@
   const sourceNames={direct:'直接访问',internal:'站内',share:'分享带回',baidu:'百度',google:'Google',bing:'Bing',sogou:'搜狗','360':'360搜索',zhihu:'知乎',wechat:'微信',other:'其他',unknown:'旧数据/未知'};
   const deviceNames={desktop:'电脑',mobile:'手机',tablet:'平板',unknown:'旧数据/未知'};
   const stepNames={quick:'快速测算',identity:'身份',status:'参保状态',plan:'未来计划',amount:'金额信息',local:'当地标准',result:'结果'};
-  const eventNames={flow_start:'开始流程',step_view:'进入步骤',wizard_next:'点下一步',pension_step1_submit:'提交第1步',pension_step2_submit:'有效提交',validation_error:'校验拦截',result_view:'到达结果',pension_result_view:'养老金结果'};
+  const eventNames={flow_start:'开始流程',step_view:'进入步骤',wizard_next:'点下一步',pension_step1_submit:'提交第1步',pension_step2_submit:'有效提交',validation_error:'校验拦截',result_view:'到达结果',pension_result_view:'养老金结果',pension_full_result_view:'完整金额结果',pension_partial_result_view:'部分金额结果',pension_qualification_result_view:'只看资格结果'};
   const toolNames={job_value:'这 B 班值不值？',livable_city:'宜居城市排行榜'};
   const funnelStages={age:[['identity','身份']],quick:[['quick','进入快速页'],['submitted','有效提交']],normal:[['identity','身份'],['status','参保状态'],['amount','金额信息']],early:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],flex:[['identity','身份'],['status','参保状态'],['plan','未来计划'],['amount','金额信息']],resident:[['identity','身份'],['amount','金额信息'],['local','当地标准']]};
   const $=id=>document.getElementById(id);
@@ -139,7 +143,14 @@
 
   function renderDiagnostics(data={}){
     const today=data.today||{},week=data.seven_days||{},q=today.quick||{},qw=week.quick||{},a=today.amount||{},w=week.amount||{};
+    const tq=today.result_quality||{},wq=week.result_quality||{};
+    $('mFullResults').textContent=Number(tq.full_results||0);
+    $('mPartialResults').textContent=Number(tq.partial_results||0);
+    $('mQualificationResults').textContent=Number(tq.qualification_results||0);
     $('amountDiagnostic').innerHTML=`当前诊断版本：<strong>${esc(data.app_version||'-')}</strong><br>今天快速测算：开始 <strong>${Number(q.starts||0)}</strong> → 进入 <strong>${Number(q.viewed_flows||0)}</strong> → 有效提交 <strong>${Number(q.submit_flows||0)}</strong> → 结果 <strong>${Number(q.result_flows||0)}</strong>；下一步 ${Number(q.next_attempts||0)} 次，其中校验拦截 ${Number(q.validation_attempts||0)} 次（${Number(q.validation_flows||0)} 个流程）。<br>最近7天快速测算：开始 <strong>${Number(qw.starts||0)}</strong> → 有效提交 <strong>${Number(qw.submit_flows||0)}</strong> → 结果 <strong>${Number(qw.result_flows||0)}</strong>。<br>今天精准金额页：<strong>${Number(a.next_attempts||0)}</strong> 次下一步（${Number(a.next_flows||0)} 个流程），其中 <strong>${Number(a.validation_attempts||0)}</strong> 次被校验拦截（${Number(a.validation_flows||0)} 个流程）；最近7天 ${Number(w.next_attempts||0)} 次下一步、${Number(w.validation_attempts||0)} 次校验拦截。`;
+    $('resultQuality').innerHTML=`<div class="diag-row"><code>完整金额结果</code><span></span><strong>${Number(wq.full_results||0)}</strong></div><div class="diag-row"><code>部分金额结果</code><span></span><strong>${Number(wq.partial_results||0)}</strong></div><div class="diag-row"><code>只看资格结果</code><span></span><strong>${Number(wq.qualification_results||0)}</strong></div>`;
+    const partialReasons=wq.partial_reasons||[];
+    $('partialReasonList').innerHTML=partialReasons.length?partialReasons.map(row=>`<div class="diag-row"><code>${esc(row.reason||'unknown')}</code><span class="muted">流程</span><strong>${Number(row.flows||0)}</strong></div>`).join(''):'<div class="empty">最近 7 天没有部分结果</div>';
     renderDiagRows('todayReasonList',today.reasons||[],row=>row.reason||'unknown');
     renderDiagRows('weekReasonList',week.reasons||[],row=>row.reason||'unknown');
     renderDiagRows('stepErrorList',week.steps||[],row=>stepNames[row.step]||row.step||'unknown');
@@ -150,7 +161,8 @@
   function renderAudit(audit={}){
     $('auditSummary').innerHTML=`<div class="audit-metric"><span>被拦截流程</span><strong>${Number(audit.blocked_flows||0)}</strong></div><div class="audit-metric"><span>最终恢复成功</span><strong>${Number(audit.recovered_flows||0)}</strong></div><div class="audit-metric"><span>暂未恢复</span><strong>${Number(audit.not_recovered_flows||0)}</strong></div><div class="audit-metric"><span>平均拦截次数</span><strong>${Number(audit.avg_attempts_per_blocked_flow||0).toFixed(1)}</strong></div>`;
     const flows=audit.flows||[];
-    $('auditFlowList').innerHTML=flows.length?flows.map(flow=>`<article class="audit-flow"><div class="audit-head"><div><h3>流程 <code>${esc(flow.flow_ref||'')}</code></h3><div class="audit-meta">${esc(featureNames[flow.feature]||flow.feature||'未知入口')} · ${esc(sourceNames[flow.source]||flow.source||'未知来源')} · ${esc(deviceNames[flow.device]||flow.device||'未知设备')} · 拦截 ${Number(flow.validation_attempts||0)} 次</div></div><span class="audit-status ${flow.recovered?'':'pending'}">${flow.recovered?'已恢复到结果':'暂未恢复'}</span></div><div class="audit-reasons">${(flow.reasons||[]).map(item=>`<span class="audit-reason">${esc(item.reason)} × ${Number(item.count||0)}</span>`).join('')}</div><div class="timeline">${(flow.timeline||[]).map(item=>`<div class="timeline-row"><span class="muted">${esc(item.time||'')}</span><code>${esc(eventNames[item.event]||item.event||'')}</code><span class="timeline-step">${esc(stepNames[item.step]||item.step||'')}</span><span class="timeline-reason">${item.reason?esc(item.reason):''}</span></div>`).join('')}</div></article>`).join(''):'<div class="empty">最近 7 天当前版本没有被校验拦截的流程。</div>';
+    const recoveryLabels={full:'完整结果',partial:'部分结果',qualification:'只看资格',legacy:'已到达结果'};
+    $('auditFlowList').innerHTML=flows.length?flows.map(flow=>`<article class="audit-flow"><div class="audit-head"><div><h3>流程 <code>${esc(flow.flow_ref||'')}</code></h3><div class="audit-meta">${esc(featureNames[flow.feature]||flow.feature||'未知入口')} · ${esc(sourceNames[flow.source]||flow.source||'未知来源')} · ${esc(deviceNames[flow.device]||flow.device||'未知设备')} · 拦截 ${Number(flow.validation_attempts||0)} 次</div></div><span class="audit-status ${flow.recovered?'':'pending'}">${flow.recovered?esc(recoveryLabels[flow.recovery_type]||'已恢复到结果'):'暂未恢复'}</span></div><div class="audit-reasons">${(flow.reasons||[]).map(item=>`<span class="audit-reason">${esc(item.reason)} × ${Number(item.count||0)}</span>`).join('')}</div><div class="timeline">${(flow.timeline||[]).map(item=>`<div class="timeline-row"><span class="muted">${esc(item.time||'')}</span><code>${esc(eventNames[item.event]||item.event||'')}</code><span class="timeline-step">${esc(stepNames[item.step]||item.step||'')}</span><span class="timeline-reason">${item.reason?esc(item.reason):''}</span></div>`).join('')}</div></article>`).join(''):'<div class="empty">最近 7 天当前版本没有被校验拦截的流程。</div>';
   }
 
   function render(data){
@@ -164,9 +176,13 @@
     $('mReturning').textContent=today.returning_visitors||0;
     $('mErrors').textContent=today.client_errors||0;
 
-    const scopeLabel=data.scope==='all'?'全部历史':'当前版本 V2.6';
+    const scopeLabel=data.scope==='all'?'全部历史':data.scope==='legacy'?'旧统计基线（V2.6.0～V2.6.3）':'当前版本 V2.6.4';
     $('subtitle').textContent=`${scopeLabel} · 累计访客 ${data.total?.visitors||0} · 累计 PV ${data.total?.page_views||0} · 今日吐槽 ${today.feedback_submits||0}`;
-    $('scopeNote').textContent=data.scope==='all'?'当前显示跨版本历史数据；漏斗结构变化时不要用它直接评价 V2.6。':'当前仅统计 v2-prod-20260912-conversion，避免旧流程污染当前漏斗。';
+    $('scopeNote').textContent=data.scope==='all'
+      ? '当前显示跨版本历史数据；漏斗结构变化时不要用它直接评价某一个版本。'
+      : data.scope==='legacy'
+        ? '旧统计基线使用 v2-prod-20260912-conversion，混合 V2.6.0～V2.6.3，仅用于历史对照。'
+        : '当前仅统计 v2-prod-20260929-v264，作为 V2.6.4 的干净效果基线。';
 
     const trend=data.trend||[];
     const maxVisitors=Math.max(1,...trend.map(row=>Number(row.visitors||0)));
@@ -204,7 +220,8 @@
   }
 
   async function loadDashboard(options={}){
-    const scope=$('scopeSelect').value==='all'?'all':'current';
+    const selectedScope=$('scopeSelect').value;
+    const scope=['current','legacy','all'].includes(selectedScope)?selectedScope:'current';
     const preserveSession=Boolean(options.preserveSession);
     const fallbackDashboard=options.fallbackDashboard||null;
     let lastStatus=0;

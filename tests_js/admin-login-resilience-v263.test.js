@@ -27,7 +27,7 @@ test('enhanced analytics features remain present after login resilience fix', as
   assert.match(html, /当前版本 · 失败流程审计/);
   assert.match(html, /renderDiagnostics\(data\.diagnostics\|\|\{\}\)/);
   assert.match(html, /renderAudit\(data\.audit\|\|\{\}\)/);
-  assert.match(api, /'analytics_version' => 'a5'/);
+  assert.match(api, /'analytics_version' => 'a6'/);
   assert.match(api, /'blocked_flows'/);
   assert.match(api, /'recovered_flows'/);
   assert.match(api, /if \(\$action === 'v262'\)/);

@@ -7,7 +7,7 @@ const read = path => readFile(new URL(path, root), 'utf8');
 
 test('analytics records only diagnostic buckets and flow identifiers', async () => {
   const source = await read('js/analytics.js');
-  assert.match(source, /APP_VERSION = 'v2-prod-20260912-conversion'/);
+  assert.match(source, /APP_VERSION = 'v2-prod-20260929-v264'/);
   for (const field of ['flow_id', 'source', 'device', 'step', 'reason_code', 'error_type', 'script_name', 'line_no', 'column_no']) {
     assert.match(source, new RegExp(`${field}:`));
   }
@@ -52,7 +52,7 @@ test('v2.4 growth layer adds related tools, share card and privacy-safe tracking
 
 test('event API accepts diagnostics and growth events while persisting safe fields only', async () => {
   const php = await read('api/event.php');
-  for (const event of ['flow_start', 'step_view', 'validation_error', 'client_error', 'share_open', 'share_card_generate', 'share_copy_text', 'share_copy_link', 'share_system', 'outbound_tool_click']) {
+  for (const event of ['flow_start', 'step_view', 'validation_error', 'client_error', 'pension_full_result_view', 'pension_partial_result_view', 'pension_qualification_result_view', 'share_open', 'share_card_generate', 'share_copy_text', 'share_copy_link', 'share_system', 'outbound_tool_click']) {
     assert.match(php, new RegExp(`'${event}'`));
   }
   for (const field of ['flow_id', 'step', 'source', 'device', 'reason_code', 'error_type', 'script_name', 'line_no', 'column_no']) {
@@ -96,6 +96,9 @@ test('admin dashboard exposes current-version failure diagnostics without form d
   assert.match(html, /renderDiagnostics\(data\.diagnostics/);
   assert.match(html, /validation_attempts/);
   assert.match(html, /当前版本 · 失败流程审计/);
+  assert.match(html, /精准结果完整度/);
+  assert.match(html, /部分结果原因/);
+  assert.match(html, /旧统计基线（V2\.6\.0～V2\.6\.3）/);
   assert.doesNotMatch(html, /currentAccount|monthlyContributionBase|paidYears/);
 });
 
@@ -111,19 +114,52 @@ test('enhanced analytics is served by the already-deployed admin php endpoint', 
 test('homepage loads v2.4 growth layer and cache-busted analytics', async () => {
   const html = await read('index.html');
   assert.match(html, /v23-runtime\.js\?v=20260902-v23/);
-  assert.match(html, /v24-growth\.js\?v=20260903-v241/);
+  assert.match(html, /v24-growth\.js\?v=20260929-v264/);
   assert.match(html, /growth-v24\.css\?v=20260903-v24/);
-  assert.match(html, /analytics\.js\?v=20260903-d3/);
+  assert.match(html, /analytics\.js\?v=20260929-v264/);
+  assert.match(html, /employee-v4\.js\?v=20260929-v264/);
+  assert.match(html, /trust-v5\.js\?v=20260929-v264/);
   assert.match(html, /分享\/相关工具点击/);
 });
 
 test('release notes expose the current pension conversion release', async () => {
   const source = await read('js/release-v25.js');
   const trust = await read('js/trust-v5.js');
-  assert.match(source, /RELEASE_VERSION = 'v2\.6\.3'/);
-  assert.match(source, /RELEASE_DATE = '2026-09-15'/);
-  assert.match(source, /历史缴费年月校验/);
-  assert.match(source, /Quick 升级到精准测算后改为新建独立流程统计/);
+  assert.match(source, /RELEASE_VERSION = 'v2\.6\.4'/);
+  assert.match(source, /RELEASE_DATE = '2026-09-29'/);
+  assert.match(source, /不知道过渡性养老金/);
+  assert.match(source, /未包含过渡性养老金/);
+  assert.match(source, /v2\.6\.3 · 2026-09-15/);
   assert.match(source, /v2\.6\.0 · 2026-09-12/);
-  assert.match(trust, /release-v25\.js\?v=20260915-v263/);
+  assert.match(trust, /release-v25\.js\?v=20260929-v264/);
+});
+
+
+test('v2.6.4 partial pension keeps unknown transition out of the full total', async () => {
+  const employee = await read('js/employee-v4.js');
+  const projection = await read('js/projection-v4.js');
+  const growth = await read('js/v24-growth.js');
+  const admin = await read('api/admin.php');
+
+  assert.match(employee, /deemedStatus: 'none'/);
+  assert.match(employee, /data-deemed-status="unknown"/);
+  assert.match(employee, /state\.hasDeemed \? 'confirmed' : 'none'/);
+  assert.match(employee, /deemedStatus: 'none'/);
+  assert.match(employee, /不知道，先算已知部分/);
+  assert.match(employee, /目前可估算的养老金部分/);
+  assert.match(employee, /完整养老金 = 当前已知部分/);
+  assert.doesNotMatch(employee, /暂不能把它省略后给出总金额/);
+
+  assert.match(projection, /partial_transition_unknown/);
+  assert.match(projection, /partial_deemed_unknown/);
+  assert.match(projection, /knownPensionCenter/);
+  assert.match(projection, /fullPensionCenter/);
+  assert.match(projection, /transitionCenter = transitionKnown/);
+
+  assert.match(growth, /当前金额未包含过渡性养老金/);
+  assert.match(growth, /partial-link/);
+  assert.match(admin, /DIAGNOSTICS_APP_VERSION = 'v2-prod-20260929-v264'/);
+  assert.match(admin, /LEGACY_BASELINE_APP_VERSION = 'v2-prod-20260912-conversion'/);
+  assert.match(admin, /pension_partial_result_view/);
+  assert.match(admin, /result_quality/);
 });
