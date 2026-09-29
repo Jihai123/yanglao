@@ -143,6 +143,8 @@ test('v2.6.4 partial pension keeps unknown transition out of the full total', as
 
   assert.match(employee, /deemedStatus: 'none'/);
   assert.match(employee, /data-deemed-status="unknown"/);
+  assert.match(employee, /state\.hasDeemed \? 'confirmed' : 'none'/);
+  assert.match(employee, /deemedStatus: 'none'/);
   assert.match(employee, /不知道，先算已知部分/);
   assert.match(employee, /目前可估算的养老金部分/);
   assert.match(employee, /完整养老金 = 当前已知部分/);
