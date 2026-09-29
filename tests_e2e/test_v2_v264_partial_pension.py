@@ -118,6 +118,14 @@ def test_v264_birth_month_is_bounded_and_paid_month_copy_is_clear(browser):
     page.locator('#continuePlanBtn').click()
     expect(page.locator('#stepBody')).to_contain_text('额外月份（0～11）')
     expect(page.locator('#stepBody')).to_contain_text('月份只填不足一年的部分')
+
+    months = page.locator('[data-key="paidMonthsExtra"]')
+    months.fill('18')
+    page.locator('#nextBtn').click()
+    expect(page.locator('#stepError')).to_contain_text('累计缴费月数请填0到11')
+    expect(months).to_have_attribute('aria-invalid', 'true')
+    expect(months).to_be_focused()
+
     assert errors == []
     page.close()
 
