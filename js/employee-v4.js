@@ -349,6 +349,9 @@ function quickCalculationInput() {
     now: NOW,
     paidMonths: paidMonths(),
     deemedMonths: 0,
+    deemedStatus: 'none',
+    transitionAmountKnown: false,
+    transitionAmount: 0,
     claimAgeMonths: retirementRule.statutoryAgeMonths,
     amountMode: 'estimate',
     accountKnown: false,
@@ -701,12 +704,27 @@ function bindBasicFields() {
 
 function showStepError(message) {
   document.getElementById('stepError')?.remove();
+  stepBody.querySelectorAll('[data-v264-validation-target="1"]').forEach(input => {
+    input.removeAttribute('aria-invalid');
+    delete input.dataset.v264ValidationTarget;
+  });
   if (!message) return;
   const box = document.createElement('div');
   box.id = 'stepError';
   box.className = 'status danger';
   box.textContent = message;
   stepBody.appendChild(box);
+
+  let target = null;
+  if (message.includes('累计缴费月数')) target = stepBody.querySelector('[data-key="paidMonthsExtra"]');
+  else if (message.includes('出生年月')) target = stepBody.querySelector('[data-key="birth"]');
+
+  if (target) {
+    target.dataset.v264ValidationTarget = '1';
+    target.setAttribute('aria-invalid', 'true');
+    try { target.focus({ preventScroll: true }); } catch { target.focus(); }
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 function validateHistorySegments() {
