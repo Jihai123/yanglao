@@ -1,5 +1,5 @@
-const RELEASE_VERSION = 'v2.6.3';
-const RELEASE_DATE = '2026-09-15';
+const RELEASE_VERSION = 'v2.6.4';
+const RELEASE_DATE = '2026-09-29';
 
 function injectReleaseV25() {
   const release = document.getElementById('releaseNotes');
@@ -14,10 +14,20 @@ function injectReleaseV25() {
   details.open = true;
   details.dataset.releaseVersion = RELEASE_VERSION;
   details.innerHTML = `<summary>${RELEASE_VERSION} · ${RELEASE_DATE}</summary><ul>
-    <li>精简快速测算结果页的升级入口：保留一个“进入精准测算”主入口，移除重复按钮，减少操作歧义。</li>
-    <li>优化历史缴费年月校验：月份选择不能超过当前月；如果已有未来月份数据，提交后会自动定位并聚焦到具体错误字段。</li>
-    <li>Quick 升级到精准测算后改为新建独立流程统计，后续精准填写与校验失败不再混入“30秒快速测算”漏斗。</li>
-    <li>管理看板继续支持当前版本 / 全部历史隔离与失败流程审计，便于区分真实产品摩擦和历史统计噪声。</li>
+    <li>有视同缴费年限但暂时不知道过渡性养老金时，不再阻断整个测算；现在可以先查看基础养老金和个人账户养老金等已知部分。</li>
+    <li>部分结果会明确标记“未包含过渡性养老金”，不会把未知金额当作 0 元，也不会把已知部分生成成“完整养老金”分享卡。</li>
+    <li>新增“视同缴费年限 / 过渡性养老金是什么、怎么确认”的说明，并补充缴费基数查询提示。</li>
+    <li>优化累计缴费月份和出生年月的防错；月份明确为 0～11 个月，出生年月不能选择未来月份。</li>
+    <li>管理看板升级为 V2.6.4 独立统计基线，区分完整结果、部分结果、只看资格和真正校验阻断。</li>
+  </ul>`;
+
+  const previousV263 = document.createElement('details');
+  previousV263.dataset.releaseVersion = 'v2.6.3';
+  previousV263.innerHTML = `<summary>v2.6.3 · 2026-09-15</summary><ul>
+    <li>精简快速测算结果页的升级入口，移除重复按钮。</li>
+    <li>历史缴费年月不能超过当前月，校验失败会自动定位具体字段。</li>
+    <li>Quick 升级到精准测算后新建独立流程统计，减少漏斗归因污染。</li>
+    <li>管理看板支持当前版本 / 全部历史隔离与失败流程审计。</li>
   </ul>`;
 
   const previousV26 = document.createElement('details');
@@ -46,10 +56,12 @@ function injectReleaseV25() {
   if (first) {
     first.open = false;
     first.before(details);
-    details.after(previousV26);
+    details.after(previousV263);
+    previousV263.after(previousV26);
     previousV26.after(previousV25);
   } else {
     release.appendChild(details);
+    release.appendChild(previousV263);
     release.appendChild(previousV26);
     release.appendChild(previousV25);
   }
