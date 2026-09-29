@@ -9,7 +9,8 @@ test('V2.6.4 dashboard defaults to current-version data and keeps legacy/all sco
   const page = await read('admin/index.html');
   const api = await read('api/admin.php');
 
-  assert.match(page, /<option value="current">当前版本 V2\.6<\/option>/);
+  assert.match(page, /<option value="current">当前版本 V2\.6\.4<\/option>/);
+  assert.match(page, /<option value="legacy">旧统计基线/);
   assert.match(page, /<option value="all">全部历史<\/option>/);
   assert.match(page, /const DATA_API='\/api\/admin\.php'/);
   assert.match(page, /action=v262&scope=/);
