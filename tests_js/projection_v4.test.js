@@ -78,13 +78,19 @@ test('养老金分项之和等于总额', () => {
   assert.ok(Math.abs(sum - result.pensionCenter) < 1e-8);
 });
 
-test('存在视同缴费但没有过渡养老金信息时不输出伪完整总额', () => {
+test('已确认视同缴费计入最低缴费年限，但未知地方金额规则时只给部分结果', () => {
   const result = projectPlanV4({
     ...base,
-    deemedMonths: 48,
+    paidMonths: 10 * 12,
+    deemedMonths: 5 * 12,
+    futureContributionSegments: [],
+    deemedStatus: 'confirmed',
     transitionAmountKnown: false,
-    transitionAmount: 0,
+    transitionAmount: null,
   });
+  assert.equal(result.qualifyingContributionMonths, 15 * 12);
+  assert.equal(result.actualContributionMonths, 10 * 12);
+  assert.equal(result.eligible, true);
   assert.equal(result.amountAvailable, true);
   assert.equal(result.amountStatus, 'partial_transition_unknown');
   assert.equal(result.partialReason, 'transition_unknown');
@@ -92,4 +98,48 @@ test('存在视同缴费但没有过渡养老金信息时不输出伪完整总�
   assert.equal(result.fullPensionCenter, null);
   assert.ok(result.knownPensionCenter > 0);
   assert.equal(result.pensionCenter, result.knownPensionCenter);
+});
+
+test('已填写官方过渡性养老金仍保持部分结果，不伪装地方视同规则已完整计算', () => {
+  const withoutTransition = projectPlanV4({
+    ...base,
+    deemedMonths: 60,
+    deemedStatus: 'confirmed',
+    transitionAmountKnown: false,
+    transitionAmount: null,
+  });
+  const withTransition = projectPlanV4({
+    ...base,
+    deemedMonths: 60,
+    deemedStatus: 'confirmed',
+    transitionAmountKnown: true,
+    transitionAmount: 500,
+  });
+  assert.equal(withTransition.amountStatus, 'partial_deemed_rules_unknown');
+  assert.equal(withTransition.partialReason, 'deemed_rules_unknown');
+  assert.equal(withTransition.transitionKnown, true);
+  assert.equal(withTransition.transitionCenter, 500);
+  assert.equal(withTransition.fullPensionCenter, null);
+  assert.ok(Math.abs((withTransition.knownPensionCenter - withoutTransition.knownPensionCenter) - 500) < 1e-8);
+});
+
+test('视同缴费状态不确定时，资格和金额都只基于已确认资料', () => {
+  const result = projectPlanV4({
+    ...base,
+    paidMonths: 10 * 12,
+    deemedMonths: 0,
+    deemedStatus: 'unknown',
+    futureContributionSegments: [],
+  });
+  assert.equal(result.qualifyingContributionMonths, 10 * 12);
+  assert.equal(result.amountStatus, 'partial_deemed_unknown');
+  assert.equal(result.partialReason, 'deemed_status_unknown');
+});
+
+test('没有视同缴费时仍输出完整金额结果', () => {
+  const result = projectPlanV4({ ...base, deemedStatus: 'none', deemedMonths: 0 });
+  assert.equal(result.amountStatus, 'full');
+  assert.equal(result.partialReason, '');
+  assert.ok(result.fullPensionCenter > 0);
+  assert.equal(result.fullPensionCenter, result.pensionCenter);
 });
