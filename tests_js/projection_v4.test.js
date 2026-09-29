@@ -85,6 +85,11 @@ test('存在视同缴费但没有过渡养老金信息时不输出伪完整总�
     transitionAmountKnown: false,
     transitionAmount: 0,
   });
-  assert.equal(result.amountAvailable, false);
-  assert.ok(result.amountMissingReasons.some(item => item.includes('过渡性养老金')));
+  assert.equal(result.amountAvailable, true);
+  assert.equal(result.amountStatus, 'partial_transition_unknown');
+  assert.equal(result.partialReason, 'transition_unknown');
+  assert.equal(result.transitionCenter, null);
+  assert.equal(result.fullPensionCenter, null);
+  assert.ok(result.knownPensionCenter > 0);
+  assert.equal(result.pensionCenter, result.knownPensionCenter);
 });
