@@ -276,11 +276,29 @@ async function copyText(value) {
 }
 
 function injectShareBox() {
+  const result = document.getElementById('resultView');
+  if (!result || result.classList.contains('hidden')) return;
+  if (result.querySelector('[data-v24-share-box]')) return;
+
+  const partialCard = result.querySelector('.amount-decision.amount-partial')?.closest('.card');
+  if (partialCard) {
+    const box = document.createElement('div');
+    box.className = 'v24-share-box';
+    box.dataset.v24ShareBox = '1';
+    box.innerHTML = `<span class="v24-share-kicker">结果还不是完整养老金</span><h3>先保存这个测算入口</h3><p>当前金额未包含过渡性养老金，因此不生成“养老金总额”分享卡，避免把已知部分误当成完整待遇。</p><div class="v24-share-actions"><button class="v24-share-tertiary" data-v24-copy-link type="button">复制测算链接</button></div><div class="v24-share-toast" aria-live="polite"></div>`;
+    partialCard.appendChild(box);
+    const toast = box.querySelector('.v24-share-toast');
+    box.querySelector('[data-v24-copy-link]').addEventListener('click', async () => {
+      const ok = await copyText(shareUrl('partial-link')).catch(() => false);
+      toast.textContent = ok ? '测算链接已复制。' : '复制失败，请长按选择。';
+      if (ok) track('share_copy_link');
+    });
+    return;
+  }
+
   const data = resultShareData();
   latestShareData = data;
   if (!data) return;
-  const result = document.getElementById('resultView');
-  if (result.querySelector('[data-v24-share-box]')) return;
   const amountCard = result.querySelector('.amount-decision.amount-good')?.closest('.card');
   if (!amountCard) return;
   const box = document.createElement('div');
