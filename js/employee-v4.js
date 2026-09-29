@@ -28,10 +28,11 @@ const state = {
   currentAccount: '',
   hasDeemed: false,
   deemedStatus: 'none',
+  deemedMigrationNeedsReview: false,
   deemedYears: 0,
   deemedMonthsExtra: 0,
   transitionAmountKnown: false,
-  transitionAmount: 0,
+  transitionAmount: '',
   stopWorkAge: 50,
   retirementMode: 'statutory',
   retirementOffsetMonths: 12,
@@ -209,7 +210,7 @@ function futureContributionSegments(category = mapCategory()) {
   if (state.contributionPlan === 'continuous_to_claim') afterMonths = window.afterStop;
   if (state.contributionPlan === 'actual_months') afterMonths = Math.min(actualAfterStopMonths(), window.afterStop);
   if (state.contributionPlan === 'to_minimum') {
-    const needed = Math.max(0, minimumRequiredMonths(category) - effectivePaidMonths() - beforeStop);
+    const needed = Math.max(0, minimumRequiredMonths(category) - effectivePaidMonths() - deemedMonths() - beforeStop);
     afterMonths = Math.min(needed, window.afterStop);
   }
 
@@ -320,7 +321,7 @@ function calculationInput(category = mapCategory()) {
     accountKnown: state.knowsAccount,
     currentAccount: state.knowsAccount ? Number(state.currentAccount || 0) : 0,
     transitionAmountKnown: Boolean(state.transitionAmountKnown),
-    transitionAmount: Number(state.transitionAmount || 0),
+    transitionAmount: state.transitionAmount === '' ? null : Number(state.transitionAmount),
     deemedStatus: state.deemedStatus,
     currentCalcBase: Number(state.currentCalcBase || 0),
     currentCalcBaseYear: Number(state.currentCalcBaseYear || 0),
@@ -494,7 +495,7 @@ function accountGuideHtml() {
 }
 
 function deemedGuideHtml() {
-  return `<details class="inline-help"><summary>什么是视同缴费年限？怎么确认？</summary><p>简单理解：部分人在养老保险个人账户建立前或特定制度改革前的工作年限，经社保部门认定后，可以按养老保险缴费年限计算。是否属于这种情况，以社保经办机构认定为准。</p><ol><li>先查看电子社保卡、掌上12333或个人社保权益记录中的养老保险信息。</li><li>如果记录里仍看不明确，咨询参保地 / 待遇领取地社保经办机构。</li><li>如果你现在不确定，选择“不确定”即可，不会阻断本次测算。</li></ol></details>`;
+  return `<details class="inline-help"><summary>什么是视同缴费年限？怎么确认？</summary><p>简单理解：部分人在养老保险个人账户建立前或特定制度改革前的工作年限，经社保部门认定后，可以计入养老保险缴费年限。是否属于这种情况，以社保经办机构认定为准。</p><ol><li>先查看电子社保卡、掌上12333或个人社保权益记录中的养老保险信息。</li><li>如果记录里仍看不明确，咨询参保地 / 待遇领取地社保经办机构。</li><li>如果你现在不确定，选择“不确定”即可，不会阻断本次测算。</li></ol><p>本页“累计实际缴费”不包含这里单独填写的视同缴费年限。</p></details>`;
 }
 
 function contributionBaseGuideHtml() {
@@ -509,14 +510,15 @@ function renderStatus() {
   stepTitle.textContent = '你已经缴了多久？';
   stepDesc.textContent = '这里先填大概累计年限即可；后面如果按历史记录分段填写，会以分段合计为准。';
   stepBody.innerHTML = `
-    <div class="field"><label>累计缴费（大约）</label><div class="number-pair"><div><input data-key="paidYears" type="number" min="0" step="1" value="${state.paidYears}"><span>年</span></div><div><input data-key="paidMonthsExtra" type="number" min="0" max="11" step="1" value="${state.paidMonthsExtra}"><span>额外月份（0～11）</span></div></div><div class="help">月份只填不足一年的部分，例如 18年6个月就填“18年 + 6个月”。</div></div>
+    ${state.deemedMigrationNeedsReview ? `<div class="status warn"><strong>请确认一次旧数据口径</strong><br>新版将“累计实际缴费”和“视同缴费年限”分开计算。请确认下面的累计实际缴费年限不包含视同缴费，再重新选择一次视同缴费状态。</div>` : ''}
+    <div class="field"><label>累计实际缴费（不含视同缴费）</label><div class="number-pair"><div><input data-key="paidYears" type="number" min="0" step="1" value="${state.paidYears}"><span>年</span></div><div><input data-key="paidMonthsExtra" type="number" min="0" max="11" step="1" value="${state.paidMonthsExtra}"><span>额外月份（0～11）</span></div></div><div class="help">这里只填实际缴费；视同缴费在下面单独填写。月份只填不足一年的部分，例如 18年6个月就填“18年 + 6个月”。</div></div>
     <div class="field"><label>个人账户余额</label><div class="segment"><button type="button" data-account="known" class="${state.knowsAccount ? 'active' : ''}">我知道</button><button type="button" data-account="unknown" class="${!state.knowsAccount ? 'active' : ''}">不知道</button></div>${accountGuideHtml()}</div>
     ${state.knowsAccount ? `<div class="field"><label>个人账户余额（元）</label><input data-key="currentAccount" type="number" min="0" step="1" value="${state.currentAccount}"></div>` : ''}
     <details class="disclosure" ${state.deemedStatus !== 'none' ? 'open' : ''}><summary>是否有被认定的视同缴费年限？</summary><div class="detail-stack">
       <div class="choice-stack compact-choices">
         <button type="button" class="choice ${state.deemedStatus === 'none' ? 'active' : ''}" data-deemed-status="none"><strong>没有 / 不适用</strong></button>
         <button type="button" class="choice ${state.deemedStatus === 'unknown' ? 'active' : ''}" data-deemed-status="unknown"><strong>不确定</strong><span>先继续测算，不会因为不知道而卡住</span></button>
-        <button type="button" class="choice ${state.deemedStatus === 'confirmed' ? 'active' : ''}" data-deemed-status="confirmed"><strong>有，已经确认</strong></button>
+        <button type="button" class="choice ${state.deemedStatus === 'confirmed' ? 'active' : ''}" data-deemed-status="confirmed"><strong>有，已经确认</strong><span>请单独填写已认定的视同缴费年限</span></button>
       </div>
       ${deemedGuideHtml()}
       ${state.deemedStatus === 'confirmed' ? `<div class="field"><label>视同缴费年限</label><div class="number-pair"><div><input data-key="deemedYears" type="number" min="0" step="1" value="${state.deemedYears}"><span>年</span></div><div><input data-key="deemedMonthsExtra" type="number" min="0" max="11" step="1" value="${state.deemedMonthsExtra}"><span>个月</span></div></div></div>` : ''}
@@ -525,9 +527,10 @@ function renderStatus() {
   stepBody.querySelectorAll('[data-deemed-status]').forEach(btn => btn.addEventListener('click', () => {
     state.deemedStatus = btn.dataset.deemedStatus;
     state.hasDeemed = state.deemedStatus === 'confirmed';
+    state.deemedMigrationNeedsReview = false;
     if (state.deemedStatus !== 'confirmed') {
       state.transitionAmountKnown = false;
-      state.transitionAmount = 0;
+      state.transitionAmount = '';
     }
     renderStep();
   }));
@@ -637,7 +640,11 @@ function renderAmount() {
   stepBody.querySelectorAll('[data-amount-mode]').forEach(btn => btn.addEventListener('click', () => { state.amountMode = btn.dataset.amountMode; renderStep(); }));
   stepBody.querySelectorAll('[data-history-mode]').forEach(btn => btn.addEventListener('click', () => { state.historyMode = btn.dataset.historyMode; if (state.historyMode === 'segments') ensureHistorySegments(); renderStep(); }));
   stepBody.querySelectorAll('[data-history-pattern]').forEach(btn => btn.addEventListener('click', () => { state.historyPattern = btn.dataset.historyPattern; renderStep(); }));
-  stepBody.querySelectorAll('[data-transition-known]').forEach(btn => btn.addEventListener('click', () => { state.transitionAmountKnown = btn.dataset.transitionKnown === 'yes'; renderStep(); }));
+  stepBody.querySelectorAll('[data-transition-known]').forEach(btn => btn.addEventListener('click', () => {
+    state.transitionAmountKnown = btn.dataset.transitionKnown === 'yes';
+    if (!state.transitionAmountKnown) state.transitionAmount = '';
+    renderStep();
+  }));
   document.getElementById('regionSelect')?.addEventListener('change', event => {
     state.regionKey = event.target.value;
     state.calcBaseMode = 'auto';
@@ -692,7 +699,11 @@ function bindBasicFields() {
       state.contributionGrowth = state.socialWageGrowth;
       return;
     }
-    const numericKeys = new Set(['paidYears','paidMonthsExtra','currentAccount','deemedYears','deemedMonthsExtra','transitionAmount','stopWorkAge','actualFutureYears','actualFutureMonthsExtra','flexMonthlyContributionBase','monthlyContributionBase','avgIndex','currentCalcBaseYear']);
+    if (key === 'transitionAmount') {
+      state.transitionAmount = el.value === '' ? '' : Number(el.value);
+      return;
+    }
+    const numericKeys = new Set(['paidYears','paidMonthsExtra','currentAccount','deemedYears','deemedMonthsExtra','stopWorkAge','actualFutureYears','actualFutureMonthsExtra','flexMonthlyContributionBase','monthlyContributionBase','avgIndex','currentCalcBaseYear']);
     state[key] = numericKeys.has(key) ? Number(el.value) : el.value;
     if (event.type === 'change' && stepBody.dataset.step === 'plan') renderStep();
     };
@@ -777,6 +788,7 @@ function validateCurrentStep() {
       if (!(Number(state.paidMonthsExtra) >= 0 && Number(state.paidMonthsExtra) <= 11)) return '累计缴费月数请填0到11。';
       if (state.knowsAccount && !(Number(state.currentAccount) >= 0)) return '请填写个人账户余额。';
       if (state.deemedStatus === 'confirmed' && !(Number(state.deemedMonthsExtra) >= 0 && Number(state.deemedMonthsExtra) <= 11)) return '视同缴费月数请填0到11。';
+      if (state.deemedStatus === 'confirmed' && !(deemedMonths() > 0)) return '请填写已确认的视同缴费年限。';
     }
     if (key === 'plan') {
       const claim = claimAgeMonths();
@@ -794,7 +806,9 @@ function validateCurrentStep() {
       if (state.historyMode === 'exact' && !(Number(state.avgIndex) >= 0.3 && Number(state.avgIndex) <= 3)) return '平均缴费工资指数请填0.3到3。';
       applyRegionCalcBase(false);
       if (!(Number(state.currentCalcBase) > 0)) return '当前地区还没有可用的计发基准。可在“高级参数”中填写当地人社公布的计发基准后再估算金额。';
-      // V2.6.4: unknown transition/deemed status degrades to a clearly labelled partial result instead of blocking.
+      if (state.deemedStatus === 'confirmed' && state.transitionAmountKnown && String(state.transitionAmount).trim() === '') return '请选择“我有已核定金额”后填写过渡性养老金月额，或改选“不知道，先算已知部分”。';
+      if (state.deemedStatus === 'confirmed' && state.transitionAmountKnown && !(Number(state.transitionAmount) >= 0)) return '请填写有效的过渡性养老金月额。';
+      // V2.6.4: unknown transition/deemed rules degrade to a clearly labelled partial result instead of blocking.
     }
   } catch (error) {
     return error.message || '输入有误，请检查。';
