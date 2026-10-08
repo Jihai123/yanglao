@@ -75,7 +75,8 @@ test('landing tracking uses first-party anonymous events and preserves existing 
   assert.match(entry, /button\.click\(\)/);
   assert.match(entry, /history\.replaceState/);
   assert.match(admin, /function landing_acquisition_data\(/);
-  assert.match(admin, /'acquisition' => landing_acquisition_data\(\$pdo\)/);
+  assert.match(admin, /'acquisition' => safe_landing_acquisition_data\(\$pdo\)/);
+  assert.match(admin, /unavailable' => true/);
   assert.match(dashboard, /获客落地页/);
   assert.match(dashboard, /renderLandingAcquisition/);
   assert.doesNotMatch(growth + entry, /monthlyContributionBase|currentAccount|birth|password/);
