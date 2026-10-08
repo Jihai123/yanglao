@@ -75,6 +75,18 @@
 - 若 Indexed page 与 Live page 都是新页，但公开 SERP 使用旧文案：可能是 Bing 自主改写或 SERP 缓存/显示问题，转向 Search Performance 的近期查询排名和 search-serving 诊断。
 - 即便 indexed page 更新，**也不能保证搜索排名恢复**；多关键词曝光断崖是另外一条需要持续观察的指标。
 
+### Bing View Indexed page：旧索引假设已被排除（2026-10-08）
+
+所有者通过 Bing URL Inspection > View Indexed page 提供了完整首页 HTML。
+- Indexed HTML 的 `<title>` 是 `养老金计算器2026｜退休年龄查询｜退休规划助手`。
+- description 是 2026 职工法定退休年龄、灵活就业/城乡居民养老金的新版文案。
+- meta robots 为 `index,follow,max-image-preview:large`，canonical 正确指向 `https://yanglao.zhibeimao.com/`。
+- 页面包含新版 Quick/年龄/退休规划入口与 `analytics.js?v=20260929-v264`、`employee-v4.js?v=20260929-v264` 等 V2.6.4 资源链接。
+
+**结论更正：Bing 所存索引 HTML 已更新到新版，不能再把“旧索引缓存”列为当前确定原因。** 公开 SERP 旧标题/摘要可能由 snippet 自动改写或展示缓存产生；索引中有页面、实时可抓取和 URL operator 可查询仍不能保证核心关键词展示。2026-09-16 后曝光归零的原因未证实，不可声称“遭惩罚”或“已解决”。
+
+**执行策略调整：**保留 Bing serving 异常报告线索，必要时提供给 Bing Webmaster Support；无需等待该异常解决再建设获客页面。首批优先复用现有测算功能开发 3 个可抓取的高质量专题入口，并同步建立来源归因；所有更改在独立分支测试验收，未获生产部署指令前绝不部署。
+
 ### 明确的诊断次序
 
 1. **先排 Bing 突然失去曝光的原因**：进入 Bing > Search Performance，选择 2026-08-25 至 2026-10-08 范围，分别导出/截图 Queries、Pages 和每日展现；再用 URL Inspection 核对首页的索引/抓取/最后抓取日期。若 9 月中旬后确实显著下滑，优先从查询词/网页构成排查，而不是马上发表新内容。
