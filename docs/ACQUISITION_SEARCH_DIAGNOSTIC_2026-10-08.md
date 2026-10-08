@@ -22,6 +22,27 @@
 | Bing Webmaster Tools | 首页汇总约 **37 次点击、1.6K 次展现**，大部分可见曲线集中在 **9 月上半月**，9 月中下旬后显示接近零。尚未看到实际索引 URL 和关键词、网页报告 | **优先 P0 排查异常时间序列**：可能是索引/排名/抓取/报表范围等原因，不能据此认定“被处罚” |
 | Google Search Console | **1 个已编入索引页面，0 个未收录页面，0 次网页搜索点击**（截图所选范围） | 收录至少一个 URL，但没有可见 Google 点击；需要查看首页 URL Inspection 与 Search Performance 的 impressions、queries |
 
+### Bing Search Performance 详情补采（2026-10-08）
+
+用户提供了 3M 的 Keywords 与 Pages 两个完整截图，确认：
+- 汇总：`37 clicks`，`1.6K impressions`，`2.37% CTR`。
+- **Pages 只有首页一个 URL：`https://yanglao.zhibeimao.com/`，37 clicks / 1.6K impressions / 2.37% CTR / 8.28 Avg Position。** 因此搜索流量断崖的分析对象就是首页，不需要先在多篇内容页间排查。
+- Keywords 报表共 77 个 query 行（第一页25行）；可见主要关键词如下：
+
+| 搜索词 | 曝光 | 点击 | CTR | 平均排名 |
+| --- | ---: | ---: | ---: | ---: |
+| 养老金计算器 | 186 | 7 | 3.76% | 8.71 |
+| 退休金计算器 | 129 | 2 | 1.55% | 9.61 |
+| 养老金测算 | 93 | 2 | 2.15% | 7.32 |
+| 养老保险计算器 | 65 | 1 | 1.54% | 7.89 |
+| 退休金测算 | 37 | 2 | 5.41% | 7.89 |
+| 退休工资计算器2026 | 17 | 0 | 0% | 8.47 |
+
+- 可见日趋势在 **2026-09-16 前后**掉到零，且 9 月下旬、10 月初持续为零。排名是整个三个月报告的历史均值，不能解释为当前排名。
+- 已知关键词说明 **泛养老金计算器需求曾有实质搜索曝光**。不能断言全由单一版本变更、算法调整、被惩罚或页面质量引起。
+
+**紧接着要做的唯一 P0 用户操作：Bing 左侧 `URL Inspection` → 输入 `https://yanglao.zhibeimao.com/` → 截图 Index（是否已索引、最后抓取日期、索引错误）及 Live URL（实时 Bingbot 抓取是否成功、HTTP 响应、canonical/robots）。** 然后进入 Site Explorer 查看 Indexed / Error / Warning / Excluded 分布。若首页已从索引退出，先找退出原因，不应盲目扩建页面。
+
 ### 明确的诊断次序
 
 1. **先排 Bing 突然失去曝光的原因**：进入 Bing > Search Performance，选择 2026-08-25 至 2026-10-08 范围，分别导出/截图 Queries、Pages 和每日展现；再用 URL Inspection 核对首页的索引/抓取/最后抓取日期。若 9 月中旬后确实显著下滑，优先从查询词/网页构成排查，而不是马上发表新内容。
