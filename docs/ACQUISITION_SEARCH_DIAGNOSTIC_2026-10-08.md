@@ -43,6 +43,23 @@
 
 **紧接着要做的唯一 P0 用户操作：Bing 左侧 `URL Inspection` → 输入 `https://yanglao.zhibeimao.com/` → 截图 Index（是否已索引、最后抓取日期、索引错误）及 Live URL（实时 Bingbot 抓取是否成功、HTTP 响应、canonical/robots）。** 然后进入 Site Explorer 查看 Indexed / Error / Warning / Excluded 分布。若首页已从索引退出，先找退出原因，不应盲目扩建页面。
 
+### Bing 首页索引与实时抓取诊断（2026-10-08 追加）
+
+站长平台 URL Inspection 用户截图对应 URL：`https://yanglao.zhibeimao.com/`：
+
+- **Bing Index: Indexed successfully / URL can appear on Bing**。Discover: 2026-04-06；最近抓取显示当日 14:52；Crawl allowed **Yes**；Page Fetch **Successful**；Indexing allowed **Yes**。
+- **Live URL: URL can be indexed by Bing**（当日 17:19 测试）；两页都显示 No SEO/GEO issues found；识别到 JSON-LD 与 OpenGraph 2 种标记；Canonical URL 以 `--` 展示，不能仅凭此认定 canonical 配置有误。
+- 由此**基本排除首页已经出索引、Robots/noindex 禁止、Bingbot 当下无法抓取**。但此检查不说明首页会被公开 SERP 展示，更不能确认历史排名仍在。
+- 与此前 3M 搜索表现结合，初步将故障类型由“抓取/索引错误”调整为 **“已收录但近期没有公开搜索曝光 / 关键词排名或 serving 异常待查”**。
+- 公开 Microsoft Q&A 上 2026-09-21 有其他站长报告从 2026-09-16 起发生“已索引、持续可抓取，但曝光/点击零”的类似情形（参考 https://learn.microsoft.com/en-us/answers/questions/6010384/bing-webmaster-tools-shows-913-urls-indexed-but-en）。这是**其他站点个案证据，不能据此断言本站被 Bing 降权、处罚或 Bing 存在普遍故障**。其他微软问答案例中的 Microsoft External Staff 说明“已索引”与公开搜索的展示是不同阶段，可能存在后者未展示情形：https://learn.microsoft.com/en-us/answers/a/12795351 。
+- 官方 URL Inspection 文档明确 Live URL 可用于对比 Bingbot 当下拿到的 HTML 与索引缓存内容：https://www.bing.com/webmasters/help/URL-Inspection-55a30305 。
+
+**下一组最高信息增益检查**：
+1. **Bing 公开搜索**（实际 Bing 搜索框而不是 Webmaster）：`url:yanglao.zhibeimao.com/`；精确站名和 `site:yanglao.zhibeimao.com`。截图判断首页能否被公开展示。搜索操作符可能受分词及搜索引擎策略影响，单项失败不足以确证域名级过滤。
+2. 在 URL Inspection 点击 **View Indexed page** 与 **View Tested page**，比对 Bing 看到的标题、HTML 头部、正文及是否是近期版本；关注是否显示旧版页面、被重定向或返回与用户不同的内容。
+3. **Site Explorer** 检查 index / excluded / error 数量与站点状态，查看是否只有一个首页；需要时从 Bing Webmaster Support 提交异常工单，并附 9 月中旬断崖归零、已索引、实时抓取成功的完整证据。
+4. 无论 Bing 是否存在 serving 问题，**百度/Google 已至少索引 1 页，但仍仅有单一落地页**的结构性获客瓶颈依旧；可并行推进首批高质量独立落地页（单独 Gate、独立分支、禁止直接生产部署），不因 Bing 排查无限期拖延整个增长计划。
+
 ### 明确的诊断次序
 
 1. **先排 Bing 突然失去曝光的原因**：进入 Bing > Search Performance，选择 2026-08-25 至 2026-10-08 范围，分别导出/截图 Queries、Pages 和每日展现；再用 URL Inspection 核对首页的索引/抓取/最后抓取日期。若 9 月中旬后确实显著下滑，优先从查询词/网页构成排查，而不是马上发表新内容。
