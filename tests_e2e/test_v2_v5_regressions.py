@@ -195,7 +195,7 @@ def test_planning_to_minimum_counts_pre_stop_contributions_before_flex(browser):
     future_cell = page.locator('.result-cell').filter(has_text='未来缴费')
     future_text = future_cell.inner_text()
     import re
-    match = re.search(r'\\d+年\\d+个月', future_text)
+    match = re.search(r'\d+年\d+个月', future_text)
     assert match, future_text
     expected_duration = match.group(0)
     expect(page.locator('#resultView')).to_contain_text('未来计划 ' + expected_duration)
