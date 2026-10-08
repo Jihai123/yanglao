@@ -60,6 +60,21 @@
 3. **Site Explorer** 检查 index / excluded / error 数量与站点状态，查看是否只有一个首页；需要时从 Bing Webmaster Support 提交异常工单，并附 9 月中旬断崖归零、已索引、实时抓取成功的完整证据。
 4. 无论 Bing 是否存在 serving 问题，**百度/Google 已至少索引 1 页，但仍仅有单一落地页**的结构性获客瓶颈依旧；可并行推进首批高质量独立落地页（单独 Gate、独立分支、禁止直接生产部署），不因 Bing 排查无限期拖延整个增长计划。
 
+### Bing 公开搜索进一步验证（2026-10-08）
+
+用户提供两张 Bing 公开 SERP 实际截图：
+
+- `url:yanglao.zhibeimao.com/` 返回 **1 个可见首页结果**，故“Bing 仅保留索引记录但公开结果完全不可见”的假说不成立（至少 URL operator 的公开结果可以返回站点）。
+- `site:yanglao.zhibeimao.com` 在所见截图中出现约 19,600 个与“审判”相关的无关结果，**没有正常限制到目标域名**，不能用于认定站点无结果或搜索词排名。
+- `url:` 结果展示标题为 **“养老金计算器_退休年龄查询_养老保险测算工具”**，摘要为 **“养老金计算器上线版，提供退休年龄速查、职工养老测算、居民养老测算。先查几岁退休，再估算退休后预计每月养老金。”**。这与仓库中旧版 `pension_calculator_v7.html` 的 `<title>` / description **高度一致**，也与其他公开抓取工具标注六个月前的旧首页快照一致。
+- 但 GitHub 当前生产候选 `index.html` 元数据已是 **“养老金计算器2026｜退休年龄查询｜退休规划助手”**，description 为 **“退休规划助手：查询2026职工法定退休年龄和退休年月，估算职工养老金、灵活就业养老与城乡居民养老金，并比较不同缴费年限方案。”**；旧内容与新内容不一致。
+- 因此有了一个**可检验的强线索：Bing 公开搜索结果可能仍使用旧版首页的标题与摘要**。该差异也可能源自搜索引擎自动改写 title/snippet，不能仅凭 SERP 判断索引缓存一定过期或 HTTP/HTTPS canonical 有错。
+
+**下一步的单一高信息增益核验**：在 URL Inspection > Bing Index 点击 `View Indexed page`，查看 Bing 实际索引版本的 title / description / 正文；与 `Live URL > View Tested page` 对比（尤其 HTML 头部 title、description、canonical、HTTPS 最终网址）。
+- 若 Indexed page 明确为旧页、Live page 为 V2.6.4 新页：有证据表明索引内容滞后，可点击 Request indexing（至多一次）、观察 3–7 天是否更新；同时按技术侧排查 HTTP/HTTPS 重定向与 canonical。
+- 若 Indexed page 与 Live page 都是新页，但公开 SERP 使用旧文案：可能是 Bing 自主改写或 SERP 缓存/显示问题，转向 Search Performance 的近期查询排名和 search-serving 诊断。
+- 即便 indexed page 更新，**也不能保证搜索排名恢复**；多关键词曝光断崖是另外一条需要持续观察的指标。
+
 ### 明确的诊断次序
 
 1. **先排 Bing 突然失去曝光的原因**：进入 Bing > Search Performance，选择 2026-08-25 至 2026-10-08 范围，分别导出/截图 Queries、Pages 和每日展现；再用 URL Inspection 核对首页的索引/抓取/最后抓取日期。若 9 月中旬后确实显著下滑，优先从查询词/网页构成排查，而不是马上发表新内容。
