@@ -66,6 +66,7 @@ test('landing tracking uses first-party anonymous events and preserves existing 
   const entry = await read('js/landing-entry.js');
   const api = await read('api/event.php');
   const admin = await read('api/admin.php');
+  const query = await read('api/acquisition-query.php');
   const dashboard = await read('admin/index.html');
   for(const name of ['landing_cta_click','landing_flow_start']){
     assert.match(api, new RegExp(name));
@@ -74,7 +75,8 @@ test('landing tracking uses first-party anonymous events and preserves existing 
   assert.match(growth, /sessionStorage\.setItem/);
   assert.match(entry, /button\.click\(\)/);
   assert.match(entry, /history\.replaceState/);
-  assert.match(admin, /function landing_acquisition_data\(/);
+  assert.match(admin, /require_once __DIR__ . '\/acquisition-query.php'/);
+  assert.match(query, /function landing_acquisition_data\(/);
   assert.match(admin, /'acquisition' => safe_landing_acquisition_data\(\$pdo\)/);
   assert.match(admin, /unavailable' => true/);
   assert.match(dashboard, /获客落地页/);
