@@ -248,12 +248,12 @@ function landing_acquisition_data(PDO $pdo): array
     $flowStmt = $pdo->prepare(
         "SELECT
             COUNT(DISTINCT entry.flow_id) AS started_flows,
-            COUNT(DISTINCT CASE WHEN result.id IS NOT NULL THEN entry.flow_id END) AS result_flows
+            COUNT(DISTINCT CASE WHEN result_event.id IS NOT NULL THEN entry.flow_id END) AS result_flows
          FROM usage_event entry
-         LEFT JOIN usage_event result ON result.flow_id = entry.flow_id
-            AND result.app_version = ?
-            AND result.event_name = 'result_view'
-            AND result.created_at >= entry.created_at
+         LEFT JOIN usage_event result_event ON result_event.flow_id = entry.flow_id
+            AND result_event.app_version = ?
+            AND result_event.event_name = 'result_view'
+            AND result_event.created_at >= entry.created_at
          WHERE entry.app_version = ?
            AND entry.step = ?
            AND entry.event_name = 'landing_flow_start'
@@ -282,6 +282,21 @@ function landing_acquisition_data(PDO $pdo): array
         ];
     }
     return ['app_version' => $version, 'period_days' => 30, 'pages' => $pages];
+}
+
+function safe_landing_acquisition_data(PDO $pdo): array
+{
+    try {
+        return landing_acquisition_data($pdo);
+    } catch (Throwable $error) {
+        // Acquisition statistics must never take down admin login or legacy dashboards.
+        return [
+            'app_version' => DIAGNOSTICS_APP_VERSION,
+            'period_days' => 30,
+            'pages' => [],
+            'unavailable' => true,
+        ];
+    }
 }
 
 function failure_flow_audit(PDO $pdo): array
@@ -642,7 +657,7 @@ if ($action === 'v262') {
             'dashboard' => dashboard_data($pdo, $scope),
             'diagnostics' => diagnostics_data($pdo),
             'audit' => failure_flow_audit($pdo),
-            'acquisition' => landing_acquisition_data($pdo),
+            'acquisition' => safe_landing_acquisition_data($pdo),
         ]);
     } catch (Throwable $error) {
         respond(['ok' => false, 'error' => 'analytics_audit_query_failed'], 500);
