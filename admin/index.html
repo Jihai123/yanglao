@@ -158,6 +158,10 @@
       'retirement-age':'退休年龄查询'
     };
     const pages=data.pages||[];
+    if(data.unavailable){
+      $('landingAcquisition').innerHTML='<div class="empty">获客统计暂不可用，原有管理看板仍可正常使用。</div>';
+      return;
+    }
     $('landingAcquisition').innerHTML=pages.length?pages.map(row=>{
       const slug=String(row.slug||'');
       const label=names[slug]||slug;
