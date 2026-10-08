@@ -190,10 +190,16 @@ def test_planning_to_minimum_counts_pre_stop_contributions_before_flex(browser):
 
     expect(page.locator('#resultView')).not_to_have_class('hidden')
     expect(page.locator('#resultView')).to_contain_text('已缴 16年8个月')
-    expect(page.locator('#resultView')).to_contain_text('未来计划 5年4个月')
+    # Stop-work age defaults change with the current date. Verify consistent
+    # pre-stop planning rather than pinning a 2026-09 calendar snapshot.
     future_cell = page.locator('.result-cell').filter(has_text='未来缴费')
-    expect(future_cell).to_contain_text('5年4个月')
-    expect(page.locator('#resultView')).to_contain_text('停止工作前 5年4个月')
+    future_text = future_cell.inner_text()
+    import re
+    match = re.search(r'\\d+年\\d+个月', future_text)
+    assert match, future_text
+    expected_duration = match.group(0)
+    expect(page.locator('#resultView')).to_contain_text('未来计划 ' + expected_duration)
+    expect(page.locator('#resultView')).to_contain_text('停止工作前 ' + expected_duration)
     expect(page.locator('#resultView')).to_contain_text('¥20,000')
     expect(page.locator('#resultView')).not_to_contain_text('未来缴费安排灵活就业')
     assert errors == []
