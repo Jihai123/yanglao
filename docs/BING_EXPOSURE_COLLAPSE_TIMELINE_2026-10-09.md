@@ -98,3 +98,27 @@
 5. 报告原有“缺少 Bingbot 历史访问日志”的限制**现在对当前这段日期汇总已补齐**，但没有真实 IP 验证/CDN 边缘日志/按查询按日历史排名，根因继续标记 **UNCONFIRMED**。
 
 **推荐下一步优先级**：停止重复抓取脚本和盲目提交 URL。第一优先向 Bing Webmaster **Search Performance** 导出 **09-01—09-15 与 09-16—09-30** 分日期、Pages/Queries 的 impressions、clicks、average position（按同一 Web 流量范围），确认是查询排名/展示消失还是报告异常；若两侧对比和站点索引均无法解释，准备现有取证材料向 Bing Webmaster 支持提交案例。Cloudflare 9 月历史请求审计仅在可获得边缘日志时作为并行辅助，不应再要求大量命令逐项试错。
+
+
+## 7. 2026-10-09 新增：Bing 双时段对比截图及两份原始导出 CSV
+
+维护者选择 Bing Webmaster Tools / Search Performance / Compare，截图明确显示 2026-09-01—09-15 与 2026-09-16—09-30。独立页面 CSV 文件 `yanglao.zhibeimao.com_PageTrafficReport_10_9_2026 (1).csv` 仅一行：`https://yanglao.zhibeimao.com/`。其数值与截图完全一致：
+
+| 指标 | 9/1—9/15 | 9/16—9/30 | 变化 |
+| --- | ---: | ---: | ---: |
+| 曝光次数 | **1537** | **22** | **-98.57%** |
+| 点击次数 | **37** | **0** | **-100%** |
+| 平均排名 | 8.271955042290175 | 8.7727 | 仅对仍有展示的查询样本计算，不能证明原有关键词排名不变 |
+| CTR | 2.41% | 0% | 下降 |
+
+Pages CSV 只有**首页一行**，已否定“当时有其他页面接替首页搜索流量”的假设；但是**不证明 Bing 在全部地区、全部搜索类别也完全没有其他流量**，因为截图为当前选定 Web/Search Performance 视图。
+
+**数据质量红旗：第二份关键词 CSV `yanglao.zhibeimao.com_PageTrafficReport_10_9_2026.csv` 含 25 行，列名为 `Last Impressions`/`Prev Impressions` 等。其中历史列合计 `Last Impressions=586`、`Prev Impressions=422`、`Last Clicks=18`、`Prev Clicks=14`；单个查询“养老金计算器”的 Prev Impressions 为 186、Prev Clicks 为 7。与 Pages 同时段**全站后半月总曝光 22、点击 0** 完全不相容。两份 CSV 不能据此直接联表、拆解前后关键词排名。极可能是导出时页面状态/筛选日期不同，或 Bing 导出数据异常；CSV 没有日期元数据，不可臆断哪一种。此前对关键词来源和平均排名的推断只限有明确截图的对应窗口；不能用这份关键词文件给出“哪些词后半月保住排名”结论。
+
+**证据等级的更新**：
+- **确证**：指定 Pages 视图首页 1537 → 22 曝光、37 → 0 点击（-98.57%），已索引且 Live 可索引；2026-09-10—20 Bingbot-UA 源站请求只有 200/304，09-17 起明显减少。
+- **排除/削弱**：全站页面曝光转移、当时普遍源站 403/5xx、当前 deindex/noindex。
+- **未确证**：实际 Bingbot 身份、Cloudflare 边缘被拦截或挑战的请求、Bing 内部 search-serving/算法机制、哪个搜索词的实际排名掉出结果、当年 9 月发布内容与掉量之间的因果关系。
+- **决定**：停止重复服务器日志采样、IndexNow 提交和生产 SEO 改动；要求如需关键词层因果分析，先从**同一 Compare 筛选条件、选中 Keywords 标签之后**重新下载，核对关键词样本的合计是否合理。若仍不相容，将“关键词与页面导出不一致”与曝光异常**一并报 Bing Webmaster 支持**。向支持说明历史抓取统计是基于 UA 匹配而非官方验证 IP。
+
+官方支持入口：https://www.bing.com/webmasters/help/webmaster-support-24ab5ebf
