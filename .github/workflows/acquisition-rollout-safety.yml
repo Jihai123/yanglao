@@ -4,6 +4,7 @@ on:
     paths:
       - 'ops/deploy-acquisition-p1.sh'
       - 'ops/diagnose-acquisition-rollback.sh'
+      - 'ops/diagnose-nginx-origin-403.sh'
       - '.github/workflows/acquisition-rollout-safety.yml'
 jobs:
   lint-only:
@@ -17,6 +18,7 @@ jobs:
         run: |
           bash -n ops/deploy-acquisition-p1.sh
           bash -n ops/diagnose-acquisition-rollback.sh
+          bash -n ops/diagnose-nginx-origin-403.sh
           echo "ROLLOUT_BASH_SYNTAX_PASS"
       - name: ShellCheck static analysis (does not deploy)
         run: |
@@ -24,5 +26,5 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install -y shellcheck
           fi
-          shellcheck -S error ops/deploy-acquisition-p1.sh ops/diagnose-acquisition-rollback.sh
+          shellcheck -S error ops/deploy-acquisition-p1.sh ops/diagnose-acquisition-rollback.sh ops/diagnose-nginx-origin-403.sh
           echo "ROLLOUT_SHELLCHECK_PASS"
