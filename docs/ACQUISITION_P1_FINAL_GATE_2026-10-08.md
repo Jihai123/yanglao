@@ -46,3 +46,30 @@ PR #21 只在 `growth/acquisition-p1-landings` 工作分支，**生产未更新�
 - **有时间吻合且可验证的代码线索**：9/13 首页 H1/首屏语义弱化、入口重构，与核心关键词平均第7～10名的历史表现可能有关。
 - **尚未建立因果关系**：突然所有曝光归零也可能来自 Bing search-serving、搜索系统或报表维度变化；单纯改 H1 不足以解释完整断崖。不能宣称某一次提交一定触发处罚。
 - **建议后续审慎实验**：先保留 PR #21 3 个独立主题页、不要大幅重写首页。若需验证首页语义因素，在另一个独立 SEO 分支用有明确关键词的 H1/首屏文案做一次小范围改动，同时保留转化入口；提前固定观察窗口，以 Bing 的 impressions、queries、ranking 对照（至少 7～14 天）评估。不能为了试验伪造站长数据。
+
+## 2026-10-09 最终 Gate 补充：生产只读 SQL 实测已通过
+
+2026-10-09 网站维护者按本 PR 指定版本提供了生产服务器一次性只读脚本的实际输出；不是 CI 假数据：
+
+```text
+flexible-employment-pension: visits=0, cta_sessions=0, started_flows=0, result_flows=0
+minimum-pension-years: visits=0, cta_sessions=0, started_flows=0, result_flows=0
+retirement-age: visits=0, cta_sessions=0, started_flows=0, result_flows=0
+PRODUCTION_ACQUISITION_READONLY_PASS: existing schema and actual query compatible; no data changed
+```
+
+结论：**生产实际 `usage_event` 字段存在、SQL 可在现有数据库执行、返回三行合法计数，生产 DB 兼容 Gate PASS**。三个页面尚未上线，计数 0 符合预期，不应误认为未接入数据库。该核验只执行只读查询及连接会话范围的时区设置，未执行业务写入/迁移/部署/重启。生产历史总量、慢查询在数据增长后的性能及非自测筛选仍不属于本次 SQL 兼容 Gate 的已验证范围。
+
+CLI 同时打印 `PHP Startup: exif` 加载警告：扩展 module API 20230831 与解释器 API 20210902 不匹配。这是 CLI PHP 扩展配置的独立运维问题，与本次 PDO/MySQL 查询结果无关；不在获客 PR 中直接修改生产 PHP 配置。
+
+### 代码修复及完整回归
+
+- `74d109f`：结果归因须同时满足 flow_id 与 session_id；空 session 不计；MySQL 合成数据增加跨会话/旧版本/空值/合法结果断言；修复两处政策依据 URL。已独立查证政府官方网站的《渐进式延迟法定退休年龄的决定》和最低缴费年限附表。
+- `87eb0e4`：生产只读核验兼容站点根目录外 `.yanglao-db.php` 配置。
+- `f057e86`：浏览器测试校验 CTA 事件 POST 及跨页同一匿名会话、有效 flow_id。
+- `838ff19`：只读核验脚本增加 PHP lint。
+- GitHub Actions [#37878237718](https://github.com/Jihai123/yanglao/actions/runs/37878237718) (HEAD `838ff19ec0004615eacc9adf94d1ba3d78d2f088`)：`test-v2`、`acquisition-mysql`、`browser-smoke` **全 SUCCESS**；Node **92/92**、真实 MySQL 8 PDO 测试 **PASS**、Chromium **90/90**、PHP/JS syntax **PASS**。
+
+**最终合并判断：代码/CI/浏览器/生产实际 SQL 兼容 Gate 全 PASS，可按既定审批合并 `main`；生产部署仍单独授权、独立验收。**
+
+**持续经营限制**：后台页面会话数不是“可归因非自测访问”完成指标的自动证明。仍需在上线后结合日志、站长平台数据、来源和测试者识别制定 30 天去自测口径；不得将普通访客数伪称搜索曝光或真实新增用户。Bing 9/16 异常仍未归因，单独存放在 PR #20 分支报告。
