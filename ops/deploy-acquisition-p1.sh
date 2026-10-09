@@ -72,6 +72,26 @@ rollback(){
       fi
     done <<< "$FILES"
   fi
+  if [ "$GIT_MODE" = 1 ]; then
+    restored=1
+    while IFS= read -r file; do
+      [ -n "$file" ] || continue
+      if ! cmp -s "$APP/$file" "$BACKUP/old/$file" ||
+          [ "$(stat -c '%a' "$APP/$file" 2>/dev/null)" != "$(stat -c '%a' "$BACKUP/old/$file" 2>/dev/null)" ]; then
+        log "ROLLBACK_VERIFY_FAILED: $file"
+        restored=0
+      fi
+    done <<< "$ORIGINAL_TRACKED_FILES"
+    [ "$(git -C "$APP" rev-parse HEAD 2>/dev/null)" = "$BASE" ] || restored=0
+    if [ "$restored" = 1 ]; then
+      log "ROLLBACK_FILES_AND_MODES_PASS"
+    else
+      log "ROLLBACK_INCOMPLETE: investigate backup immediately"
+    fi
+  fi
+  rollback_http=$(curl -ksS --noproxy '*' --resolve "yanglao.zhibeimao.com:443:127.0.0.1" \
+    --connect-timeout 5 --max-time 15 -o /dev/null -w '%{http_code}' "$SITE/" || true)
+  log "ROLLBACK_ORIGIN_HOME_HTTP=$rollback_http"
   log "Rollback attempted. Backup retained at $BACKUP"
 }
 finish(){
@@ -238,6 +258,8 @@ http_get '/guides/minimum-pension-years.html' 'data-landing-cta="minimum-pension
 http_get '/tools/retirement-age.html' 'data-landing-cta="retirement-age"'
 http_get '/sitemap.xml' '/tools/retirement-age.html'
 http_get '/js/landing-growth.js' 'landing_cta_click'
+http_get '/js/landing-entry.js' 'landing_flow_start'
+http_get '/assets/growth-landings.css' 'color-scheme:light'
 http_get '/admin/index.html' 'landingAcquisition'
 
 # Public delivery is a separate gate; Cloudflare must also return the new homepage.
