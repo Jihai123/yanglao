@@ -77,7 +77,8 @@ def test_v263_future_history_month_is_bounded_and_error_focuses_field(browser):
     expect(end).to_have_attribute('max', expected_max)
 
     start.fill('2008-10')
-    end.fill('2026-10')
+    future_month = page.evaluate("() => String(new Date().getFullYear() + 1) + '-01'")
+    end.fill(future_month)
     base.fill('6000')
     page.locator('#nextBtn').click()
 

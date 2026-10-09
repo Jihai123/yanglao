@@ -25,6 +25,8 @@ $columnNo = max(0, min(2147483647, (int)($data['column_no'] ?? 0)));
 
 $allowed = [
     'page_view',
+    'landing_cta_click',
+    'landing_flow_start',
     'intent_click',
     'flow_start',
     'step_view',

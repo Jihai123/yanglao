@@ -89,6 +89,8 @@ jobs:
           node --check js/launch.js
           node --check js/launch-polish.js
           node --check js/analytics.js
+          node --check js/landing-growth.js
+          node --check js/landing-entry.js
           node --check js/feedback.js
           node --check js/ux-v6.js
           node --check scripts/audit-region-policy-dictionary.mjs
@@ -100,9 +102,42 @@ jobs:
             php -l api/feedback.php
             php -l api/event.php
             php -l api/admin.php
+            php -l api/acquisition-query.php
+            php -l scripts/test-acquisition-mysql.php
+            php -l scripts/audit-acquisition-readonly.php
             php -l scripts/migrate-analytics-v2.php
             php -l scripts/migrate-analytics-diagnostics.php
           fi
+
+  acquisition-mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: yanglao_acquisition_ci
+          MYSQL_ROOT_PASSWORD: ci-temporary-root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-temporary-root-password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure native MySQL PDO driver
+        run: |
+          php -m | grep -qi pdo_mysql || (sudo apt-get update -qq && sudo apt-get install -y php-mysql)
+      - name: Verify production-shaped acquisition queries on disposable MySQL
+        env:
+          ACQ_TEST_DB: yanglao_acquisition_ci
+          ACQ_TEST_HOST: 127.0.0.1
+          ACQ_TEST_PORT: '3306'
+          ACQ_TEST_USER: root
+          ACQ_TEST_PASS: ci-temporary-root-password
+        run: php scripts/test-acquisition-mysql.php
 
   browser-smoke:
     runs-on: ubuntu-latest

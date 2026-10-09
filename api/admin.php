@@ -220,6 +220,13 @@ function diagnostics_data(PDO $pdo): array
     ];
 }
 
+/**
+ * First-party, anonymous acquisition funnel; deliberately does not use
+ * submitted pension data or visitor-identifying information.
+ * Source impressions/search positions must be read from webmaster consoles.
+ */
+require_once __DIR__ . '/acquisition-query.php';
+
 function failure_flow_audit(PDO $pdo): array
 {
     $version = $pdo->quote(DIAGNOSTICS_APP_VERSION);
@@ -578,6 +585,7 @@ if ($action === 'v262') {
             'dashboard' => dashboard_data($pdo, $scope),
             'diagnostics' => diagnostics_data($pdo),
             'audit' => failure_flow_audit($pdo),
+            'acquisition' => safe_landing_acquisition_data($pdo),
         ]);
     } catch (Throwable $error) {
         respond(['ok' => false, 'error' => 'analytics_audit_query_failed'], 500);

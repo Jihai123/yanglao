@@ -57,6 +57,12 @@
     <section class="card" style="margin-top:14px"><h2>最近 30 天各入口测算漏斗</h2><div id="funnelList" class="funnel-list"></div></section>
     <section class="grid two" style="margin-top:14px"><div class="card"><h2>分享增长 · 最近 30 天</h2><div id="shareGrowth"></div></div><div class="card"><h2>相关工具导流 · 最近 30 天</h2><div id="toolGrowth"></div></div></section>
 
+    <section class="card" style="margin-top:14px">
+      <h2>获客落地页 · 最近 30 天</h2>
+      <p class="scope-note">以下只统计三个独立专题页面，按匿名会话去重；包含本站实际可记录的访问、点击、启动和结果，不包括站长平台搜索曝光量。始终使用当前埋点基线，不随顶部历史范围切换。</p>
+      <div id="landingAcquisition"><div class="empty">新页面尚未部署，等待获客数据。</div></div>
+    </section>
+
     <section style="margin-top:14px">
       <div class="card"><h2>V2.6.4 当前版本诊断</h2><p class="scope-note">下面的结果质量、失败诊断和失败流程审计始终只看当前 V2.6.4，不随上方“旧统计基线 / 全部历史”切换，避免不同统计口径混在一起。</p></div>
       <div class="grid cards">
@@ -145,6 +151,24 @@
     $(target).innerHTML=rows.length?rows.map(row=>`<div class="diag-row"><code>${esc(label(row))}</code><span class="muted">流程 ${Number(row.flows||0)}</span><strong>${Number(row.attempts||0)} 次</strong></div>`).join(''):'<div class="empty">暂无当前版本诊断数据</div>';
   }
 
+  function renderLandingAcquisition(data={}){
+    const names={
+      'flexible-employment-pension':'灵活就业养老金',
+      'minimum-pension-years':'最低缴费年限',
+      'retirement-age':'退休年龄查询'
+    };
+    const pages=data.pages||[];
+    if(data.unavailable){
+      $('landingAcquisition').innerHTML='<div class="empty">获客统计暂不可用，原有管理看板仍可正常使用。</div>';
+      return;
+    }
+    $('landingAcquisition').innerHTML=pages.length?pages.map(row=>{
+      const slug=String(row.slug||'');
+      const label=names[slug]||slug;
+      return `<div class="diag-row"><code>${esc(label)}</code><span class="muted">会话访问 ${Number(row.visits||0)} → 点击测算 ${Number(row.cta_sessions||0)}（${Number(row.cta_rate||0).toFixed(1)}%）→ 启动 ${Number(row.started_flows||0)} → 结果 ${Number(row.result_flows||0)}</span><strong>${Number(row.flow_result_rate||0).toFixed(1)}%</strong></div>`;
+    }).join(''):'<div class="empty">暂无落地页获客记录</div>';
+  }
+
   function renderDiagnostics(data={}){
     const today=data.today||{},week=data.seven_days||{},q=today.quick||{},qw=week.quick||{},a=today.amount||{},w=week.amount||{};
     const tq=today.result_quality||{},wq=week.result_quality||{};
@@ -214,6 +238,7 @@
     showDataWarning('登录已成功，但增强分析暂时未完成加载。当前先显示基础看板，系统会继续尝试恢复当前版本分析；不会把你退回登录页。');
     $('auditSummary').innerHTML='<div class="empty">增强审计正在重试。</div>';
     $('auditFlowList').innerHTML='';
+    $('landingAcquisition').innerHTML='<div class="empty">获客统计接口正在重试。</div>';
   }
 
   async function fetchEnhanced(scope){
@@ -239,6 +264,7 @@
         render(data.dashboard);
         renderDiagnostics(data.diagnostics||{});
         renderAudit(data.audit||{});
+        renderLandingAcquisition(data.acquisition||{});
         return true;
       }
       if(res.status!==401)break;
