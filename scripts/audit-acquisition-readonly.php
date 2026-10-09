@@ -10,11 +10,14 @@ if (PHP_SAPI !== 'cli') {
 }
 $root = (string)(getenv('YANGLAO_APP_ROOT') ?: dirname(__DIR__));
 $queryModule = (string)(getenv('YANGLAO_ACQ_QUERY_FILE') ?: $root . '/api/acquisition-query.php');
-if (!is_file($root . '/.yanglao-db.php') || !is_file($queryModule)) {
+$insideConfig = $root . '/.yanglao-db.php';
+$outsideConfig = dirname($root) . '/.yanglao-db.php';
+$configFile = (string)(getenv('YANGLAO_DB_CONFIG') ?: (is_file($insideConfig) ? $insideConfig : $outsideConfig));
+if (!is_file($configFile) || !is_file($queryModule)) {
     fwrite(STDERR, "Missing app configuration or audited query module\n");
     exit(2);
 }
-putenv('YANGLAO_DB_CONFIG=' . $root . '/.yanglao-db.php');
+putenv('YANGLAO_DB_CONFIG=' . $configFile);
 require $root . '/api/bootstrap.php';
 const DIAGNOSTICS_APP_VERSION = 'v2-prod-20260929-v264';
 require $queryModule;
