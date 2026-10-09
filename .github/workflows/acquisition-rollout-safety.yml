@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'ops/deploy-acquisition-p1.sh'
+      - 'ops/deploy-seo-topics-hotfix.sh'
       - 'ops/diagnose-acquisition-rollback.sh'
       - 'ops/diagnose-nginx-origin-403.sh'
       - '.github/workflows/acquisition-rollout-safety.yml'
@@ -17,6 +18,7 @@ jobs:
       - name: Bash syntax check (does not deploy)
         run: |
           bash -n ops/deploy-acquisition-p1.sh
+          bash -n ops/deploy-seo-topics-hotfix.sh
           bash -n ops/diagnose-acquisition-rollback.sh
           bash -n ops/diagnose-nginx-origin-403.sh
           echo "ROLLOUT_BASH_SYNTAX_PASS"
@@ -26,5 +28,5 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install -y shellcheck
           fi
-          shellcheck -S error ops/deploy-acquisition-p1.sh ops/diagnose-acquisition-rollback.sh ops/diagnose-nginx-origin-403.sh
+          shellcheck -S error ops/deploy-acquisition-p1.sh ops/deploy-seo-topics-hotfix.sh ops/diagnose-acquisition-rollback.sh ops/diagnose-nginx-origin-403.sh
           echo "ROLLOUT_SHELLCHECK_PASS"
