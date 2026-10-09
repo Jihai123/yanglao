@@ -68,3 +68,28 @@ def test_acquisition_pages_link_each_other_and_skip_sensitive_data(browser):
     expect(page.locator("table tbody tr")).to_have_count(15)
     assert page.locator("input").count() == 0
     page.close()
+
+@pytest.mark.parametrize("width,height", [(390, 844), (1280, 900)])
+def test_home_policy_topics_render_as_accessible_cards(browser, width, height):
+    page = tune_page(browser.new_page(viewport={"width": width, "height": height}))
+    page.goto(BASE_URL + "/", wait_until="networkidle")
+
+    section = page.locator(".seo-topics")
+    expect(section).to_be_visible()
+    expect(section.locator("h2")).to_have_text("按自己的问题查退休政策")
+    links = section.locator("nav.seo-topic-list a.seo-topic-link")
+    expect(links).to_have_count(3)
+
+    expected_paths = ["/" + path for path, _, _ in ROUTES]
+    for i, expected_path in enumerate(expected_paths):
+        link = links.nth(i)
+        expect(link).to_have_attribute("href", expected_path)
+        assert link.evaluate("(el) => getComputedStyle(el).textDecorationLine") == "none"
+        assert link.evaluate("(el) => getComputedStyle(el).display") == "grid"
+        assert link.bounding_box()["height"] >= 60
+        assert link.locator("strong").inner_text()
+        assert link.locator(".seo-topic-arrow").is_visible()
+
+    # The fix must not introduce sideways scrolling on either viewport.
+    assert page.evaluate("() => document.documentElement.scrollWidth <= innerWidth")
+    page.close()
