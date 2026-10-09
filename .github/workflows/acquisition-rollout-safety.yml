@@ -1,0 +1,26 @@
+name: Acquisition rollout script safety check
+on:
+  pull_request:
+    paths:
+      - 'ops/deploy-acquisition-p1.sh'
+      - '.github/workflows/acquisition-rollout-safety.yml'
+jobs:
+  lint-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash syntax check (does not deploy)
+        run: |
+          bash -n ops/deploy-acquisition-p1.sh
+          echo "ROLLOUT_BASH_SYNTAX_PASS"
+      - name: ShellCheck static analysis (does not deploy)
+        run: |
+          if ! command -v shellcheck >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y shellcheck
+          fi
+          shellcheck -S error ops/deploy-acquisition-p1.sh
+          echo "ROLLOUT_SHELLCHECK_PASS"
