@@ -114,12 +114,18 @@ printf 'old=%s\nnew=%s\nmethod=%s\n' "$BASE" "$TARGET" "$GIT_MODE" >"$BACKUP/man
 log "Deploying audited code (backup: $BACKUP)"
 CHANGED=1
 if [ "$GIT_MODE" = 1 ]; then
+  # Git creates new directories using process umask; 077 would make guides/tools 0700.
+  # Use normal web-readable mode for checkout content; the backup remains protected.
+  umask 022
   git -C "$APP" merge --ff-only "$TARGET" >/dev/null
+  umask 077
 else
   while IFS= read -r file; do
     [ -n "$file" ] || continue
     dest="$APP/$file"
+    umask 022
     mkdir -p "$(dirname "$dest")"
+    umask 077
     temp_file=$(mktemp "$(dirname "$dest")/.yanglao-new.XXXXXX")
     cp -- "$TMP/new/$file" "$temp_file"
     if [ -f "$dest" ]; then
@@ -132,6 +138,11 @@ else
     mv -f -- "$temp_file" "$dest"
   done <<< "$FILES"
 fi
+
+for public_dir in "$APP/guides" "$APP/tools"; do
+  [ -d "$public_dir" ] || die "Missing public landing directory: $public_dir"
+  find "$public_dir" -maxdepth 0 -perm -o=rx | grep -Fxq "$public_dir" || die "Public directory lacks others read/execute: $public_dir"
+done
 
 while IFS= read -r file; do
   [ -n "$file" ] || continue
