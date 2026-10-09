@@ -26,6 +26,7 @@ function landing_acquisition_data(PDO $pdo): array
             COUNT(DISTINCT CASE WHEN result_event.id IS NOT NULL THEN entry.flow_id END) AS result_flows
          FROM usage_event entry
          LEFT JOIN usage_event result_event ON result_event.flow_id = entry.flow_id
+            AND result_event.session_id = entry.session_id
             AND result_event.app_version = ?
             AND result_event.event_name = 'result_view'
             AND result_event.created_at >= entry.created_at
@@ -33,7 +34,8 @@ function landing_acquisition_data(PDO $pdo): array
            AND entry.step = ?
            AND entry.event_name = 'landing_flow_start'
            AND entry.created_at >= CURDATE() - INTERVAL 29 DAY
-           AND entry.flow_id <> ''"
+           AND entry.flow_id <> ''
+           AND entry.session_id <> ''"
     );
     foreach ($slugs as $slug => $page) {
         $pageStmt->execute([$version, $page]);

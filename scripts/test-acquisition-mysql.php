@@ -67,4 +67,16 @@ eq($pages['minimum-pension-years']['started_flows'], 1, 'minimum starts');
 eq($pages['minimum-pension-years']['result_flows'], 0, 'minimum results');
 eq($pages['retirement-age']['visits'], 0, 'empty page visits');
 
+// Reject orphaned results from another session reusing a flow_id; avoid false conversion credit.
+event_insert($insert, 'foreign-session', 'flow-c', 'result_view', '/', 'result');
+event_insert($insert, 'session-c', 'flow-c', 'result_view', '/', 'result', 'old-version');
+$afterForeign = landing_acquisition_data($pdo);
+eq($afterForeign['pages'][1]['result_flows'], 0, 'cross-session/old-version result must not count');
+event_insert($insert, 'session-c', 'flow-c', 'result_view', '/', 'result');
+$afterValid = landing_acquisition_data($pdo);
+eq($afterValid['pages'][1]['result_flows'], 1, 'valid same-session result must count once');
+event_insert($insert, '', 'flow-no-session', 'landing_flow_start', '/', 'minimum-pension-years');
+$afterEmptySession = landing_acquisition_data($pdo);
+eq($afterEmptySession['pages'][1]['started_flows'], 1, 'blank-session flow excluded');
+
 echo "MYSQL_ACQUISITION_QUERY_PASS: real MySQL, native prepares, production DDL, strict fixture counts\n";
