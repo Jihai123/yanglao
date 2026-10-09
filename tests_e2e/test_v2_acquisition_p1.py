@@ -26,9 +26,13 @@ def test_acquisition_landing_directly_starts_existing_wizard(browser, path, slug
     page = tune_page(browser.new_page(viewport={"width": 390, "height": 844}))
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
-    page.route("**/api/event.php", lambda route: route.fulfill(
-        status=200, content_type="application/json", body='{"ok":true}'
-    ))
+    recorded_requests = []
+
+    def record_event(route):
+        recorded_requests.append(route.request.post_data_json)
+        route.fulfill(status=200, content_type="application/json", body='{"ok":true}')
+
+    page.route("**/api/event.php", record_event)
     page.goto(f"{BASE_URL}/{path}", wait_until="networkidle")
 
     expect(page.locator("h1")).to_be_visible()
@@ -44,6 +48,14 @@ def test_acquisition_landing_directly_starts_existing_wizard(browser, path, slug
     payloads = page.evaluate("() => window.dataLayer.filter(e => ['flow_start', 'landing_flow_start'].includes(e.event))")
     assert any(p["event"] == "flow_start" and p["feature"] == entry for p in payloads)
     assert any(p["event"] == "landing_flow_start" and p["step"] == slug for p in payloads)
+    ctas = [p for p in recorded_requests if p.get("event") == "landing_cta_click"]
+    starts = [p for p in recorded_requests if p.get("event") == "landing_flow_start"]
+    assert len(ctas) == 1
+    assert ctas[0]["page"] == "/" + path
+    assert ctas[0]["step"] == slug
+    assert starts and starts[0]["step"] == slug
+    assert starts[0]["flow_id"]
+    assert starts[0]["session_id"] == ctas[0]["session_id"]
     assert errors == []
     page.close()
 
