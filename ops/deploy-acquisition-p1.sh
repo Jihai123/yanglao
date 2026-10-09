@@ -31,13 +31,37 @@ tools/retirement-age.html
 FILES_EOF
 )
 
+# Precisely the eight 100644 tracked files modified by the pinned upgrade.
+# Previous broken deploy/rollback could leave them 0600 despite git status clean.
+ORIGINAL_TRACKED_FILES=$(cat <<'ORIGINAL_EOF'
+.github/workflows/v2-quality.yml
+admin/index.html
+api/admin.php
+api/event.php
+index.html
+sitemap.xml
+tests_e2e/test_v2_v263_precision_upgrade_ux.py
+tests_e2e/test_v2_v5_regressions.py
+ORIGINAL_EOF
+)
+
 log(){ printf '[yanglao-deploy] %s\n' "$*"; }
 die(){ log "BLOCKED: $*"; exit 1; }
 rollback(){
   log "Post-update check failed; restoring previous production files."
   set +e
   if [ "$GIT_MODE" = 1 ]; then
+    umask 022
     git -C "$APP" reset --hard "$BASE" >/dev/null
+    umask 077
+    # A Git reset can also rewrite permissions. Restore exact pre-deploy metadata.
+    while IFS= read -r file; do
+      [ -n "$file" ] || continue
+      if [ -f "$BACKUP/old/$file" ] && [ -f "$APP/$file" ]; then
+        chmod --reference="$BACKUP/old/$file" "$APP/$file"
+        chown --reference="$BACKUP/old/$file" "$APP/$file"
+      fi
+    done <<< "$ORIGINAL_TRACKED_FILES"
   else
     while IFS= read -r file; do
       [ -n "$file" ] || continue
@@ -99,6 +123,28 @@ if [ -d "$APP/.git" ] || [ -f "$APP/.git" ]; then
   [ -z "$(git -C "$APP" status --porcelain --untracked-files=no)" ] || die "Production has tracked local edits; refusing Git merge"
   git -C "$APP" fetch --quiet --no-tags origin "$TARGET"
   git -C "$APP" merge-base --is-ancestor "$BASE" "$TARGET" || die "Target not descendant of baseline"
+
+  # Recover the known 0600 regression only after byte-for-byte comparison with BASE.
+  # Refuse to touch unknown file modes, symlinks, or changed content.
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    [ -f "$APP/$file" ] && [ ! -L "$APP/$file" ] || die "Baseline tracked file missing/symlink: $file"
+    cmp -s "$APP/$file" "$TMP/old/$file" || die "Original tracked file drift: $file"
+    mode=$(stat -c '%a' "$APP/$file")
+    case "$mode" in
+      644) ;;
+      600)
+        chmod 0644 "$APP/$file"
+        log "RESTORED_MODE 600->644: $file"
+        ;;
+      *) die "Unexpected baseline mode $mode on $file (manual review required)" ;;
+    esac
+  done <<< "$ORIGINAL_TRACKED_FILES"
+
+  # Previous rollback left index.html as 0600. Verify origin recovery before updating code.
+  origin_before=$(curl -k -sS --noproxy '*' --resolve "yanglao.zhibeimao.com:443:127.0.0.1"     --connect-timeout 5 --max-time 20 -o "$TMP/origin-before.html" -w '%{http_code}' "$SITE/" || true)
+  [ "$origin_before" = 200 ] || die "Origin homepage still returns $origin_before after permission restoration; no deployment attempted"
+  log "ORIGIN_BASELINE_RECOVERED HTTP 200"
 fi
 
 mkdir -p -m 700 "$BACKUP/old"
@@ -109,6 +155,14 @@ while IFS= read -r file; do
     cp -a "$APP/$file" "$BACKUP/old/$file"
   fi
 done <<< "$FILES"
+if [ "$GIT_MODE" = 1 ]; then
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    [ -e "$BACKUP/old/$file" ] && continue
+    mkdir -p "$BACKUP/old/$(dirname "$file")"
+    cp -a "$APP/$file" "$BACKUP/old/$file"
+  done <<< "$ORIGINAL_TRACKED_FILES"
+fi
 printf 'old=%s\nnew=%s\nmethod=%s\n' "$BASE" "$TARGET" "$GIT_MODE" >"$BACKUP/manifest.txt"
 
 log "Deploying audited code (backup: $BACKUP)"
@@ -119,6 +173,12 @@ if [ "$GIT_MODE" = 1 ]; then
   umask 022
   git -C "$APP" merge --ff-only "$TARGET" >/dev/null
   umask 077
+  # Verify the actual Nginx-readable modes, not only Git content status.
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    mode=$(stat -c '%a' "$APP/$file")
+    [ "$mode" = 644 ] || die "Unexpected installed Git file mode $mode: $file"
+  done <<< "$ORIGINAL_TRACKED_FILES"
 else
   while IFS= read -r file; do
     [ -n "$file" ] || continue
@@ -155,18 +215,21 @@ for file in api/admin.php api/event.php api/acquisition-query.php; do
   php -l "$APP/$file" >/dev/null || die "Installed PHP lint failed: $file"
 done
 
-# Query-string cache busting verifies public web delivery; no policy or data input is sent.
+# Verify against the local HTTPS origin before checking public Cloudflare delivery.
+# Curl never stores or sends credentials in this test.
 probe="deploy=$STAMP"
 http_get(){
   path="$1"
   needle="$2"
   output="$TMP/http-$(printf '%s' "$path" | sha256sum | cut -c 1-12)"
   case "$path" in *\?*) url="$SITE$path&$probe";; *) url="$SITE$path?$probe";; esac
-  status=$(curl -sS -fL --connect-timeout 10 --max-time 35 --retry 1 \
-    -o "$output" -w '%{http_code}' "$url") || die "HTTP GET failed: $path"
+  status=$(curl -sS -fkL --noproxy '*' \
+    --resolve "yanglao.zhibeimao.com:443:127.0.0.1" \
+    --connect-timeout 10 --max-time 35 --retry 1 \
+    -o "$output" -w '%{http_code}' "$url") || die "Origin HTTP GET failed: $path"
   [ "$status" = 200 ] || die "HTTP $status for $path"
   grep -Fq "$needle" "$output" || die "HTTP content mismatch: $path"
-  log "HTTP 200 verified: $path"
+  log "ORIGIN HTTP 200 verified: $path"
 }
 
 http_get '/' 'landing-entry.js?v=20261008-p1'
@@ -177,10 +240,18 @@ http_get '/sitemap.xml' '/tools/retirement-age.html'
 http_get '/js/landing-growth.js' 'landing_cta_click'
 http_get '/admin/index.html' 'landingAcquisition'
 
+# Public delivery is a separate gate; Cloudflare must also return the new homepage.
+public_code=$(curl -sS -fL --connect-timeout 10 --max-time 35 \
+  -o "$TMP/public-home.html" -w '%{http_code}' "$SITE/?$probe" || true)
+[ "$public_code" = 200 ] || die "Public CDN homepage returned $public_code (origin checks already passed)"
+grep -Fq 'landing-entry.js?v=20261008-p1' "$TMP/public-home.html" || die "Public homepage was stale"
+log "PUBLIC_CDN_HTTP_200_PASS"
+
 # One deliberately marked anonymous probe exercises the real PHP -> MySQL INSERT path.
 # It uses a test app_version, so cannot count in the three landing funnels.
 probe_id="deployment-smoke-$STAMP-$$"
-code=$(curl -sS --connect-timeout 10 --max-time 30 -o "$TMP/event.json" -w '%{http_code}' \
+code=$(curl -ksS --noproxy '*' --resolve "yanglao.zhibeimao.com:443:127.0.0.1" \
+  --connect-timeout 10 --max-time 30 -o "$TMP/event.json" -w '%{http_code}' \
   -H 'Content-Type: application/json' -X POST "$SITE/api/event.php" \
   --data "{\"event\":\"landing_cta_click\",\"feature\":\"early\",\"step\":\"flexible-employment-pension\",\"visitor_id\":\"$probe_id\",\"session_id\":\"$probe_id\",\"flow_id\":\"$probe_id\",\"source\":\"direct\",\"device\":\"desktop\",\"page\":\"/__deployment_smoke__\",\"app_version\":\"deployment-smoke-20261009\"}") || die "Event API request failed"
 [ "$code" = 201 ] && grep -Fq '"ok":true' "$TMP/event.json" || die "Event API did not return 201/ok"
