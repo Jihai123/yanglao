@@ -122,3 +122,21 @@ Pages CSV 只有**首页一行**，已否定“当时有其他页面接替首页
 - **决定**：停止重复服务器日志采样、IndexNow 提交和生产 SEO 改动；要求如需关键词层因果分析，先从**同一 Compare 筛选条件、选中 Keywords 标签之后**重新下载，核对关键词样本的合计是否合理。若仍不相容，将“关键词与页面导出不一致”与曝光异常**一并报 Bing Webmaster 支持**。向支持说明历史抓取统计是基于 UA 匹配而非官方验证 IP。
 
 官方支持入口：https://www.bing.com/webmasters/help/webmaster-support-24ab5ebf
+
+
+## 8. 2026-10-10 新证据：Bing Webmaster Support 回复“已解决”
+
+网站维护者提交 **Ranking: My site suddenly dropped in ranking** 工单，站点 `https://yanglao.zhibeimao.com/`，Bing Webmaster Tools 自动回复邮件截图包含：
+
+- **Request ID：`REQ00348080`**。
+- **2026-10-09 14:46（截图显示的邮箱界面时间）**：确认收到了网站问题并创建请求。
+- **2026-10-09 15:41（截图显示的邮箱界面时间）**：Bing Webmaster Support 写道：`I am happy to inform you that the issue related to your site ... has been resolved.`；还提示若此前无法抓取或收录，恢复搜索展示可能需要 **2–3 周**，可通过 IndexNow 加快重新抓取；表示将关闭工单。
+- 这两封邮件相隔约 **55 分钟**，第二封为简短模板式结果通知，**没有披露处理措施、触发原因、具体受影响 URL、排序回归指标或何时恢复展示**。
+
+**状态严格分层**：`Bing support marked case resolved = YES`；`Bing rankings/impressions actually restored = NOT YET VERIFIED`；`Root cause established = NO`。不能把支持邮件升级解释为 Bing 承认平台故障、解除处罚、SEO 改版无关或搜索流量已经恢复。也不能仅凭“Things to Avoid”通用指南链接就认定本站违反规范。
+
+后续：
+1. 生产代码、首页 H1、IndexNow 提交保持稳定，**不因模板通知而做临时 SEO 变更**。
+2. 观察 **2026-10-16 前后（7 天）**的 Bing Search Performance 每日 impressions/clicks 与新专题索引状态；注意 Webmaster 报表有时间延迟，观察同一查询/页面与搜索范围。
+3. 若到 **2026-10-23—10-30** 搜索曝光仍接近零，再引用工单 `REQ00348080`，请 Bing 提供问题类型、实际修复措施、恢复时间和是否需要站点侧动作，并附原有 1537→22 数据、已索引和日志 200/304 证据。
+4. 无论增长是否恢复，继续 30 天非自测、可归因访问的获客实验；IndexNow 返回成功只是提交被接收。
