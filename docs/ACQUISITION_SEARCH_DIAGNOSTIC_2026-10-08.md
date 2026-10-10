@@ -1,0 +1,181 @@
+# 退休规划助手：搜索获客 P0 诊断基线（2026-10-08）
+
+状态：**第一轮代码与公开搜索诊断完成；站长平台私有报表待验证。** 本文件为诊断记录，不包含代码上线、收录承诺或任何站长平台账号操作。
+
+## 一、已确认事实
+
+- 站点：`https://yanglao.zhibeimao.com/`，生产版目前由项目维护者提供的验收记录确认为 V2.6.4；本轮未部署服务器。
+- `sitemap.xml` 当前仅有首页一个 `<loc>`，且 `lastmod=2026-08-31`。尚无独立可收录的退休日历、缴费最低年限、停止工作等专题页面。
+- `robots.txt` 允许公开路径抓取，显式禁止 `/admin/`、`/api/`、`/v2-preview/`。当前代码中未发现阻止首页收录的明显 robots 规则。
+- `index.html` 包含首页 title、description、canonical、FAQ 结构化数据和 HTML FAQ，但主要任务都在同一个 URL 的动态前端流程中，搜索流量无法分别落在按需求定制的深层页面。
+- 项目已有 `scripts/submit-indexnow.sh`、索引 key 文件、`tests_js/seo.test.js`；可以复用，不需要重建提交脚本。
+- 根目录仍保留 `pension_calculator_v7.html`（旧版可独立渲染的养老金页面，独立 title，文件本身无 canonical/noindex）。**待从生产 HTTP 和站长平台核实是否可抓取/收录**；可能存在旧内容竞争/重复收录风险，不可未经检查直接删除。
+- 当前 Analytics 记录 `source`、`page`、`flow_id` 等匿名参数，可复用，但缺少“落地页 → CTA → 测算”专门归因口径。站内点击不能等同于搜索曝光。
+
+## 一-A、2026-10-08 站长平台首次真实数据（用户提供的后台截图）
+
+三张截图均为网站所有者在对应站长平台的实际账户视图，**统计周期彼此不同**，不能把点击/曝光直接相加作为单个日期范围的搜索总量。
+
+| 平台 | 截图可见数据 | 诊断 |
+| --- | --- | --- |
+| 百度搜索资源平台 | 流量与关键词 **1 次点击、46 次展现**；索引量折线约 **1 页**。示例查询：“灵活就业养老金计算器”（1 点击、1 展现）、“退休金2026计算器”（0 点击、15 展现）、“广东退休金计算器”（0 点击、2 展现） | 已开始获得少量真实曝光；“灵活就业”“地区养老金”可以进入候选，不是只有退休年龄需求 |
+| Bing Webmaster Tools | 首页汇总约 **37 次点击、1.6K 次展现**，大部分可见曲线集中在 **9 月上半月**，9 月中下旬后显示接近零。尚未看到实际索引 URL 和关键词、网页报告 | **优先 P0 排查异常时间序列**：可能是索引/排名/抓取/报表范围等原因，不能据此认定“被处罚” |
+| Google Search Console | **1 个已编入索引页面，0 个未收录页面，0 次网页搜索点击**（截图所选范围） | 收录至少一个 URL，但没有可见 Google 点击；需要查看首页 URL Inspection 与 Search Performance 的 impressions、queries |
+
+### Bing Search Performance 详情补采（2026-10-08）
+
+用户提供了 3M 的 Keywords 与 Pages 两个完整截图，确认：
+- 汇总：`37 clicks`，`1.6K impressions`，`2.37% CTR`。
+- **Pages 只有首页一个 URL：`https://yanglao.zhibeimao.com/`，37 clicks / 1.6K impressions / 2.37% CTR / 8.28 Avg Position。** 因此搜索流量断崖的分析对象就是首页，不需要先在多篇内容页间排查。
+- Keywords 报表共 77 个 query 行（第一页25行）；可见主要关键词如下：
+
+| 搜索词 | 曝光 | 点击 | CTR | 平均排名 |
+| --- | ---: | ---: | ---: | ---: |
+| 养老金计算器 | 186 | 7 | 3.76% | 8.71 |
+| 退休金计算器 | 129 | 2 | 1.55% | 9.61 |
+| 养老金测算 | 93 | 2 | 2.15% | 7.32 |
+| 养老保险计算器 | 65 | 1 | 1.54% | 7.89 |
+| 退休金测算 | 37 | 2 | 5.41% | 7.89 |
+| 退休工资计算器2026 | 17 | 0 | 0% | 8.47 |
+
+- 可见日趋势在 **2026-09-16 前后**掉到零，且 9 月下旬、10 月初持续为零。排名是整个三个月报告的历史均值，不能解释为当前排名。
+- 已知关键词说明 **泛养老金计算器需求曾有实质搜索曝光**。不能断言全由单一版本变更、算法调整、被惩罚或页面质量引起。
+
+**紧接着要做的唯一 P0 用户操作：Bing 左侧 `URL Inspection` → 输入 `https://yanglao.zhibeimao.com/` → 截图 Index（是否已索引、最后抓取日期、索引错误）及 Live URL（实时 Bingbot 抓取是否成功、HTTP 响应、canonical/robots）。** 然后进入 Site Explorer 查看 Indexed / Error / Warning / Excluded 分布。若首页已从索引退出，先找退出原因，不应盲目扩建页面。
+
+### Bing 首页索引与实时抓取诊断（2026-10-08 追加）
+
+站长平台 URL Inspection 用户截图对应 URL：`https://yanglao.zhibeimao.com/`：
+
+- **Bing Index: Indexed successfully / URL can appear on Bing**。Discover: 2026-04-06；最近抓取显示当日 14:52；Crawl allowed **Yes**；Page Fetch **Successful**；Indexing allowed **Yes**。
+- **Live URL: URL can be indexed by Bing**（当日 17:19 测试）；两页都显示 No SEO/GEO issues found；识别到 JSON-LD 与 OpenGraph 2 种标记；Canonical URL 以 `--` 展示，不能仅凭此认定 canonical 配置有误。
+- 由此**基本排除首页已经出索引、Robots/noindex 禁止、Bingbot 当下无法抓取**。但此检查不说明首页会被公开 SERP 展示，更不能确认历史排名仍在。
+- 与此前 3M 搜索表现结合，初步将故障类型由“抓取/索引错误”调整为 **“已收录但近期没有公开搜索曝光 / 关键词排名或 serving 异常待查”**。
+- 公开 Microsoft Q&A 上 2026-09-21 有其他站长报告从 2026-09-16 起发生“已索引、持续可抓取，但曝光/点击零”的类似情形（参考 https://learn.microsoft.com/en-us/answers/questions/6010384/bing-webmaster-tools-shows-913-urls-indexed-but-en）。这是**其他站点个案证据，不能据此断言本站被 Bing 降权、处罚或 Bing 存在普遍故障**。其他微软问答案例中的 Microsoft External Staff 说明“已索引”与公开搜索的展示是不同阶段，可能存在后者未展示情形：https://learn.microsoft.com/en-us/answers/a/12795351 。
+- 官方 URL Inspection 文档明确 Live URL 可用于对比 Bingbot 当下拿到的 HTML 与索引缓存内容：https://www.bing.com/webmasters/help/URL-Inspection-55a30305 。
+
+**下一组最高信息增益检查**：
+1. **Bing 公开搜索**（实际 Bing 搜索框而不是 Webmaster）：`url:yanglao.zhibeimao.com/`；精确站名和 `site:yanglao.zhibeimao.com`。截图判断首页能否被公开展示。搜索操作符可能受分词及搜索引擎策略影响，单项失败不足以确证域名级过滤。
+2. 在 URL Inspection 点击 **View Indexed page** 与 **View Tested page**，比对 Bing 看到的标题、HTML 头部、正文及是否是近期版本；关注是否显示旧版页面、被重定向或返回与用户不同的内容。
+3. **Site Explorer** 检查 index / excluded / error 数量与站点状态，查看是否只有一个首页；需要时从 Bing Webmaster Support 提交异常工单，并附 9 月中旬断崖归零、已索引、实时抓取成功的完整证据。
+4. 无论 Bing 是否存在 serving 问题，**百度/Google 已至少索引 1 页，但仍仅有单一落地页**的结构性获客瓶颈依旧；可并行推进首批高质量独立落地页（单独 Gate、独立分支、禁止直接生产部署），不因 Bing 排查无限期拖延整个增长计划。
+
+### Bing 公开搜索进一步验证（2026-10-08）
+
+用户提供两张 Bing 公开 SERP 实际截图：
+
+- `url:yanglao.zhibeimao.com/` 返回 **1 个可见首页结果**，故“Bing 仅保留索引记录但公开结果完全不可见”的假说不成立（至少 URL operator 的公开结果可以返回站点）。
+- `site:yanglao.zhibeimao.com` 在所见截图中出现约 19,600 个与“审判”相关的无关结果，**没有正常限制到目标域名**，不能用于认定站点无结果或搜索词排名。
+- `url:` 结果展示标题为 **“养老金计算器_退休年龄查询_养老保险测算工具”**，摘要为 **“养老金计算器上线版，提供退休年龄速查、职工养老测算、居民养老测算。先查几岁退休，再估算退休后预计每月养老金。”**。这与仓库中旧版 `pension_calculator_v7.html` 的 `<title>` / description **高度一致**，也与其他公开抓取工具标注六个月前的旧首页快照一致。
+- 但 GitHub 当前生产候选 `index.html` 元数据已是 **“养老金计算器2026｜退休年龄查询｜退休规划助手”**，description 为 **“退休规划助手：查询2026职工法定退休年龄和退休年月，估算职工养老金、灵活就业养老与城乡居民养老金，并比较不同缴费年限方案。”**；旧内容与新内容不一致。
+- 因此有了一个**可检验的强线索：Bing 公开搜索结果可能仍使用旧版首页的标题与摘要**。该差异也可能源自搜索引擎自动改写 title/snippet，不能仅凭 SERP 判断索引缓存一定过期或 HTTP/HTTPS canonical 有错。
+
+**下一步的单一高信息增益核验**：在 URL Inspection > Bing Index 点击 `View Indexed page`，查看 Bing 实际索引版本的 title / description / 正文；与 `Live URL > View Tested page` 对比（尤其 HTML 头部 title、description、canonical、HTTPS 最终网址）。
+- 若 Indexed page 明确为旧页、Live page 为 V2.6.4 新页：有证据表明索引内容滞后，可点击 Request indexing（至多一次）、观察 3–7 天是否更新；同时按技术侧排查 HTTP/HTTPS 重定向与 canonical。
+- 若 Indexed page 与 Live page 都是新页，但公开 SERP 使用旧文案：可能是 Bing 自主改写或 SERP 缓存/显示问题，转向 Search Performance 的近期查询排名和 search-serving 诊断。
+- 即便 indexed page 更新，**也不能保证搜索排名恢复**；多关键词曝光断崖是另外一条需要持续观察的指标。
+
+### Bing View Indexed page：旧索引假设已被排除（2026-10-08）
+
+所有者通过 Bing URL Inspection > View Indexed page 提供了完整首页 HTML。
+- Indexed HTML 的 `<title>` 是 `养老金计算器2026｜退休年龄查询｜退休规划助手`。
+- description 是 2026 职工法定退休年龄、灵活就业/城乡居民养老金的新版文案。
+- meta robots 为 `index,follow,max-image-preview:large`，canonical 正确指向 `https://yanglao.zhibeimao.com/`。
+- 页面包含新版 Quick/年龄/退休规划入口与 `analytics.js?v=20260929-v264`、`employee-v4.js?v=20260929-v264` 等 V2.6.4 资源链接。
+
+**结论更正：Bing 所存索引 HTML 已更新到新版，不能再把“旧索引缓存”列为当前确定原因。** 公开 SERP 旧标题/摘要可能由 snippet 自动改写或展示缓存产生；索引中有页面、实时可抓取和 URL operator 可查询仍不能保证核心关键词展示。2026-09-16 后曝光归零的原因未证实，不可声称“遭惩罚”或“已解决”。
+
+**执行策略调整：**保留 Bing serving 异常报告线索，必要时提供给 Bing Webmaster Support；无需等待该异常解决再建设获客页面。首批优先复用现有测算功能开发 3 个可抓取的高质量专题入口，并同步建立来源归因；所有更改在独立分支测试验收，未获生产部署指令前绝不部署。
+
+### GitHub 代码取证：2026-09-13～09-16（2026-10-08 审核）
+
+历史 Bing 曝光主要来自唯一首页，近期归零的最后一段变化与 9/13—9/15 连续上线时间接近，但**9 月 16 日当天没有检索到 GitHub 新提交**：2026-09-15T16:00:00Z～2026-09-18T23:59:59Z 提交记录为空；实际服务器部署仍需独立核对。
+
+1. `05c964e`（9/06 main）→ `5d04fe2`（9/13 PR #9）：首页 H1 `什么时候退休，能领多少？` → `先知道答案，再慢慢算准`；首屏主题提示 `退休年龄 · 缴费年限 · 养老金` → `退休规划助手`；原有不同退休/养老金入口收敛成 Quick 主入口。**与养老金计算器等搜索词的直接语义匹配减弱**，属于可检验的代码层面相关性线索。
+2. 同期首页 title / description / robots / canonical 没变；9/12—9/15 没有 `robots.txt` 和 `sitemap.xml` 提交。
+3. 9/14 PR #10、#11 与 9/15 PR #15、#16 的主要修改涉及埋点统计、后台 API、精准表单交互；没有看到改坏基础索引开关的证据。
+4. 9/13 改版虽涉及部分现有 JS 文件，但相关版本化 script URL 未同步全部改变；**可能是缓存一致性工程风险**，没有证据表明这造成 Bing 曝光归零。
+5. 用户 Bing URL Inspection 提供的 Indexed HTML 已经是 V2.6.4，Bing Index/Live URL 均通过、公开 `url:` 查询可查到首页，已排除“旧索引缓存、首页未索引、Bingbot 当下抓取失败”等初始猜测。
+
+结论：**找到了日期相近且影响首页搜索语义的变更，但没有找到能充分解释 9/16 之后所有关键词曝光突然归零的确定性代码根因。** 其他可能包括 Bing 搜索展示/报表维度变化。应把 Bing 异常与三个独立搜索落地页两条工作流并行推进，不能把时间相关误称为因果。详细审计与 SQL 兼容性 Gate 见获客 PR #21 的 `docs/ACQUISITION_P1_FINAL_GATE_2026-10-08.md`。
+
+### 明确的诊断次序
+
+1. **先排 Bing 突然失去曝光的原因**：进入 Bing > Search Performance，选择 2026-08-25 至 2026-10-08 范围，分别导出/截图 Queries、Pages 和每日展现；再用 URL Inspection 核对首页的索引/抓取/最后抓取日期。若 9 月中旬后确实显著下滑，优先从查询词/网页构成排查，而不是马上发表新内容。
+2. **再补百度长尾**：流量与关键词详情选近30/90天、抓取/索引量详情；首批内容候选增加“灵活就业养老”和“地区养老金”话题，但仍需真实查询数据验证。
+3. **Google 为辅助验证**：URL Inspection 检查首页是否为 Google 选定 canonical；Performance > Queries/Pages 查看非零曝光是否存在。
+4. **独立核对旧版页面**：检验 `/pension_calculator_v7.html` 实际 HTTP、canonical 和索引状态；这一文件仍在 Git tracked tree 中，当前无法证明它已经在生产被搜索引擎收录，不能贸然删除。
+
+### 修正首批落地页候选的先后顺序
+
+暂时优先考察：
+- **灵活就业养老养老金测算/停止工作后继续缴费**（百度已出现“灵活就业养老金计算器”）
+- **养老保险交满 15 年后是否需要继续交**（高意图且现有工具能解答）
+- **出生年份 × 延迟退休时间**（可搜索，但纯通用计算器竞争已较强）
+- **地区养老金计算**（已出现“广东退休金计算器”，需要先核对地区参数与政策质量，不能随意声称官方精确值）
+
+这仍是候选，而非最终开发排序。**待 Bing 查询词、网页报告后正式锁定前三个。**
+
+## 二、公开搜索检查结果与局限
+
+- 使用精确域名、`site:` 加退休主题进行了公开搜索，目标域名在可获得的结果中没有稳定出现。**这不能证明未收录**，公开 SERP 的覆盖与各站长平台真实索引报告不等价。
+- 搜索工具打开首页时读到了一个旧版页面快照（标注约六个月前抓取），与当前仓库 V2.6.4 不一致。**这是搜索缓存或抓取工具的历史视图，不等于现网未更新**。
+- 外部探测容器无法解析目标域名，未获得本轮真实 HTTP 响应；这一环境限制不能作为网站故障证据。生产此前已由站点拥有者运行过成功的 API/页面验收。
+- “退休年龄计算器”已有政府官方服务以及多个专用计算网站，纯通用查询词竞争较强。优先结合最低缴费年限、提前停止工作后的方案分析形成差异化。
+- 现有后台截图的站内 source 分类表明百度/Bing 曾带来访问，但不足以判定真实关键词、曝光、排名、收录数量；内部访问和非自测流量也需要区分。
+
+## 三、待补齐的第一手资料（P0 数据门槛）
+
+| 平台 | 需要的资料 | 数据用途 |
+| --- | --- | --- |
+| 百度搜索资源平台 | 站点验证状态、近 30/90 天索引量、流量与关键词、抓取异常、重点 URL 抓取诊断 | 判断在中国大陆主要搜索来源中的真实索引和点击问题 |
+| Bing Webmaster Tools | Search Performance：查询词、页面、曝光、点击、CTR、排名；Site Explorer 的 URL 索引状态 | 确定已经产生 Bing 访问的关键词和可优化页面 |
+| Google Search Console | 搜索效果（查询、网页、曝光、点击、CTR、排名），网页索引和首页 URL 检查 | 区分索引、排名、点击率问题 |
+| 自站管理看板 | 当前 V2.6.4 和旧基线 source/flow/page 的汇总，并识别维护者自测 | 建立“外部来源 → 测算”的准确基线 |
+
+尚未读取三个站长平台的私有数据。**不要在获取数据前宣称已确认具体排名或已收录 URL 数量。**
+
+官方入口：
+- 百度：https://ziyuan.baidu.com/site/index
+- Bing：https://www.bing.com/webmasters
+- Google：https://search.google.com/search-console/
+
+## 四、选题初步候选（等待查询词数据后定稿）
+
+| 次序 | 主题 | 页面价值与定位 |
+| --- | --- | --- |
+| 候选 A | 交够 15 年之后是不是还要交？ | 结合退休年份和逐步提高的最低缴费年限给出条件化答案；导向最低年限测算 |
+| 候选 B | 40 多岁不工作了，养老保险怎么办？ | 停止工作 ≠ 办理退休；承接“停缴 / 灵活就业继续缴 / 养老金变化”组合需求 |
+| 候选 C | 1980～1985 年出生什么时候退休？ | 展示人员类别/出生月份差异并提供计算入口；作为搜索辅助入口而非唯一主战场 |
+| 候选 D | 灵活就业养老保险怎么交，养老金会差多少？ | 明确测算假设、缴费成本和资格口径，避免金额承诺 |
+
+第一批最多上三个高质量、独立 URL 页面，内容由官方政策校对，真实交互复用已有养老金计算能力；不得仅复制不同出生年份制造薄内容。若站长平台显示其他查询词更有潜力，优先级以真实数据为准。
+
+## 五、下一步任务及 Gate
+
+### Gate 1：搜索现状数据
+- 获取百度、Bing、Google 近 30/90 天真实关键词、索引/曝光/点击报表，或者明确某平台尚未添加站点（新添加的数据可能没有历史记录）。
+- 核实 `/`、`/pension_calculator_v7.html` 的 URL 检查和最后抓取时间；根据真实状态决定 legacy 页做 301、canonical 还是 noindex，不能直接删除。
+- 输出关键词机会表：query、impressions、clicks、CTR、rank、对应页面、检索意图、是否值得建页。
+- 依此最终批准首批 3 个页面，不先批量写文章。
+
+### Gate 2：获客工程（下一开发分支）
+- 新增 3 个独立 HTML 页（可抓取正文、明确 title/H1/canonical、官方出处、页面更新日期、准确的适用范围）。
+- 页面直接调用现有退休测算主链或带明确来源参数进入主链；不复制养老金算法。
+- 实现 landing_view、landing_cta_click 等匿名事件并与 flow 关联；在后台增加“页面/渠道 → 开始 → 结果”统计，避免重复计算。
+- 更新 `sitemap.xml` 并设置实际修改日期；维护跨页内部链接、robots、SEO 测试。
+- Node、PHP、完整浏览器 E2E、错误路径、历史主链回归全部通过；不得直接修改生产。
+
+### Gate 3：14/30 天经营验证
+- 观察搜索曝光、已索引页面、落地页点击率、来源访问量、真实测算完成率。
+- 30 天争取 100 次可归因非自测访问，作为实验门槛而非效果保证；达不到时按“收录 / 曝光 / CTR / 转化”诊断，不用页面数量冒充成果。
+
+## 六、已验证的参考资料
+
+- 百度站长平台：https://ziyuan.baidu.com/site/index
+- Bing Search Performance：https://www.bing.com/webmasters/help/search-performance-c680da36
+- Bing URL Inspection：https://www.bing.com/webmasters/help/URL-Inspection-55a30305
+- Google Search Console：https://search.google.com/search-console/about
+- 人社部法定退休年龄官方查询渠道：https://www.mohrss.gov.cn/SYrlzyhshbzb/ztzl/zt202409/zcmdm/202409/t20240913_525722.html
+
+本报告仅提交独立工作分支供审阅，不更改运行程序、数据库或生产服务器。
